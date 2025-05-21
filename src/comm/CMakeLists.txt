@@ -11,6 +11,9 @@ if(BUILD_TESTING)
 	)
 endif()
 
+file(GLOB_RECURSE CS_AIRLINK_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CSKY/Airlink/*.cc)
+file(GLOB_RECURSE CS_AIRLINK_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSKY/Airlink/*.h)
+
 add_library(comm
 	#BluetoothLink.cc
 	#BluetoothLink.h
@@ -40,7 +43,12 @@ add_library(comm
 	UDPLink.h
 
 	${EXTRA_SRC}
+
+	${CS_AIRLINK_SOURCES}
+	${CS_AIRLINK_HEADERS}
 )
+
+add_subdirectory(CSKY/AirlinkStreamBridge)
 
 target_link_libraries(comm
 	PUBLIC

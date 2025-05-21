@@ -28,3 +28,6 @@
 [submodule "src/FirmwarePlugin/APM/ArduPilot-Parameter-Repository"]
 	path = src/FirmwarePlugin/APM/ArduPilot-Parameter-Repository
 	url = https://github.com/ArduPilot/ArduPilot-Parameter-Repository
+[submodule "src/comm/CSKY/AirlinkStreamBridge"]
+	path = src/comm/CSKY/AirlinkStreamBridge
+	url = https://dev.air-link.space/airlink/groundcontrol/airlinkstreambridge.git

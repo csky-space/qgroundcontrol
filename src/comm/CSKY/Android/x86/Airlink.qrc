@@ -1,0 +1,6 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/assets/ASB/resources">
+        <file alias="AirlinkStreamBridge_x86">../../../../../resources/x86/AirlinkStreamBridge_x86</file>
+    </qresource>
+</RCC>

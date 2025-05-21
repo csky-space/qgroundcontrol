@@ -37,6 +37,11 @@
 #include "MockLink.h"
 #endif
 
+#ifdef QGC_AIRLINK_ENABLED
+#include <CSKY/Airlink/AirlinkManager.h>
+#include <CSKY/Airlink/AirlinkConfiguration.h>
+#endif
+
 #include <qmdnsengine/browser.h>
 #include <qmdnsengine/cache.h>
 #include <qmdnsengine/mdns.h>
@@ -134,6 +139,12 @@ bool LinkManager::createConnectedLink(SharedLinkConfigurationPtr& config, bool i
     case LinkConfiguration::TypeLogReplay:
         link = std::make_shared<LogReplayLink>(config);
         break;
+#ifdef QGC_AIRLINK_ENABLED
+    case LinkConfiguration::TypeAirlink:
+        qDebug() << "creating link";
+        link = std::make_shared<CSKY::Airlink>(config);
+        break;
+#endif
 #ifdef QT_DEBUG
     case LinkConfiguration::TypeMock:
         link = std::make_shared<MockLink>(config);
@@ -334,6 +345,12 @@ void LinkManager::loadLinkConfigurationList()
 #ifdef QT_DEBUG
                             case LinkConfiguration::TypeMock:
                                 link = new MockConfiguration(name);
+                                break;
+#endif
+#ifdef QGC_AIRLINK_ENABLED
+                            case LinkConfiguration::TypeAirlink:
+                                qDebug() << "creating configuration";
+                                link = new CSKY::AirlinkConfiguration(name);
                                 break;
 #endif
                             case LinkConfiguration::TypeLast:
@@ -697,6 +714,9 @@ QStringList LinkManager::linkTypeStrings(void) const
 #endif
 #ifdef QT_DEBUG
         list += tr("Mock Link");
+#endif
+#ifdef QGC_AIRLINK_ENABLED
+        list += tr("Air-link");
 #endif
 #ifndef __mobile__
         list += tr("Log Replay");

@@ -1,0 +1,31 @@
+{
+    "version":      1,
+    "fileType":  "FactMetaData",
+    "QGC.MetaData.Facts":
+[
+{
+    "name":                 "asbEnabled",
+    "shortDesc":     "Airlink Stream Bridge activate",
+    "longDesc":      "Airlink Stream Bridge activate",
+    "type":                 "bool",
+    "default":         true,
+    "qgcRebootRequired":    false
+},
+{
+    "name":                 "asbAutotune",
+    "shortDesc":     "Airlink Stream Bridge autotune",
+    "longDesc":      "Airlink Stream Bridge autotune for gstreamer video",
+    "type":                 "bool",
+    "default":         true,
+    "qgcRebootRequired":    false
+},
+{
+    "name":                 "asbPort",
+    "shortDesc":     "Airlink Stream Bridge autotune",
+    "longDesc":      "Airlink Stream Bridge autotune for gstreamer video",
+    "type":                 "uint16",
+    "default":         9050,
+    "qgcRebootRequired":    false
+}
+]
+}

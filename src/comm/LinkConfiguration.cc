@@ -20,7 +20,9 @@
 #ifdef QT_DEBUG
 #include "MockLink.h"
 #endif
-
+#ifdef QGC_AIRLINK_ENABLED
+#include <CSKY/Airlink/AirlinkConfiguration.h>
+#endif
 #define LINK_SETTING_ROOT "LinkConfigurations"
 
 LinkConfiguration::LinkConfiguration(const QString& name)
@@ -88,6 +90,11 @@ LinkConfiguration* LinkConfiguration::createSettings(int type, const QString& na
         case LinkConfiguration::TypeLogReplay:
             config = new LogReplayLinkConfiguration(name);
             break;
+#ifdef QGC_AIRLINK_ENABLED
+        case LinkConfiguration::TypeAirlink:
+            config = new CSKY::AirlinkConfiguration(name);
+            break;
+#endif
 #ifdef QT_DEBUG
         case LinkConfiguration::TypeMock:
             config = new MockConfiguration(name);
@@ -124,6 +131,11 @@ LinkConfiguration* LinkConfiguration::duplicateSettings(LinkConfiguration* sourc
         case TypeLogReplay:
             dupe = new LogReplayLinkConfiguration(qobject_cast<LogReplayLinkConfiguration*>(source));
             break;
+#ifdef QGC_AIRLINK_ENABLED
+        case TypeAirlink:
+            dupe = new CSKY::AirlinkConfiguration(qobject_cast<CSKY::AirlinkConfiguration*>(source));
+            break;
+#endif
 #ifdef QT_DEBUG
         case TypeMock:
             dupe = new MockConfiguration(qobject_cast<MockConfiguration*>(source));

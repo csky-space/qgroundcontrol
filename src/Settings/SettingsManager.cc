@@ -8,6 +8,7 @@
  ****************************************************************************/
 
 #include "SettingsManager.h"
+#include "AirlinkStreamBridgeSettings.h"
 
 #include <QQmlEngine>
 #include <QtQml>
@@ -21,6 +22,9 @@ SettingsManager::SettingsManager(QGCApplication* app, QGCToolbox* toolbox)
     , _flightMapSettings            (nullptr)
     , _rtkSettings                  (nullptr)
     , _flyViewSettings              (nullptr)
+#ifdef QGC_AIRLINK_ENABLED
+    , _asbSettings                  (nullptr)
+#endif
     , _planViewSettings             (nullptr)
     , _brandImageSettings           (nullptr)
     , _offlineMapsSettings          (nullptr)
@@ -48,6 +52,9 @@ void SettingsManager::setToolbox(QGCToolbox *toolbox)
     _flightMapSettings =            new FlightMapSettings           (this);
     _rtkSettings =                  new RTKSettings                 (this);
     _flyViewSettings =              new FlyViewSettings             (this);
+#ifdef QGC_AIRLINK_ENABLED
+    _asbSettings =                  new AirlinkStreamBridgeSettings (this);
+#endif
     _planViewSettings =             new PlanViewSettings            (this);
     _brandImageSettings =           new BrandImageSettings          (this);
     _offlineMapsSettings =          new OfflineMapsSettings         (this);

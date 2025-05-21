@@ -16,6 +16,9 @@
 #include "QGCLoggingCategory.h"
 #include "AppSettings.h"
 #include "ADSBVehicleManager.h"
+#ifdef QGC_AIRLINK_ENABLED
+#include <CSKY/Airlink/AirlinkManager.h>
+#endif
 #include "QGCPalette.h"
 #include "QmlUnitsConversion.h"
 #if defined(QGC_ENABLE_PAIRING)
@@ -57,32 +60,36 @@ public:
     };
     Q_ENUM(AltMode)
 
-    Q_PROPERTY(QString              appName                 READ    appName                 CONSTANT)
-    Q_PROPERTY(LinkManager*         linkManager             READ    linkManager             CONSTANT)
-    Q_PROPERTY(MultiVehicleManager* multiVehicleManager     READ    multiVehicleManager     CONSTANT)
-    Q_PROPERTY(QGCMapEngineManager* mapEngineManager        READ    mapEngineManager        CONSTANT)
-    Q_PROPERTY(QGCPositionManager*  qgcPositionManger       READ    qgcPositionManger       CONSTANT)
-    Q_PROPERTY(VideoManager*        videoManager            READ    videoManager            CONSTANT)
-    Q_PROPERTY(MAVLinkLogManager*   mavlinkLogManager       READ    mavlinkLogManager       CONSTANT)
-    Q_PROPERTY(SettingsManager*     settingsManager         READ    settingsManager         CONSTANT)
-    Q_PROPERTY(ADSBVehicleManager*  adsbVehicleManager      READ    adsbVehicleManager      CONSTANT)
-    Q_PROPERTY(QGCCorePlugin*       corePlugin              READ    corePlugin              CONSTANT)
-    Q_PROPERTY(MissionCommandTree*  missionCommandTree      READ    missionCommandTree      CONSTANT)
-    Q_PROPERTY(FactGroup*           gpsRtk                  READ    gpsRtkFactGroup         CONSTANT)
-    Q_PROPERTY(TaisyncManager*      taisyncManager          READ    taisyncManager          CONSTANT)
-    Q_PROPERTY(bool                 taisyncSupported        READ    taisyncSupported        CONSTANT)
-    Q_PROPERTY(MicrohardManager*    microhardManager        READ    microhardManager        CONSTANT)
-    Q_PROPERTY(bool                 microhardSupported      READ    microhardSupported      CONSTANT)
-    Q_PROPERTY(bool                 supportsPairing         READ    supportsPairing         CONSTANT)
-    Q_PROPERTY(QGCPalette*          globalPalette           MEMBER  _globalPalette          CONSTANT)   ///< This palette will always return enabled colors
-    Q_PROPERTY(QmlUnitsConversion*  unitsConversion         READ    unitsConversion         CONSTANT)
-    Q_PROPERTY(bool                 singleFirmwareSupport   READ    singleFirmwareSupport   CONSTANT)
-    Q_PROPERTY(bool                 singleVehicleSupport    READ    singleVehicleSupport    CONSTANT)
-    Q_PROPERTY(bool                 px4ProFirmwareSupported READ    px4ProFirmwareSupported CONSTANT)
-    Q_PROPERTY(int                  apmFirmwareSupported    READ    apmFirmwareSupported    CONSTANT)
-    Q_PROPERTY(QGeoCoordinate       flightMapPosition       READ    flightMapPosition       WRITE setFlightMapPosition  NOTIFY flightMapPositionChanged)
-    Q_PROPERTY(double               flightMapZoom           READ    flightMapZoom           WRITE setFlightMapZoom      NOTIFY flightMapZoomChanged)
-    Q_PROPERTY(double               flightMapInitialZoom    MEMBER  _flightMapInitialZoom   CONSTANT)   ///< Zoom level to use when either gcs or vehicle shows up for first time
+    Q_PROPERTY(QString                  appName                 READ    appName                 CONSTANT)
+    Q_PROPERTY(LinkManager*             linkManager             READ    linkManager             CONSTANT)
+    Q_PROPERTY(MultiVehicleManager*     multiVehicleManager     READ    multiVehicleManager     CONSTANT)
+    Q_PROPERTY(QGCMapEngineManager*     mapEngineManager        READ    mapEngineManager        CONSTANT)
+    Q_PROPERTY(QGCPositionManager*      qgcPositionManger       READ    qgcPositionManger       CONSTANT)
+    Q_PROPERTY(VideoManager*            videoManager            READ    videoManager            CONSTANT)
+    Q_PROPERTY(MAVLinkLogManager*       mavlinkLogManager       READ    mavlinkLogManager       CONSTANT)
+    Q_PROPERTY(SettingsManager*         settingsManager         READ    settingsManager         CONSTANT)
+    Q_PROPERTY(ADSBVehicleManager*      adsbVehicleManager      READ    adsbVehicleManager      CONSTANT)
+#ifdef QGC_AIRLINK_ENABLED
+    Q_PROPERTY(CSKY::AirlinkManager*    airlinkManager          READ    airlinkManager          CONSTANT)
+    Q_PROPERTY(bool                     airlinkSupported        READ    airlinkSupported        CONSTANT)
+#endif
+    Q_PROPERTY(QGCCorePlugin*           corePlugin              READ    corePlugin              CONSTANT)
+    Q_PROPERTY(MissionCommandTree*      missionCommandTree      READ    missionCommandTree      CONSTANT)
+    Q_PROPERTY(FactGroup*               gpsRtk                  READ    gpsRtkFactGroup         CONSTANT)
+    Q_PROPERTY(TaisyncManager*          taisyncManager          READ    taisyncManager          CONSTANT)
+    Q_PROPERTY(bool                     taisyncSupported        READ    taisyncSupported        CONSTANT)
+    Q_PROPERTY(MicrohardManager*        microhardManager        READ    microhardManager        CONSTANT)
+    Q_PROPERTY(bool                     microhardSupported      READ    microhardSupported      CONSTANT)
+    Q_PROPERTY(bool                     supportsPairing         READ    supportsPairing         CONSTANT)
+    Q_PROPERTY(QGCPalette*              globalPalette           MEMBER  _globalPalette          CONSTANT)   ///< This palette will always return enabled colors
+    Q_PROPERTY(QmlUnitsConversion*      unitsConversion         READ    unitsConversion         CONSTANT)
+    Q_PROPERTY(bool                     singleFirmwareSupport   READ    singleFirmwareSupport   CONSTANT)
+    Q_PROPERTY(bool                     singleVehicleSupport    READ    singleVehicleSupport    CONSTANT)
+    Q_PROPERTY(bool                     px4ProFirmwareSupported READ    px4ProFirmwareSupported CONSTANT)
+    Q_PROPERTY(int                      apmFirmwareSupported    READ    apmFirmwareSupported    CONSTANT)
+    Q_PROPERTY(QGeoCoordinate           flightMapPosition       READ    flightMapPosition       WRITE setFlightMapPosition  NOTIFY flightMapPositionChanged)
+    Q_PROPERTY(double                   flightMapZoom           READ    flightMapZoom           WRITE setFlightMapZoom      NOTIFY flightMapZoomChanged)
+    Q_PROPERTY(double                   flightMapInitialZoom    MEMBER  _flightMapInitialZoom   CONSTANT)   ///< Zoom level to use when either gcs or vehicle shows up for first time
 
     Q_PROPERTY(QString  parameterFileExtension  READ parameterFileExtension CONSTANT)
     Q_PROPERTY(QString  missionFileExtension    READ missionFileExtension   CONSTANT)
@@ -163,6 +170,10 @@ public:
     SettingsManager*        settingsManager     ()  { return _settingsManager; }
     FactGroup*              gpsRtkFactGroup     ()  { return _gpsRtkFactGroup; }
     ADSBVehicleManager*     adsbVehicleManager  ()  { return _adsbVehicleManager; }
+#ifdef QGC_AIRLINK_ENABLED
+    bool                    airlinkSupported    ()  { return true; }
+    CSKY::AirlinkManager*   airlinkManager      ()  { return _airlinkManager; }
+#endif
     QmlUnitsConversion*     unitsConversion     ()  { return &_unitsConversion; }
 #if defined(QGC_ENABLE_PAIRING)
     bool                    supportsPairing     ()  { return true; }
@@ -257,6 +268,9 @@ private:
     TaisyncManager*         _taisyncManager         = nullptr;
     MicrohardManager*       _microhardManager       = nullptr;
     ADSBVehicleManager*     _adsbVehicleManager     = nullptr;
+#ifdef QGC_AIRLINK_ENABLED
+    CSKY::AirlinkManager*   _airlinkManager         = nullptr;
+#endif
     QGCPalette*             _globalPalette          = nullptr;
     QmlUnitsConversion      _unitsConversion;
 #if defined(QGC_ENABLE_PAIRING)

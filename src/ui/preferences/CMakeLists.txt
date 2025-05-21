@@ -1,3 +1,5 @@
+file(GLOB CS_AIRLINK_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CSKY/*.qml)
+
 add_custom_target(UiPreferencesQml
 	SOURCES
 		BluetoothSettings.qml
@@ -12,4 +14,5 @@ add_custom_target(UiPreferencesQml
 		SerialSettings.qml
 		TcpSettings.qml
 		UdpSettings.qml
+		${CS_AIRLINK_SOURCES}
 )
