@@ -47,6 +47,7 @@ Rectangle {
     property real   _margins:                   ScreenTools.defaultFontPixelWidth
     property var    _planViewSettings:          QGroundControl.settingsManager.planViewSettings
     property var    _flyViewSettings:           QGroundControl.settingsManager.flyViewSettings
+    property var    _asbSettings:               QGroundControl.settingsManager.asbSettings
     property var    _videoSettings:             QGroundControl.settingsManager.videoSettings
     property string _videoSource:               _videoSettings.videoSource.rawValue
     property bool   _isGst:                     QGroundControl.videoManager.isGStreamer
@@ -325,6 +326,7 @@ Rectangle {
                                     visible:    !_videoAutoStreamConfig && (_isUDP264 || _isUDP265 || _isMPEGTS) && _videoSettings.udpPort.visible
                                 }
                                 FactTextField {
+                                    id:                     videoUDPPort
                                     Layout.preferredWidth:  _comboFieldWidth
                                     fact:                   _videoSettings.udpPort
                                     visible:                udpPortLabel.visible
@@ -418,6 +420,61 @@ Rectangle {
                                     visible:    _showSaveVideoSettings && fact.visible
                                 }
                             }
+                        }
+                    }
+
+                    QGCLabel {
+                        id: asbSectionLabel
+                        text: qsTr("Airlink Stream Bridge")
+                        visible: QGroundControl.settingsManager.airlinkCompiled
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: asbCol.height + (_margins * 2)
+                        Layout.preferredWidth:  asbCol.width + (_margins * 2)
+                        color:                  qgcPal.windowShade
+                        visible:                asbSectionLabel.visible
+                        Layout.fillWidth:       true
+
+                        ColumnLayout {
+                            id:                         asbCol
+                            anchors.margins:            _margins
+                            anchors.top:                parent.top
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                            spacing:                    _margins
+
+                            FactCheckBox {
+                                text:       qsTr("Enabled")
+                                fact:       _asbSettings.asbEnabled
+                                visible:    _asbSettings.asbEnabled.visible
+                                enabled:    !QGroundControl.airlinkManager.fullBlock
+                            }
+                            FactCheckBox {
+                                text:               qsTr("Autotune gstreamer to receive video")
+                                fact:               _asbSettings.asbAutotune
+                                visible:            _asbSettings.asbAutotune.visible
+                                enabled:            !QGroundControl.airlinkManager.fullBlock
+                                onCheckedChanged:   {
+                                    videoSource.enabled = !checked
+                                    videoUDPPort.enabled = !checked
+                                }
+                            }
+                            GridLayout {
+                                id:         asbGrid
+                                columns:    2
+                                visible:    _asbSettings.visible
+                                QGCLabel {
+                                id:         asbUdpPortLabel
+                                text:       qsTr("UDP port")
+                                visible:    udpPortLabel.visible
+                                }
+                                FactTextField {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    fact:                   _asbSettings.asbPort
+                                    visible:                _asbSettings.asbPort.visible
+                                    enabled:                !QGroundControl.airlinkManager.fullBlock
+                                }
+                            }
+                            
                         }
                     }
 

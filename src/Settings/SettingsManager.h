@@ -10,6 +10,7 @@
 #ifndef SettingsManager_H
 #define SettingsManager_H
 
+#include "AirlinkStreamBridgeSettings.h"
 #include "QGCLoggingCategory.h"
 #include "Joystick.h"
 #include "MultiVehicleManager.h"
@@ -29,6 +30,7 @@
 #include "ADSBVehicleManagerSettings.h"
 #include "GimbalControllerSettings.h"
 #include <QVariantList>
+#include <qobjectdefs.h>
 #include "RemoteIDSettings.h"
 
 /// Provides access to all app settings
@@ -46,6 +48,10 @@ public:
     Q_PROPERTY(QObject* flightMapSettings               READ flightMapSettings              CONSTANT)
     Q_PROPERTY(QObject* rtkSettings                     READ rtkSettings                    CONSTANT)
     Q_PROPERTY(QObject* flyViewSettings                 READ flyViewSettings                CONSTANT)
+    Q_PROPERTY(bool     airlinkCompiled                 READ airlinkCompiled                CONSTANT)
+#ifdef QGC_AIRLINK_ENABLED
+    Q_PROPERTY(QObject* asbSettings                     READ asbSettings                    CONSTANT)
+#endif
     Q_PROPERTY(QObject* planViewSettings                READ planViewSettings               CONSTANT)
     Q_PROPERTY(QObject* brandImageSettings              READ brandImageSettings             CONSTANT)
     Q_PROPERTY(QObject* offlineMapsSettings             READ offlineMapsSettings            CONSTANT)
@@ -66,6 +72,10 @@ public:
     FlightMapSettings*              flightMapSettings           (void) { return _flightMapSettings; }
     RTKSettings*                    rtkSettings                 (void) { return _rtkSettings; }
     FlyViewSettings*                flyViewSettings             (void) { return _flyViewSettings; }
+    bool                            airlinkCompiled             (void) { return _airlinkCompiled; }
+#ifdef QGC_AIRLINK_ENABLED
+    AirlinkStreamBridgeSettings*    asbSettings                 (void) { return _asbSettings; }
+#endif
     PlanViewSettings*               planViewSettings            (void) { return _planViewSettings; }
     BrandImageSettings*             brandImageSettings          (void) { return _brandImageSettings; }
     OfflineMapsSettings*            offlineMapsSettings         (void) { return _offlineMapsSettings; }
@@ -84,6 +94,12 @@ private:
     FlightMapSettings*              _flightMapSettings;
     RTKSettings*                    _rtkSettings;
     FlyViewSettings*                _flyViewSettings;
+#ifdef QGC_AIRLINK_ENABLED
+    bool                            _airlinkCompiled = true;
+    AirlinkStreamBridgeSettings*    _asbSettings;
+#else
+    bool                            _airlinkCompiled = false;
+#endif
     PlanViewSettings*               _planViewSettings;
     BrandImageSettings*             _brandImageSettings;
     OfflineMapsSettings*            _offlineMapsSettings;

@@ -33,6 +33,11 @@ class MAVLinkLogManager;
 class QGCCorePlugin;
 class SettingsManager;
 class ADSBVehicleManager;
+#ifdef QGC_AIRLINK_ENABLED
+namespace CSKY{
+class AirlinkManager;
+}
+#endif
 #if defined(QGC_ENABLE_PAIRING)
 class PairingManager;
 #endif
@@ -67,6 +72,9 @@ public:
     QGCCorePlugin*              corePlugin              () { return _corePlugin; }
     SettingsManager*            settingsManager         () { return _settingsManager; }
     ADSBVehicleManager*         adsbVehicleManager      () { return _adsbVehicleManager; }
+#ifdef QGC_AIRLINK_ENABLED
+    CSKY::AirlinkManager*             airlinkManager          () { return _airlinkManager; }
+#endif
 #if defined(QGC_ENABLE_PAIRING)
     PairingManager*             pairingManager          () { return _pairingManager; }
 #endif
@@ -106,6 +114,9 @@ private:
     QGCCorePlugin*              _corePlugin             = nullptr;
     SettingsManager*            _settingsManager        = nullptr;
     ADSBVehicleManager*         _adsbVehicleManager     = nullptr;
+#ifdef QGC_AIRLINK_ENABLED
+    CSKY::AirlinkManager*       _airlinkManager         = nullptr;
+#endif
 #if defined(QGC_ENABLE_PAIRING)
     PairingManager*             _pairingManager         = nullptr;
 #endif
