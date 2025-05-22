@@ -204,7 +204,7 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
 }
 
 QStringList AirlinkManager::droneList() const {
-  return _vehiclesFromServer.keys();
+    return _vehiclesFromServer.keys();
 }
 
 QList<bool> AirlinkManager::droneOnlineList() const {

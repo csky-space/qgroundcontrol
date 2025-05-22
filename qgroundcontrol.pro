@@ -7,6 +7,8 @@
 #
 ################################################################################
 
+CONFIG += installer
+
 QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in makefiles
 
 # These are disabled until proven correct

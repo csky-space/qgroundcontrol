@@ -35,7 +35,7 @@ ColumnLayout {
         // No need
     }
 
-    function updateConnectionName(modem, online) {
+    function updateConnectionName(modem) {
             nameField.text = "Airlink " + modem
     }
 
@@ -107,6 +107,7 @@ ColumnLayout {
 
     RowLayout {
         QGCComboBox {
+            id: drones
             Layout.fillWidth: true
             model: {
                     var out        = []
@@ -121,7 +122,7 @@ ColumnLayout {
                         }
                     }
 
-                    for (var i = 0; i < list.length; i++) {
+                    for (i = 0; i < list.length; i++) {
                         if (!onlineList[i]) {
                             out.push(list[i])
                             sortedIndices.push(i)
@@ -131,18 +132,15 @@ ColumnLayout {
                 }
 
             onActivated: {
-                subEditConfig.modemName = QGroundControl.airlinkManager.droneList[index]
-                subEditConfig.online = QGroundControl.airlinkManager.droneOnlineList[index]
-                updateConnectionName(subEditConfig.modemName, subEditConfig.online)
+                updateConnectionName(drones.model[index])
             }
             Connections {
                 target: QGroundControl.airlinkManager
                 // model update does not trigger onActivated, so we catch first element manually
                 onDroneListChanged: {
-                    if (QGroundControl.airlinkManager.droneList[0] !== undefined) {
-                        subEditConfig.modemName = QGroundControl.airlinkManager.droneList[0]
-                        subEditConfig.online = QGroundControl.airlinkManager.droneOnlineList[0]
-                        updateConnectionName(subEditConfig.modemName, subEditConfig.online)
+                    if (drones.model[0] !== undefined) {
+                        drones.currentIndex = 0
+                        updateConnectionName(drones.model[0])
                     }
                 }
             }
