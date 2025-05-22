@@ -99,8 +99,12 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
 #ifdef QGC_AIRLINK_ENABLED
     AirlinkManager* manager = qgcApp()->toolbox()->airlinkManager();
 
-    connect(this, &Airlink::connected, manager, &AirlinkManager::connectVideo);
-    connect(this, &Airlink::disconnected, manager, &AirlinkManager::disconnectVideo);
+    //connect(this, &Airlink::connected, manager, &AirlinkManager::connectVideo);
+    //connect(this, &Airlink::disconnected, manager, &AirlinkManager::disconnectVideo);
+    connect(this, &Airlink::connected, this, &Airlink::retranslateSelfConnected);
+    connect(this, &Airlink::disconnected, this, &Airlink::retranslateSelfDisconnected);
+    connect(this, &Airlink::airlinkConnected, manager, &AirlinkManager::addAirlink);
+    connect(this, &Airlink::airlinkDisconnected, manager, &AirlinkManager::removeAirlink);
 #endif
 }
 
@@ -119,6 +123,10 @@ void Airlink::disconnect()
         connectedLink->disconnect();
         connectedLink = nullptr;
     }
+}
+
+std::shared_ptr<AirlinkConfiguration> Airlink::getConfig() const {
+    return std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
 }
 
 static bool is_ip(const QString& address)
@@ -282,6 +290,14 @@ void Airlink::_setConnectFlag(bool connect)
 {
     QMutexLocker locker(&_mutex);
     _needToConnect = connect;
+}
+
+void Airlink::retranslateSelfConnected() {
+    emit airlinkConnected(this);
+}
+
+void Airlink::retranslateSelfDisconnected() {
+    emit airlinkDisconnected(this);
 }
 
 }

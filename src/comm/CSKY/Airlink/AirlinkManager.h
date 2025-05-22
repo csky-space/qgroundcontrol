@@ -30,6 +30,7 @@ class VideoManager;
 
 namespace CSKY {
 class AirlinkConfiguration;
+class Airlink;
 //-----------------------------------------------------------------------------
 class AirlinkManager : public QGCTool {
   Q_OBJECT
@@ -78,6 +79,8 @@ signals:
     void closePeer();
     void sendAsbServicePort(quint16 port);
     void checkAlive();
+    void onConnectedAirlinkAdded(Airlink* link);
+    void onDisconnectedAirlinkRemoved(Airlink* link);
 private:
     void _setConnects();
 	void _parseAnswer(const QByteArray &ba);
@@ -113,6 +116,8 @@ private:
 	Fact* videoUDPPort = nullptr;
 	Fact* videoSource = nullptr;
     QThread* requestsThread = nullptr;
+    QMap<QString, Airlink*> modems;
+    Airlink* lastConnectedModem;
 private slots:
   	void setupVideoStream(QVariant value);
   	void setupPort(QVariant value);
@@ -125,8 +130,10 @@ private slots:
     void blockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
     void unblockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
 public slots:
-	void connectVideo();
-	void disconnectVideo();
+    void addAirlink(Airlink* airlink);
+    void removeAirlink(Airlink* airlink);
+    void connectVideo(Airlink* airlink);
+    void disconnectVideo(Airlink* airlink);
 };
 
 }

@@ -413,10 +413,10 @@ void AirlinkManager::asbEnabledChanged(QVariant value) {
         qCDebug(AirlinkManagerLog)  << "is link connected";
         if(config->link()->isConnected()) {
             qCDebug(AirlinkManagerLog) << "connecting video";
-            connectVideo();
+            connectVideo(lastConnectedModem);
         }
     }else {
-        disconnectVideo();
+        disconnectVideo(lastConnectedModem);
     }
 }
 
@@ -439,10 +439,34 @@ void AirlinkManager::unblockUI(QByteArray replyData, QNetworkReply::NetworkError
     emit fullBlockChanged(false);
 }
 
-void AirlinkManager::connectVideo() {
+void AirlinkManager::addAirlink(Airlink* airlink) {
+    if(airlink) {
+        QString modemName = airlink->getConfig()->modemName();
+        if(!modems.contains(modemName)) {
+            webtrcReceiverCreated = false;
+            modems[modemName] = airlink;
+            lastConnectedModem = airlink;
+            emit onConnectedAirlinkAdded(airlink);
+        }
+    }
+
+}
+
+void AirlinkManager::removeAirlink(Airlink* airlink) {
+    if(airlink) {
+        QString modemName = airlink->getConfig()->modemName();
+        if(modems.contains(modemName)) {
+            webtrcReceiverCreated = false;
+            modems.remove(modemName);
+            emit onDisconnectedAirlinkRemoved(airlink);
+        }
+    }
+}
+
+void AirlinkManager::connectVideo(Airlink* airlink) {
     if ((asbProcess.state() == QProcess::Running) && asbEnabled->rawValue().toBool()) {
         qCDebug(AirlinkManagerLog) << "asb is on";
-        _findAirlinkConfiguration();
+        config = airlink->getConfig();
         if(config) {
             _login = config->modemName();
             _pass  = config->password();
@@ -470,7 +494,7 @@ void AirlinkManager::connectVideo() {
     }
 }
 
-void AirlinkManager::disconnectVideo() {
+void AirlinkManager::disconnectVideo(Airlink* airlink) {
     if (asbProcess.state() != QProcess::NotRunning) {
         _login = "";
         _pass = "";

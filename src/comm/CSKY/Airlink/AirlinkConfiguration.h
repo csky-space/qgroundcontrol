@@ -68,7 +68,7 @@ public:
     virtual ~Airlink();
 
     void disconnect (void) override;
-
+    std::shared_ptr<AirlinkConfiguration> getConfig() const;
 private:
     void findSelf();
     /// LinkInterface overrides
@@ -83,6 +83,12 @@ private:
     /// Access this varible only with _mutex locked
     bool _needToConnect {false};
     std::shared_ptr<UDPLink> connectedLink = nullptr;
+signals:
+    void airlinkConnected(Airlink* link);
+    void airlinkDisconnected(Airlink* link);
+private slots:
+    void retranslateSelfConnected();
+    void retranslateSelfDisconnected();
 };
 
 }
