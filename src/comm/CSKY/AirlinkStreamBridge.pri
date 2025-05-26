@@ -4,6 +4,7 @@ MAIN_PWD = $$PWD/../../..
 GO_SRC_DIR = $$PWD/AirlinkStreamBridge
 GO_SRC = $$GO_SRC_DIR/main.go
 GO_OUT_BASE = $$OUT_PWD/AirlinkStreamBridge
+GO_FILES = $$files($$GO_SRC_DIR/*.go, true)
 
 win32 {
     GO_EXT = .exe
@@ -14,7 +15,7 @@ win32 {
 GO_OUT_FULL = $$GO_OUT_BASE$$GO_EXT
 
 go_target.target = $$GO_OUT_FULL
-go_target.depends = $$GO_SRC
+go_target.depends = $$GO_FILES
 
 android {
     GOOS = android
@@ -82,3 +83,9 @@ export(GO_SRC_DIR)
 
 QMAKE_EXTRA_TARGETS += go_target
 PRE_TARGETDEPS += $$GO_OUT_FULL
+
+HEADERS += \
+    $$PWD/Airlink/Airlink.h
+
+SOURCES += \
+    $$PWD/Airlink/Airlink.cpp

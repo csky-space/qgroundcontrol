@@ -222,6 +222,7 @@ bool checkAndroidWritePermission() {
 
 void sigHandler(int s)
 {
+    qDebug() << "signal handle";
     std::signal(s, SIG_DFL);
     qgcApp()->mainRootWindow()->close();
     QEvent event{QEvent::Quit};

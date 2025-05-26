@@ -65,22 +65,24 @@ public:
     static const QString airlinkHostPrefix;
 	static const QString airlinkHost;
 	static constexpr int airlinkPort = 10000;
-	
+
+    AirlinkStreamBridgeManager& getASBManager();
+    QProcess& getAsbProcess();
+    Fact* getAsbEnabled() const;
+    Fact* getPort() const;
 signals:
+    void asbEnabledTrue();
+    void asbEnabledFalse();
+    void asbClosed();
     void fullBlockChanged(bool blocked);
 
 	void droneListChanged();
     void droneOnlineListChanged();
 
-    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
-    void enableVideoTransmit();
-    void isWebrtcReceiverConnected();
-    void openPeer();
-    void closePeer();
     void sendAsbServicePort(quint16 port);
     void checkAlive();
-    void onConnectedAirlinkAdded(Airlink* link);
-    void onDisconnectedAirlinkRemoved(Airlink* link);
+    void onConnectedAirlinkAdded(Airlink* link = nullptr);
+    void onDisconnectedAirlinkRemoved(Airlink* link = nullptr);
 private:
     void _setConnects();
 	void _parseAnswer(const QByteArray &ba);
@@ -94,7 +96,6 @@ private:
     QTimer* watchdogTimer = nullptr;
     QMutex processMutex;
     bool isRestarting = false;
-    bool webtrcReceiverCreated = false;
 	QMap<QString, bool> _vehiclesFromServer;
     QNetworkReply *_reply = nullptr;
 	QString _login;
@@ -118,22 +119,25 @@ private:
     QThread* requestsThread = nullptr;
     QMap<QString, Airlink*> modems;
     Airlink* lastConnectedModem;
-private slots:
+public slots:
+    void startWatchdog();
+    Q_INVOKABLE void stopWatchdog();
+    Q_INVOKABLE void terminateASB();
+
   	void setupVideoStream(QVariant value);
   	void setupPort(QVariant value);
     void portConstraint(QVariant value);
-    void startWatchdog();
-    void stopWatchdog();
+
+    void blockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
+    void unblockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
+
+    void addAirlink(Airlink* airlink);
+    void removeAirlink(Airlink* airlink);
+private slots:
+
     void checkAndRestartASB();
     void asbEnabledChanged(QVariant value);
     void asbAutotuneChanged(QVariant value);
-    void blockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
-    void unblockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
-public slots:
-    void addAirlink(Airlink* airlink);
-    void removeAirlink(Airlink* airlink);
-    void connectVideo(Airlink* airlink);
-    void disconnectVideo(Airlink* airlink);
 };
 
 }

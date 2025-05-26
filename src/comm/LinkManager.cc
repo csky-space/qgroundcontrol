@@ -40,6 +40,7 @@
 #ifdef QGC_AIRLINK_ENABLED
 #include <CSKY/Airlink/AirlinkManager.h>
 #include <CSKY/Airlink/AirlinkConfiguration.h>
+#include <CSKY/Airlink/Airlink.h>
 #endif
 
 #include <qmdnsengine/browser.h>

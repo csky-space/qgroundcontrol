@@ -7,7 +7,9 @@
  *
  ****************************************************************************/
 
-// #include "LinkInterface.h"
+#include "AirlinkManager.h"
+
+#include <csignal>
 
 #include <QDebug>
 #include <QSettings>
@@ -17,9 +19,11 @@
 #include <QTimer>
 #include <QThread>
 
-#include <QGCLoggingCategory.h>
 
-#include "AirlinkManager.h"
+#include <QGCLoggingCategory.h>
+#include <QQuickWindow>
+
+
 #include "Fact.h"
 #include "LinkManager.h"
 #include "QGCApplication.h"
@@ -27,6 +31,7 @@
 #include "SettingsManager.h"
 #include "UDPLink.h"
 #include "AirlinkConfiguration.h"
+#include "Airlink.h"
 #include "VideoManager.h"
 
 
@@ -101,10 +106,6 @@ AirlinkManager::~AirlinkManager() {
         asbProcess.terminate();
         asbProcess.waitForFinished();
     }
-
-    if(watchdogTimer && watchdogTimer->isActive()){
-        watchdogTimer->stop();
-    }
 }
 
 void AirlinkManager::restartASBProcess() {
@@ -132,6 +133,11 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
     videoSource = toolbox->settingsManager()->videoSettings()->videoSource();
     
     qgcVideoManager = toolbox->videoManager();
+
+    for(auto airlinkIt = modems.keyValueBegin(); airlinkIt != modems.keyValueEnd(); ++airlinkIt) {
+        airlinkIt->second->setAsbEnabled(asbEnabled);
+        airlinkIt->second->setAsbPort(asbPort);
+    }
 
     connect(asbEnabled, &Fact::rawValueChanged, this, &AirlinkManager::asbEnabledChanged);
     connect(videoUDPPort, &Fact::rawValueChanged, this, &AirlinkManager::portConstraint);
@@ -211,6 +217,22 @@ QList<bool> AirlinkManager::droneOnlineList() const {
     return _vehiclesFromServer.values();
 }
 
+AirlinkStreamBridgeManager& AirlinkManager::getASBManager() {
+    return manager;
+}
+
+QProcess& AirlinkManager::getAsbProcess() {
+    return asbProcess;
+}
+
+Fact* AirlinkManager::getAsbEnabled() const {
+    return asbEnabled;
+}
+
+Fact* AirlinkManager::getPort() const {
+    return asbPort;
+}
+
 void AirlinkManager::updateDroneList(const QString &login,
                                      const QString &pass) {
                                         
@@ -252,42 +274,23 @@ void AirlinkManager::updateCredentials(const QString &login,
     _toolbox->settingsManager()->appSettings()->passAirLink()->setRawValue(pass);
 }
 
+void signalHandler(int signal) {
+    qDebug() << "signal handle";
+    std::signal(signal, SIG_DFL);
+    qgcApp()->mainRootWindow()->close();
+    QEvent event{QEvent::Quit};
+    qgcApp()->event(&event);
+}
+
 void AirlinkManager::_setConnects() {
-    connect(this, &AirlinkManager::createWebrtcDefault, &manager, &AirlinkStreamBridgeManager::createWebrtcDefault);
-    connect(this, &AirlinkManager::enableVideoTransmit, &manager, &AirlinkStreamBridgeManager::enableVideoTransmit);
-    connect(this, &AirlinkManager::isWebrtcReceiverConnected, &manager, &AirlinkStreamBridgeManager::isWebrtcReceiverConnected);
-    connect(this, &AirlinkManager::openPeer, &manager, &AirlinkStreamBridgeManager::openPeer);
-    connect(this, &AirlinkManager::closePeer, &manager, &AirlinkStreamBridgeManager::closePeer);
+    std::signal(SIGSEGV, signalHandler);
+    std::signal(SIGABRT, signalHandler);
+#ifndef Q_OS_LINUX
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
+#endif
     connect(this, &AirlinkManager::sendAsbServicePort, &manager, &AirlinkStreamBridgeManager::sendAsbServicePort);
     connect(this, &AirlinkManager::checkAlive, &manager, &AirlinkStreamBridgeManager::checkAlive);
-
-    connect(&manager, &AirlinkStreamBridgeManager::createWebrtcCompleted, this, &AirlinkManager::unblockUI);
-
-    connect(&manager, &AirlinkStreamBridgeManager::createWebrtcCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
-        if(err == QNetworkReply::NoError) {
-            qCDebug(AirlinkManagerLog) << "create webrtc completed";
-            webtrcReceiverCreated = true;
-            blockUI();
-            emit openPeer();
-        }else {
-            qCDebug(AirlinkManagerLog) << "create webrtc failed: " << replyData;
-        }
-
-    });
-
-
-    connect(&manager, &AirlinkStreamBridgeManager::openPeerCompleted, this, &AirlinkManager::unblockUI);
-
-    connect(&manager, &AirlinkStreamBridgeManager::openPeerCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
-        qCDebug(AirlinkManagerLog) << "peer opened";
-        qgcApp()->toolbox()->videoManager()->stopVideo();
-    });
-
-    connect(&manager, &AirlinkStreamBridgeManager::closePeerCompleted, this, &AirlinkManager::unblockUI);
-
-    connect(&manager, &AirlinkStreamBridgeManager::closePeerCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
-        qCDebug(AirlinkManagerLog) << "peer closed";
-    });
 
     connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, &AirlinkManager::unblockUI);
     connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
@@ -298,7 +301,6 @@ void AirlinkManager::_setConnects() {
         if(err != QNetworkReply::NoError) {
             QMutexLocker locker(&processMutex);
 
-            webtrcReceiverCreated = false;
             qCDebug(AirlinkManagerLog) << "[Watchdog] HTTP server unreachable. Restarting ASB...";
             isRestarting = true;
             restartASBProcess();
@@ -361,10 +363,8 @@ void AirlinkManager::setupPort(QVariant value) {
         qCDebug(AirlinkManagerLog) << "port constraining to " << value;
         videoUDPPort->setRawValue(value);
     }
-    if(webtrcReceiverCreated) {
-        blockUI();
-        emit sendAsbServicePort(value.toUInt());
-    }
+    blockUI();
+    emit sendAsbServicePort(value.toUInt());
 
 }
 
@@ -382,9 +382,14 @@ void AirlinkManager::startWatchdog() {
 }
 
 void AirlinkManager::stopWatchdog() {
-    if (watchdogTimer->isActive()) {
+    if(watchdogTimer && watchdogTimer->isActive()){
         watchdogTimer->stop();
     }
+}
+
+void AirlinkManager::terminateASB() {
+    asbProcess.terminate();
+    asbProcess.waitForFinished(3000);
 }
 
 void AirlinkManager::checkAndRestartASB() {
@@ -395,7 +400,7 @@ void AirlinkManager::checkAndRestartASB() {
     }
 
     if (asbProcess.state() != QProcess::Running) {
-        webtrcReceiverCreated = false;
+        emit asbClosed();
         qCDebug(AirlinkManagerLog) << "[Watchdog] ASB process not running. Restarting...";
         isRestarting = true;
         restartASBProcess();
@@ -407,16 +412,13 @@ void AirlinkManager::checkAndRestartASB() {
 }
 
 void AirlinkManager::asbEnabledChanged(QVariant value) {
-    _findAirlinkConfiguration();
     qCDebug(AirlinkManagerLog) << "check for possibility connect";
-    if(value.toBool() && config) {
-        qCDebug(AirlinkManagerLog)  << "is link connected";
-        if(config->link()->isConnected()) {
-            qCDebug(AirlinkManagerLog) << "connecting video";
-            connectVideo(lastConnectedModem);
-        }
+    if(value.toBool()) {
+        qCDebug(AirlinkManagerLog)  << "asbEnabledTrue";
+        emit asbEnabledTrue();
     }else {
-        disconnectVideo(lastConnectedModem);
+        qCDebug(AirlinkManagerLog)  << "asbEnabledFalse";
+        emit asbEnabledFalse();
     }
 }
 
@@ -443,9 +445,10 @@ void AirlinkManager::addAirlink(Airlink* airlink) {
     if(airlink) {
         QString modemName = airlink->getConfig()->modemName();
         if(!modems.contains(modemName)) {
-            webtrcReceiverCreated = false;
             modems[modemName] = airlink;
             lastConnectedModem = airlink;
+            lastConnectedModem->setAsbEnabled(asbEnabled);
+            lastConnectedModem->setAsbPort(asbPort);
             emit onConnectedAirlinkAdded(airlink);
         }
     }
@@ -453,54 +456,14 @@ void AirlinkManager::addAirlink(Airlink* airlink) {
 }
 
 void AirlinkManager::removeAirlink(Airlink* airlink) {
+    qDebug() << "remove airlink?";
     if(airlink) {
         QString modemName = airlink->getConfig()->modemName();
         if(modems.contains(modemName)) {
-            webtrcReceiverCreated = false;
+            qDebug() << "removing airlink";
             modems.remove(modemName);
             emit onDisconnectedAirlinkRemoved(airlink);
         }
-    }
-}
-
-void AirlinkManager::connectVideo(Airlink* airlink) {
-    if ((asbProcess.state() == QProcess::Running) && asbEnabled->rawValue().toBool()) {
-        qCDebug(AirlinkManagerLog) << "asb is on";
-        config = airlink->getConfig();
-        if(config) {
-            _login = config->modemName();
-            _pass  = config->password();
-        }
-        else {
-            asbEnabled->setRawValue(false);
-            qCDebug(AirlinkManagerLog) << "Airlink configuration doesn't exist yet";
-            return;
-        }
-        setupVideoStream("");
-        portConstraint(asbPort->rawValue());
-        //qgcApp()->toolbox()->videoManager()->stopVideo();
-        if(!webtrcReceiverCreated) {
-            blockUI();
-            emit createWebrtcDefault(AirlinkManager::airlinkHost, _login, _pass, asbPort->rawValue().toUInt());
-        }
-        else {
-            blockUI();
-            emit openPeer();
-        }
-    }
-    else if ((asbProcess.state() != QProcess::Running)){
-        asbEnabled->setRawValue(false);
-        qCDebug(AirlinkManagerLog) << "Airlink AirlinkStreamBridge didn't run";
-    }
-}
-
-void AirlinkManager::disconnectVideo(Airlink* airlink) {
-    if (asbProcess.state() != QProcess::NotRunning) {
-        _login = "";
-        _pass = "";
-        config = nullptr;
-        blockUI();
-        emit closePeer();
     }
 }
 

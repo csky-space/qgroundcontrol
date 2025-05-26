@@ -2,7 +2,6 @@
 #define AIRLINKLINK_H
 
 #include <UDPLink.h>
-#include <QMutex>
 
 namespace CSKY {
 
@@ -58,37 +57,6 @@ private:
     const QString _usernameSettingsKey = "username";
     const QString _passwordSettingsKey = "password";
     const QString _modemNameSettingsKey = "modemName";
-};
-
-class Airlink : public UDPLink
-{
-    Q_OBJECT
-public:
-    Airlink(SharedLinkConfigurationPtr& config);
-    virtual ~Airlink();
-
-    void disconnect (void) override;
-    std::shared_ptr<AirlinkConfiguration> getConfig() const;
-private:
-    void findSelf();
-    /// LinkInterface overrides
-    bool _connect(void) override;
-
-    void _configureUdpSettings();
-    void _sendLoginMsgToAirLink();
-    bool _stillConnecting();
-    void _setConnectFlag(bool connect);
-
-    QMutex _mutex;
-    /// Access this varible only with _mutex locked
-    bool _needToConnect {false};
-    std::shared_ptr<UDPLink> connectedLink = nullptr;
-signals:
-    void airlinkConnected(Airlink* link);
-    void airlinkDisconnected(Airlink* link);
-private slots:
-    void retranslateSelfConnected();
-    void retranslateSelfDisconnected();
 };
 
 }

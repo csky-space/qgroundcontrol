@@ -132,7 +132,9 @@ ColumnLayout {
                 }
 
             onActivated: {
-                updateConnectionName(drones.model[index])
+                var name = drones.model[index].replace(" online", "")
+                subEditConfig.modemName = name
+                updateConnectionName(name)
             }
             Connections {
                 target: QGroundControl.airlinkManager
@@ -140,7 +142,9 @@ ColumnLayout {
                 onDroneListChanged: {
                     if (drones.model[0] !== undefined) {
                         drones.currentIndex = 0
-                        updateConnectionName(drones.model[0])
+                        var name = drones.model[0].replace(" online", "")
+                        subEditConfig.modemName = name
+                        updateConnectionName(name)
                     }
                 }
             }

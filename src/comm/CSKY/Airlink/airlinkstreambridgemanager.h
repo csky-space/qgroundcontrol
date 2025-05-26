@@ -21,6 +21,7 @@ private:
     QString baseConnectionRequestsPath = "Connection/";
     QString baseVideoRequestsPath = "Video/";
 
+    QNetworkAccessManager manager;
     QNetworkRequest createWebrtcDefaultRequest;
     QNetworkReply* createWebrtcDefaultReply = nullptr;
     QNetworkRequest enableVideoTransmitRequest;
@@ -36,7 +37,7 @@ private:
     QNetworkRequest checkAliveRequest;
     QNetworkReply* checkAliveReply = nullptr;
 
-    QNetworkAccessManager manager;
+
 signals:
     void createWebrtcCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void enableVideoTransmitCompleted(QByteArray replyData, QNetworkReply::NetworkError err);

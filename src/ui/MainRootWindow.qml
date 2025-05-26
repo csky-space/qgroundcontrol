@@ -250,6 +250,11 @@ ApplicationWindow {
             close.accepted = false
             checkForUnsavedMission()
         }
+        console.log("stopping watch")
+        QGroundControl.airlinkManager.stopWatchdog()
+        QGroundControl.airlinkManager.terminateASB()
+        console.log("watch stopped")
+
     }
 
     //-------------------------------------------------------------------------

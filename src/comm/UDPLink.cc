@@ -219,12 +219,17 @@ void UDPLink::disconnect(void)
     _running = false;
     quit();
     wait();
+    qDebug() << "UDPLink disonnect";
     if (_socket) {
         // This prevents stale signal from calling the link after it has been deleted
         QObject::disconnect(_socket, &QUdpSocket::readyRead, this, &UDPLink::readBytes);
         // Make sure delete happen on correct thread
         _socket->deleteLater();
         _socket = nullptr;
+        qDebug() << "UDPLink disonnected emitting";
+        if (this->signalsBlocked()) {
+            qDebug() << "Signals are blocked!";
+        }
         emit disconnected();
     }
     _connectState = false;

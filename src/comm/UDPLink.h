@@ -106,7 +106,6 @@ public:
 
     // QThread overrides
     void run(void) override;
-
 public slots:
     void readBytes(void);
 
