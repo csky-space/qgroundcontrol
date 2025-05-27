@@ -57,12 +57,12 @@ signals:
     void closePeer();
 private slots:
 
-    void connectVideo();
-    void disconnectVideo();
+    void connectVideo(Airlink* airlink = nullptr);
+    void disconnectVideo(Airlink* airlink = nullptr);
 public slots:
     void retranslateSelfConnected();
     void retranslateSelfDisconnected();
-    void asbClosed();
+    void asbClosed(Airlink* airlink);
 };
 }
 

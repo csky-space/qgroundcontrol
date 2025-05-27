@@ -279,7 +279,10 @@ void Airlink::retranslateSelfDisconnected() {
     emit airlinkDisconnected(this);
 }
 
-void Airlink::connectVideo() {
+void Airlink::connectVideo(Airlink* airlink) {
+    if(airlink != this) {
+        return;
+    }
     if ((airlinkManager->getAsbProcess().state() == QProcess::Running) && asbEnabled->rawValue().toBool()) {
         qCDebug(AirlinkLog) << "asb is on";
         auto configuration = std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
@@ -288,9 +291,7 @@ void Airlink::connectVideo() {
             qCDebug(AirlinkLog) << "Airlink configuration doesn't exist yet";
             return;
         }
-        //airlinkManager->setupVideoStream("");
-        //airlinkManager->portConstraint(asbPort->rawValue());
-        //qgcApp()->toolbox()->videoManager()->stopVideo();
+
         if(!webtrcReceiverCreated) {
             qCDebug(AirlinkLog()) << "Airlink video connecting for " << configuration->modemName();
             airlinkManager->blockUI();
@@ -308,7 +309,10 @@ void Airlink::connectVideo() {
     }
 }
 
-void Airlink::disconnectVideo() {
+void Airlink::disconnectVideo(Airlink* airlink) {
+    if(airlink != this) {
+        return;
+    }
     qDebug() << "Disconnect video?";
     if (airlinkManager->getAsbProcess().state() != QProcess::NotRunning) {
         airlinkManager->blockUI();
@@ -317,7 +321,10 @@ void Airlink::disconnectVideo() {
     }
 }
 
-void Airlink::asbClosed() {
+void Airlink::asbClosed(Airlink* airlink) {
+    if(airlink != this) {
+        return;
+    }
     webtrcReceiverCreated = false;
 }
 }

@@ -71,9 +71,9 @@ public:
     Fact* getAsbEnabled() const;
     Fact* getPort() const;
 signals:
-    void asbEnabledTrue();
-    void asbEnabledFalse();
-    void asbClosed();
+    void asbEnabledTrue(Airlink* airlink);
+    void asbEnabledFalse(Airlink* airlink);
+    void asbClosed(Airlink* airlink);
     void fullBlockChanged(bool blocked);
 
 	void droneListChanged();
@@ -119,6 +119,7 @@ private:
     QThread* requestsThread = nullptr;
     QMap<QString, Airlink*> modems;
     Airlink* lastConnectedModem;
+    Airlink* prevConnectedModem = nullptr;
 public slots:
     void startWatchdog();
     Q_INVOKABLE void stopWatchdog();

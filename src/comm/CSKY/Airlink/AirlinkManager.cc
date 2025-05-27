@@ -400,7 +400,7 @@ void AirlinkManager::checkAndRestartASB() {
     }
 
     if (asbProcess.state() != QProcess::Running) {
-        emit asbClosed();
+        emit asbClosed(lastConnectedModem);
         qCDebug(AirlinkManagerLog) << "[Watchdog] ASB process not running. Restarting...";
         isRestarting = true;
         restartASBProcess();
@@ -415,10 +415,10 @@ void AirlinkManager::asbEnabledChanged(QVariant value) {
     qCDebug(AirlinkManagerLog) << "check for possibility connect";
     if(value.toBool()) {
         qCDebug(AirlinkManagerLog)  << "asbEnabledTrue";
-        emit asbEnabledTrue();
+        emit asbEnabledTrue(lastConnectedModem);
     }else {
         qCDebug(AirlinkManagerLog)  << "asbEnabledFalse";
-        emit asbEnabledFalse();
+        emit asbEnabledFalse(lastConnectedModem);
     }
 }
 
@@ -445,6 +445,8 @@ void AirlinkManager::addAirlink(Airlink* airlink) {
     if(airlink) {
         QString modemName = airlink->getConfig()->modemName();
         if(!modems.contains(modemName)) {
+            if(lastConnectedModem && lastConnectedModem->isConnected())
+                lastConnectedModem->disconnect();
             modems[modemName] = airlink;
             lastConnectedModem = airlink;
             lastConnectedModem->setAsbEnabled(asbEnabled);

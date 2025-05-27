@@ -83,15 +83,15 @@ void AirlinkStreamBridgeManager::enableVideoTransmit() {
     replyTimeout->start(1000);
     connect(replyTimeout, &QTimer::timeout, [this](){
         if(enableVideoTransmitReply) {
-            enableVideoTransmitReply->abort();
             enableVideoTransmitReply->deleteLater();
+            enableVideoTransmitReply = nullptr;
         }
     });
     connect(enableVideoTransmitReply, &QNetworkReply::finished, this, [this, replyTimeout](){
         replyTimeout->stop();
         emit enableVideoTransmitCompleted(enableVideoTransmitReply->readAll(), enableVideoTransmitReply->error());
-        enableVideoTransmitReply->abort();
         enableVideoTransmitReply->deleteLater();
+        enableVideoTransmitReply = nullptr;
     });
 }
 
@@ -102,8 +102,8 @@ void AirlinkStreamBridgeManager::isWebrtcReceiverConnected() {
     replyTimeout->start(1000);
     connect(replyTimeout, &QTimer::timeout, [this](){
         if(isWebrtcReceiverConnectedReply) {
-            isWebrtcReceiverConnectedReply->abort();
             isWebrtcReceiverConnectedReply->deleteLater();
+            isWebrtcReceiverConnectedReply = nullptr;
         }
     });
     connect(isWebrtcReceiverConnectedReply, &QNetworkReply::finished, this, [this, replyTimeout](){
