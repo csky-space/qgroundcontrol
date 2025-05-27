@@ -49,12 +49,6 @@ private:
 signals:
     void airlinkConnected(Airlink* link = nullptr);
     void airlinkDisconnected(Airlink* link = nullptr);
-
-    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
-    void enableVideoTransmit();
-    void isWebrtcReceiverConnected();
-    void openPeer();
-    void closePeer();
 private slots:
 
     void connectVideo(Airlink* airlink = nullptr);

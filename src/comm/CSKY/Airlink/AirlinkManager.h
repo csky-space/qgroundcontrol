@@ -71,6 +71,12 @@ public:
     Fact* getAsbEnabled() const;
     Fact* getPort() const;
 signals:
+    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
+    void enableVideoTransmit();
+    void isWebrtcReceiverConnected();
+    void openPeer();
+    void closePeer();
+
     void asbEnabledTrue(Airlink* airlink);
     void asbEnabledFalse(Airlink* airlink);
     void asbClosed(Airlink* airlink);
@@ -89,6 +95,7 @@ private:
 	void _processReplyAirlinkServer(QNetworkReply &reply);
 	void _findAirlinkConfiguration();
 private:
+    QMutex modemsModifyMutex;
     QNetworkAccessManager connectTelemetryManager;
     bool _fullBlockUI;
     QString asbPath;
@@ -118,7 +125,7 @@ private:
 	Fact* videoSource = nullptr;
     QThread* requestsThread = nullptr;
     QMap<QString, Airlink*> modems;
-    Airlink* lastConnectedModem;
+    Airlink* lastConnectedModem = nullptr;
     Airlink* prevConnectedModem = nullptr;
 public slots:
     void startWatchdog();

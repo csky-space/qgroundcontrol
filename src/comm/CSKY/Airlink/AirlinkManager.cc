@@ -116,7 +116,7 @@ void AirlinkManager::restartASBProcess() {
 
     qCDebug(AirlinkManagerLog) << "Starting AirlinkStreamBridge...";
     asbProcess.start();
-    asbProcess.waitForStarted(2000);
+    asbProcess.waitForStarted(3000);
     if(asbEnabled->rawValue().toBool()) {
         asbEnabledChanged(asbEnabled->rawValue());
     }
@@ -289,6 +289,18 @@ void AirlinkManager::_setConnects() {
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
 #endif
+    connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::activeVehicleAvailableChanged, this, [this](bool realChanged){
+        if(realChanged) {
+            auto link = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()->vehicleLinkManager()->primaryLink().lock();
+            QString linkName = link->linkConfiguration()->name();
+            Airlink* airlink = dynamic_cast<Airlink*>(link.get());
+            //if(airlink && !modems.contains(linkName)) {
+            //    LinkManager
+            //}
+
+        }
+
+    });
     connect(this, &AirlinkManager::sendAsbServicePort, &manager, &AirlinkStreamBridgeManager::sendAsbServicePort);
     connect(this, &AirlinkManager::checkAlive, &manager, &AirlinkStreamBridgeManager::checkAlive);
 
@@ -306,6 +318,47 @@ void AirlinkManager::_setConnects() {
             restartASBProcess();
             isRestarting = false;
         }
+    });
+
+    connect(this, &AirlinkManager::openPeer, &manager, &AirlinkStreamBridgeManager::openPeer);
+    connect(this, &AirlinkManager::closePeer, &manager, &AirlinkStreamBridgeManager::closePeer);
+    connect(this, &AirlinkManager::createWebrtcDefault, &manager, &AirlinkStreamBridgeManager::createWebrtcDefault);
+    connect(this, &AirlinkManager::isWebrtcReceiverConnected, &manager, &AirlinkStreamBridgeManager::isWebrtcReceiverConnected);
+
+    connect(&manager, &AirlinkStreamBridgeManager::createWebrtcCompleted, this, &AirlinkManager::unblockUI);
+
+    connect(&manager, &AirlinkStreamBridgeManager::createWebrtcCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
+        if(err == QNetworkReply::NoError) {
+            qCDebug(AirlinkManagerLog) << "create webrtc completed";
+            if(lastConnectedModem) {
+                lastConnectedModem->setWebrtcCreated(true);
+                blockUI();
+                emit openPeer();
+            }
+
+        }else {
+            lastConnectedModem->setWebrtcCreated(false);
+            qCDebug(AirlinkManagerLog) << "create webrtc failed: " << replyData;
+        }
+
+    });
+
+    connect(&manager, &AirlinkStreamBridgeManager::openPeerCompleted, this, &AirlinkManager::unblockUI);
+
+    connect(&manager, &AirlinkStreamBridgeManager::openPeerCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
+        qCDebug(AirlinkManagerLog) << "peer opened";
+        qgcApp()->toolbox()->videoManager()->stopVideo();
+    });
+
+    connect(&manager, &AirlinkStreamBridgeManager::closePeerCompleted, this, &AirlinkManager::unblockUI);
+
+    connect(&manager, &AirlinkStreamBridgeManager::closePeerCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
+        qCDebug(AirlinkManagerLog) << "peer closed";
+    });
+
+    connect(&manager, &AirlinkStreamBridgeManager::checkAliveCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err) {
+        if(lastConnectedModem)
+            lastConnectedModem->setWebrtcCreated(false);
     });
 }
 
@@ -443,6 +496,7 @@ void AirlinkManager::unblockUI(QByteArray replyData, QNetworkReply::NetworkError
 
 void AirlinkManager::addAirlink(Airlink* airlink) {
     if(airlink) {
+
         QString modemName = airlink->getConfig()->modemName();
         if(!modems.contains(modemName)) {
             if(lastConnectedModem && lastConnectedModem->isConnected())
@@ -460,6 +514,7 @@ void AirlinkManager::addAirlink(Airlink* airlink) {
 void AirlinkManager::removeAirlink(Airlink* airlink) {
     qDebug() << "remove airlink?";
     if(airlink) {
+        lastConnectedModem = nullptr;
         QString modemName = airlink->getConfig()->modemName();
         if(modems.contains(modemName)) {
             qDebug() << "removing airlink";

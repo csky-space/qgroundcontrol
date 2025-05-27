@@ -16,6 +16,7 @@ GO_OUT_FULL = $$GO_OUT_BASE$$GO_EXT
 
 go_target.target = $$GO_OUT_FULL
 go_target.depends = $$GO_FILES
+go_target.depends += $$GO_OUT_FULL
 
 android {
     GOOS = android

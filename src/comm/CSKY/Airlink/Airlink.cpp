@@ -32,44 +32,6 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
     connect(this, &Airlink::disconnected, this, &Airlink::retranslateSelfDisconnected, Qt::DirectConnection);
     connect(this, &Airlink::airlinkConnected, airlinkManager, &AirlinkManager::addAirlink);
     connect(this, &Airlink::airlinkDisconnected, airlinkManager, &AirlinkManager::removeAirlink);
-
-    connect(this, &Airlink::openPeer, asbManager, &AirlinkStreamBridgeManager::openPeer);
-    connect(this, &Airlink::closePeer, asbManager, &AirlinkStreamBridgeManager::closePeer);
-    connect(this, &Airlink::createWebrtcDefault, asbManager, &AirlinkStreamBridgeManager::createWebrtcDefault);
-    connect(this, &Airlink::isWebrtcReceiverConnected, asbManager, &AirlinkStreamBridgeManager::isWebrtcReceiverConnected);
-
-
-    connect(asbManager, &AirlinkStreamBridgeManager::createWebrtcCompleted, airlinkManager, &AirlinkManager::unblockUI);
-
-    connect(asbManager, &AirlinkStreamBridgeManager::createWebrtcCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
-        if(err == QNetworkReply::NoError) {
-            qCDebug(AirlinkLog) << "create webrtc completed";
-            webtrcReceiverCreated = true;
-            airlinkManager->blockUI();
-            emit openPeer();
-        }else {
-            webtrcReceiverCreated = false;
-            qCDebug(AirlinkLog) << "create webrtc failed: " << replyData;
-        }
-
-    });
-
-    connect(asbManager, &AirlinkStreamBridgeManager::openPeerCompleted, airlinkManager, &AirlinkManager::unblockUI);
-
-    connect(asbManager, &AirlinkStreamBridgeManager::openPeerCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
-        qCDebug(AirlinkLog) << "peer opened";
-        qgcApp()->toolbox()->videoManager()->stopVideo();
-    });
-
-    connect(asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, airlinkManager, &AirlinkManager::unblockUI);
-
-    connect(asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
-        qCDebug(AirlinkLog) << "peer closed";
-    });
-
-    connect(asbManager, &AirlinkStreamBridgeManager::checkAliveCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err) {
-        webtrcReceiverCreated = false;
-    });
 #endif
 }
 
@@ -190,7 +152,6 @@ bool Airlink::_connect()
         if (_stillConnecting()) {
             qCDebug(AirlinkLog) << "Connecting...";
             _sendLoginMsgToAirLink();
-            findSelf();
         } else {
             qCDebug(AirlinkLog) << "Stopping...";
             pendingTimer->stop();
@@ -237,15 +198,17 @@ void Airlink::_sendLoginMsgToAirLink()
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
     mavlink_message_t mavmsg;
     AirlinkConfiguration* config = dynamic_cast<AirlinkConfiguration*>(_config.get());
+    qCDebug(AirlinkLog) << "before conf gets";
     QString login = config->modemName();
     QString pass = config->password();
 
     std::fill(std::begin(auth.login), std::end(auth.login), 0);
     std::fill(std::begin(auth.password), std::end(auth.password), 0);
-
+    qCDebug(AirlinkLog) << "before print authorization";
     snprintf(auth.login, sizeof(auth.login), "%s", login.toUtf8().constData());
     snprintf(auth.password, sizeof(auth.password), "%s", pass.toUtf8().constData());
 
+    qCDebug(AirlinkLog) << "before auth";
     mavlink_msg_airlink_auth_pack(0, 0, &mavmsg, auth.login, auth.password);
     uint16_t len = mavlink_msg_to_send_buffer(buffer, &mavmsg);
 
@@ -253,8 +216,9 @@ void Airlink::_sendLoginMsgToAirLink()
         qCDebug(AirlinkLog) << "Force exit from connection";
         return;
     }
-
+    qCDebug(AirlinkLog) << "before write bytes";
     this->writeBytesThreadSafe((const char*)buffer, len);
+    qCDebug(AirlinkLog) << "after write bytes";
 }
 
 bool Airlink::_stillConnecting()
@@ -296,11 +260,11 @@ void Airlink::connectVideo(Airlink* airlink) {
             qCDebug(AirlinkLog()) << "Airlink video connecting for " << configuration->modemName();
             airlinkManager->blockUI();
 
-            emit createWebrtcDefault(AirlinkManager::airlinkHost, configuration->modemName(), configuration->password(), asbPort->rawValue().toUInt());
+            emit  airlinkManager->createWebrtcDefault(AirlinkManager::airlinkHost, configuration->modemName(), configuration->password(), asbPort->rawValue().toUInt());
         }
         else {
             airlinkManager->blockUI();
-            emit openPeer();
+            emit airlinkManager->openPeer();
         }
     }
     else if ((airlinkManager->getAsbProcess().state() != QProcess::Running)){
@@ -317,7 +281,7 @@ void Airlink::disconnectVideo(Airlink* airlink) {
     if (airlinkManager->getAsbProcess().state() != QProcess::NotRunning) {
         airlinkManager->blockUI();
         qDebug() << "Disconnect video";
-        emit closePeer();
+        emit airlinkManager->closePeer();
     }
 }
 
