@@ -7,7 +7,7 @@
 #
 ################################################################################
 
-#CONFIG += installer
+CONFIG += installer
 
 QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in makefiles
 
@@ -17,6 +17,31 @@ DEFINES += QGC_GST_MICROHARD_DISABLED
 
 #DEFINES += QGC_AIRLINK_STAGE
 DEFINES += QGC_AIRLINK_ENABLED
+
+#--AirlinkStreamBridge build----------------------------------------
+contains(QMAKE_COMPILER, gcc) {
+    !android{
+        QMAKE_LFLAGS += -fuse-ld=lld
+        QMAKE_CXXFLAGS += -fuse-ld=lld
+        QMAKE_LD = lld
+    }
+}
+
+contains(DEFINES, QGC_AIRLINK_ENABLED) {
+
+    include($$PWD/src/comm/CSKY/AirlinkStreamBridge.pri)
+    android {
+        contains(ANDROID_TARGET_ARCH, arm64-v8a) {
+            RESOURCES += $$PWD/src/comm/CSKY/Android/arm64-v8a/Airlink.qrc
+        }else:contains(ANDROID_TARGET_ARCH, armeabi-v7a){
+            RESOURCES += $$PWD/src/comm/CSKY/Android/armeabi-v7a/Airlink.qrc
+        }else:contains(ANDROID_TARGET_ARCH, x86) {
+            RESOURCES += $$PWD/src/comm/CSKY/Android/x86/Airlink.qrc
+        }
+    }
+    QMAKE_EXTRA_COMPILERS += go_target
+}
+#------------------------------------------------------------------------------------------------
 
 exists($${OUT_PWD}/qgroundcontrol.pro) {
     error("You must use shadow build (e.g. mkdir build; cd build; qmake ../qgroundcontrol.pro).")
@@ -368,12 +393,6 @@ CustomBuild {
         $$PWD/qgcresources.qrc \
         $$PWD/qgcimages.qrc \
         $$PWD/resources/InstrumentValueIcons/InstrumentValueIcons.qrc \
-
-    contains(DEFINES, QGC_AIRLINK_ENABLED) {
-        for(resource, RESOURCES) {
-            eval($${resource}.depends += $$GO_OUTPUT)
-        }
-    }
 }
 
 #
@@ -799,31 +818,6 @@ HEADERS += \
     src/comm/MockLinkFTP.h \
     src/comm/MockLinkMissionItemHandler.h \
 }
-#--AirlinkStreamBridge build----------------------------------------
-contains(QMAKE_COMPILER, gcc) {
-    !android{
-        QMAKE_LFLAGS += -fuse-ld=lld
-        QMAKE_CXXFLAGS += -fuse-ld=lld
-        QMAKE_LD = lld
-    }
-}
-
-contains(DEFINES, QGC_AIRLINK_ENABLED) {
-    android {
-        contains(ANDROID_TARGET_ARCH, arm64-v8a) {
-            RESOURCES += $$PWD/src/comm/CSKY/Android/arm64-v8a/Airlink.qrc
-        }else:contains(ANDROID_TARGET_ARCH, armeabi-v7a){
-            RESOURCES += $$PWD/src/comm/CSKY/Android/armeabi-v7a/Airlink.qrc
-        }else:contains(ANDROID_TARGET_ARCH, x86) {
-            RESOURCES += $$PWD/src/comm/CSKY/Android/x86/Airlink.qrc
-        }
-    }
-    include($$PWD/src/comm/CSKY/AirlinkStreamBridge.pri)
-    PRE_TARGETDEPS += $$GO_OUT_FULL
-}
-#------------------------------------------------------------------------------------------------
-
-
 
 WindowsBuild {
     PRECOMPILED_HEADER += src/stable_headers.h

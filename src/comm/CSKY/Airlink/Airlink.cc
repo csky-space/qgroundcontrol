@@ -24,11 +24,11 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
     connect(airlinkManager, &AirlinkManager::asbClosed, this, &Airlink::asbClosed);
     connect(airlinkManager, &AirlinkManager::asbEnabledTrue, this, &Airlink::connectVideo);
     connect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
-    connect(airlinkManager, &AirlinkManager::onConnectedAirlinkAdded, this, &Airlink::connectVideo);
+    connect(airlinkManager, &AirlinkManager::onConnectedAirlinkAdded, this, &Airlink::connectVideo, Qt::DirectConnection);
     connect(airlinkManager, &AirlinkManager::onDisconnectedAirlinkRemoved, this, &Airlink::disconnectVideo, Qt::DirectConnection);
 
 
-    connect(this, &Airlink::connected, this, &Airlink::retranslateSelfConnected);
+    connect(this, &Airlink::connected, this, &Airlink::retranslateSelfConnected, Qt::DirectConnection);
     connect(this, &Airlink::disconnected, this, &Airlink::retranslateSelfDisconnected, Qt::DirectConnection);
     connect(this, &Airlink::airlinkConnected, airlinkManager, &AirlinkManager::addAirlink);
     connect(this, &Airlink::airlinkDisconnected, airlinkManager, &AirlinkManager::removeAirlink);
@@ -223,14 +223,12 @@ void Airlink::_sendLoginMsgToAirLink()
 
 bool Airlink::_stillConnecting()
 {
-    QMutexLocker locker(&_mutex);
-    return _needToConnect;
+    return _needToConnect.load(std::memory_order_acquire);
 }
 
 void Airlink::_setConnectFlag(bool connect)
 {
-    QMutexLocker locker(&_mutex);
-    _needToConnect = connect;
+    _needToConnect.store(connect, std::memory_order_release);
 }
 
 void Airlink::retranslateSelfConnected() {

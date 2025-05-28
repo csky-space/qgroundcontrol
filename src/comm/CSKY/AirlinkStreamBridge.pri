@@ -11,57 +11,56 @@ win32 {
 } else {
     GO_EXT =
 }
-
+GO_EXECUTABLE_NAME="AirlinkStreamBridge$$GO_EXT"
 GO_OUT_FULL = $$GO_OUT_BASE$$GO_EXT
 
-go_target.target = $$GO_OUT_FULL
-go_target.depends = $$GO_FILES
-go_target.depends += $$GO_OUT_FULL
+go_target.name = AirlinkStreamBridgeCompiler
+go_target.input = GO_FILES
+
+go_target.CONFIG += combine ignore_no_exist no_link no_clean target_predeps
 
 android {
     GOOS = android
     NDK_API = 21
     NDK = $$getenv("ANDROID_NDK_ROOT")
     GOARM = 7
-
     contains(ANDROID_TARGET_ARCH, x86) {
         GOARCH = 386
+        ARCH = x86
         CC = $$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android$$NDK_API-clang
-        RESOURCES_DIR = $$MAIN_PWD/resources/x86
-        RESOURCE_TARGET = $$RESOURCES_DIR/AirlinkStreamBridge_x86
+        RESOURCES_DIR = $$MAIN_PWD/resources/$$ARCH
+        GO_OUT_FULL = $$RESOURCES_DIR/$${GO_EXECUTABLE_NAME}_$${ARCH}
 
         go_target.commands = \
             cd $$GO_SRC_DIR && \
             CC=$$CC CGO_ENABLED=1 GOOS=$$GOOS GOARCH=$$GOARCH \
-            go build $$quote(-ldflags=\"-s -w -checklinkname=0\") -o $$GO_OUT_FULL main.go && \
             mkdir -p $$RESOURCES_DIR && \
-            cp -f $$GO_OUT_FULL $$RESOURCE_TARGET
-
+            go build $$quote(-ldflags=\"-s -w -checklinkname=0\") -o $$GO_OUT_FULL main.go
     } else:contains(ANDROID_TARGET_ARCH, arm64-v8a) {
         GOARCH = arm64
+        ARCH = arm64-v8a
         CC = $$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android$$NDK_API-clang
-        RESOURCES_DIR = $$MAIN_PWD/resources/arm64-v8a
-        RESOURCE_TARGET = $$RESOURCES_DIR/AirlinkStreamBridge_arm64-v8a
+        RESOURCES_DIR = $$MAIN_PWD/resources/$$ARCH
+        GO_OUT_FULL = $$RESOURCES_DIR/$${GO_EXECUTABLE_NAME}_$${ARCH}
 
         go_target.commands = \
             cd $$GO_SRC_DIR && \
             CC=$$CC CGO_ENABLED=1 GOOS=$$GOOS GOARCH=$$GOARCH \
-            go build $$quote(-ldflags=\"-s -w -checklinkname=0\") -o $$GO_OUT_FULL main.go && \
             mkdir -p $$RESOURCES_DIR && \
-            cp -f $$GO_OUT_FULL $$RESOURCE_TARGET
+            go build $$quote(-ldflags=\"-s -w -checklinkname=0\") -o $$GO_OUT_FULL main.go
 
     } else:contains(ANDROID_TARGET_ARCH, armeabi-v7a) {
         GOARCH = arm
+        ARCH = armeabi-v7a
         CC = $$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi$$NDK_API-clang
-        RESOURCES_DIR = $$MAIN_PWD/resources/armeabi-v7a
-        RESOURCE_TARGET = $$RESOURCES_DIR/AirlinkStreamBridge_armeabi-v7a
+        RESOURCES_DIR = $$MAIN_PWD/resources/$$ARCH
+        GO_OUT_FULL = $$RESOURCES_DIR/$${GO_EXECUTABLE_NAME}_$${ARCH}
 
         go_target.commands = \
             cd $$GO_SRC_DIR && \
             CC=$$CC CGO_ENABLED=1 GOOS=$$GOOS GOARCH=$$GOARCH GOARM=$$GOARM \
-            go build $$quote(-ldflags=\"-s -w -checklinkname=0\") -o $$GO_OUT_FULL main.go && \
             mkdir -p $$RESOURCES_DIR && \
-            cp -f $$GO_OUT_FULL $$RESOURCE_TARGET
+            go build $$quote(-ldflags=\"-s -w -checklinkname=0\") -o $$GO_OUT_FULL main.go
     }
 
 } else:win32 {
@@ -79,14 +78,18 @@ android {
         ln -sf libssl.so.1.1 libssl.so && ln -sf libcrypto.so.1.1 libcrypto.so
 }
 
-export(GO_OUT_FULL)
-export(GO_SRC_DIR)
+go_target.output = $$GO_OUT_FULL
+#PRE_TARGETDEPS += $$GO_OUT_FULL
 
-QMAKE_EXTRA_TARGETS += go_target
-PRE_TARGETDEPS += $$GO_OUT_FULL
+export(GO_OUT_FULL)
+message([DEBUG] GO_OUT_FULL: $$GO_OUT_FULL)
+export(GO_SRC_DIR)
+export(go_target)
+
+
 
 HEADERS += \
     $$PWD/Airlink/Airlink.h
 
 SOURCES += \
-    $$PWD/Airlink/Airlink.cpp
+    $$PWD/Airlink/Airlink.cc

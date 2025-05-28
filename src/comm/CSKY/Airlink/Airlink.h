@@ -29,7 +29,7 @@ private:
     bool webtrcReceiverCreated = false;
     QMutex _mutex;
     /// Access this varible only with _mutex locked
-    bool _needToConnect {false};
+    std::atomic<bool> _needToConnect{false};
     std::shared_ptr<UDPLink> connectedLink = nullptr;
     AirlinkManager* airlinkManager = nullptr;
     AirlinkStreamBridgeManager* asbManager = nullptr;

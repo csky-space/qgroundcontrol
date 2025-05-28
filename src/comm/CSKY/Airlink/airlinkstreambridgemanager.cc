@@ -58,84 +58,102 @@ void AirlinkStreamBridgeManager::createWebrtcDefault(QString hostName, QString m
     obj["UDPPort"] = port;
     QJsonDocument d(obj);
 
-    QPointer<QNetworkReply> safeReply = manager.post(createWebrtcDefaultRequest, d.toJson(QJsonDocument::Compact).trimmed());
-    QTimer* replyTimeout = new QTimer(safeReply);
+    QPointer<QNetworkReply> reply = manager.post(createWebrtcDefaultRequest, d.toJson(QJsonDocument::Compact).trimmed());
+    QTimer* replyTimeout = new QTimer(reply);
     replyTimeout->setSingleShot(true);
     replyTimeout->start(30000);
 
-    connect(replyTimeout, &QTimer::timeout, this, [safeReply]() {
-        if(safeReply) {
-            safeReply->abort();
-            safeReply->deleteLater();
+    connect(replyTimeout, &QTimer::timeout, this, [reply]() {
+        if(reply) {
+            reply->abort();
         }
     });
 
-    connect(safeReply, &QNetworkReply::finished, this, [this, replyTimeout, safeReply]() {
-        replyTimeout->stop();
-        if(safeReply) {
+    connect(reply, &QNetworkReply::finished, this, [this, replyTimeout, reply]() {
+        if(replyTimeout->isActive()) {
+            replyTimeout->stop();
+        }
+
+        if(reply) {
             qCDebug(AirlinkStreamBridgeManagerLog) << "emitting createWebrtcDefaultReply";
-            emit createWebrtcCompleted(safeReply->readAll(), safeReply->error());
-            safeReply->deleteLater();
+            QByteArray data = reply->readAll();
+            QNetworkReply::NetworkError error = reply->error();
+            reply->deleteLater();
+            emit createWebrtcCompleted(data, error);
         }
     });
 }
 
 void AirlinkStreamBridgeManager::enableVideoTransmit() {
-    QPointer<QNetworkReply> enableVideoTransmitReply = manager.put(enableVideoTransmitRequest, "{}");
-    QTimer* replyTimeout = new QTimer(enableVideoTransmitReply);
+    QPointer<QNetworkReply> reply = manager.put(enableVideoTransmitRequest, "{}");
+    QTimer* replyTimeout = new QTimer(reply);
     replyTimeout->setSingleShot(true);
     replyTimeout->start(1000);
-    connect(replyTimeout, &QTimer::timeout, [enableVideoTransmitReply](){
-        if(enableVideoTransmitReply) {
-            enableVideoTransmitReply->abort();
-            enableVideoTransmitReply->deleteLater();
+    connect(replyTimeout, &QTimer::timeout, [reply](){
+        if(reply) {
+            reply->abort();
         }
     });
-    connect(enableVideoTransmitReply, &QNetworkReply::finished, this, [this, replyTimeout, enableVideoTransmitReply](){
-        replyTimeout->stop();
-        emit enableVideoTransmitCompleted(enableVideoTransmitReply->readAll(), enableVideoTransmitReply->error());
-        enableVideoTransmitReply->deleteLater();
+    connect(reply, &QNetworkReply::finished, this, [this, replyTimeout, reply](){
+        if(replyTimeout->isActive()) {
+            replyTimeout->stop();
+        }
+        if(reply) {
+            QByteArray data = reply->readAll();
+            QNetworkReply::NetworkError error = reply->error();
+            reply->deleteLater();
+            emit enableVideoTransmitCompleted(data, error);
+        }
     });
 }
 
 void AirlinkStreamBridgeManager::isWebrtcReceiverConnected() {
-    QPointer<QNetworkReply> isWebrtcReceiverConnectedReply = manager.get(isWebrtcReceiverConnectedRequest);
-    QTimer* replyTimeout = new QTimer(isWebrtcReceiverConnectedReply);
+    QPointer<QNetworkReply> reply = manager.get(isWebrtcReceiverConnectedRequest);
+    QTimer* replyTimeout = new QTimer(reply);
     replyTimeout->setSingleShot(true);
     replyTimeout->start(1000);
-    connect(replyTimeout, &QTimer::timeout, [isWebrtcReceiverConnectedReply](){
-        if(isWebrtcReceiverConnectedReply) {
-            isWebrtcReceiverConnectedReply->abort();
-            isWebrtcReceiverConnectedReply->deleteLater();
+    connect(replyTimeout, &QTimer::timeout, [reply](){
+        if(reply) {
+            reply->abort();
         }
     });
-    connect(isWebrtcReceiverConnectedReply, &QNetworkReply::finished, this, [this, replyTimeout, isWebrtcReceiverConnectedReply](){
-        replyTimeout->stop();
-        qCDebug(AirlinkStreamBridgeManagerLog) << "emitting isWebrtcReceiverConnectedReply";
-        emit isWebrtcReceiverConnectedCompleted(isWebrtcReceiverConnectedReply->readAll(), isWebrtcReceiverConnectedReply->error());
-        isWebrtcReceiverConnectedReply->deleteLater();
+    connect(reply, &QNetworkReply::finished, this, [this, replyTimeout, reply](){
+        if(replyTimeout->isActive()) {
+            replyTimeout->stop();
+        }
+        if(reply) {
+            qCDebug(AirlinkStreamBridgeManagerLog) << "emitting isWebrtcReceiverConnectedReply";
+            QByteArray data = reply->readAll();
+            QNetworkReply::NetworkError error = reply->error();
+            reply->deleteLater();
+            emit isWebrtcReceiverConnectedCompleted(data, error);
+        }
     });
 }
 
 void AirlinkStreamBridgeManager::openPeer() {
-    QPointer<QNetworkReply> openPeerReply = manager.put(openPeerRequest, "{}");
-    QTimer* replyTimeout = new QTimer(openPeerReply);
+    QPointer<QNetworkReply> reply = manager.put(openPeerRequest, "{}");
+    QTimer* replyTimeout = new QTimer(reply);
     replyTimeout->setSingleShot(true);
     replyTimeout->start(30000);
-    connect(replyTimeout, &QTimer::timeout, [openPeerReply](){
+    connect(replyTimeout, &QTimer::timeout, [reply](){
         qCDebug(AirlinkStreamBridgeManagerLog) << "open peer reply abort";
-        if(openPeerReply) {
-            openPeerReply->abort();
-            openPeerReply->deleteLater();
+        if(reply) {
+            reply->abort();
         }
 
     });
-    connect(openPeerReply, &QNetworkReply::finished, this, [this, replyTimeout, openPeerReply](){
-        replyTimeout->stop();
+    connect(reply, &QNetworkReply::finished, this, [this, replyTimeout, reply](){
+        if(replyTimeout->isActive()) {
+            replyTimeout->stop();
+        }
+
         qCDebug(AirlinkStreamBridgeManagerLog) << "emitting openPeerReply";
-        if(openPeerReply && openPeerReply->isOpen() && openPeerReply->isReadable()) {
-            emit openPeerCompleted(openPeerReply->readAll(), openPeerReply->error());
-            openPeerReply->deleteLater();
+        if(reply) {
+            QByteArray data = reply->readAll();
+            QNetworkReply::NetworkError error = reply->error();
+            reply->deleteLater();
+            emit openPeerCompleted(data, error);
         }
 
     });
@@ -143,22 +161,29 @@ void AirlinkStreamBridgeManager::openPeer() {
 
 void AirlinkStreamBridgeManager::closePeer() {
     qCDebug(AirlinkStreamBridgeManagerLog) << "closePeer";
-    QPointer<QNetworkReply> closePeerReply = manager.put(closePeerRequest, "{}");
-    QTimer* replyTimeout = new QTimer(closePeerReply);
+    QPointer<QNetworkReply> reply = manager.put(closePeerRequest, "{}");
+    QTimer* replyTimeout = new QTimer(reply);
     replyTimeout->setSingleShot(true);
     replyTimeout->start(3000);
-    connect(replyTimeout, &QTimer::timeout, [closePeerReply](){
-        if(closePeerReply) {
-            closePeerReply->abort();
-            closePeerReply->deleteLater();
+    connect(replyTimeout, &QTimer::timeout, [reply](){
+        if(reply) {
+            reply->abort();
         }
     });
-    connect(closePeerReply, &QNetworkReply::finished, this, [this, replyTimeout, closePeerReply](){
-        replyTimeout->stop();
-        qCDebug(AirlinkStreamBridgeManagerLog) << "emitting closePeerReply";
-        emit closePeerCompleted(closePeerReply->readAll(), closePeerReply->error());
-        closePeerReply->deleteLater();
+    connect(reply, &QNetworkReply::finished, this, [this, replyTimeout, reply](){
+        qCDebug(AirlinkStreamBridgeManagerLog) << "closePeerReply finished";
+        if(replyTimeout->isActive()) {
+            replyTimeout->stop();
+        }
+        if(reply) {
+            qCDebug(AirlinkStreamBridgeManagerLog) << "emitting closePeerReply";
+            QByteArray data = reply->readAll();
+            QNetworkReply::NetworkError error = reply->error();
+            reply->deleteLater();
+            emit closePeerCompleted(data, error);
+        }
     });
+    qCDebug(AirlinkStreamBridgeManagerLog) << "closePeer end";
 }
 
 void AirlinkStreamBridgeManager::sendAsbServicePort(quint16 port) {
@@ -168,41 +193,51 @@ void AirlinkStreamBridgeManager::sendAsbServicePort(quint16 port) {
     obj["UDPPort"] = port;
     QJsonDocument d(obj);
 
-    QPointer<QNetworkReply> sendAsbServicePortReply = manager.post(sendAsbServicePortRequest, d.toJson(QJsonDocument::Compact));
-    QTimer* replyTimeout = new QTimer(sendAsbServicePortReply);
+    QPointer<QNetworkReply> reply = manager.post(sendAsbServicePortRequest, d.toJson(QJsonDocument::Compact));
+    QTimer* replyTimeout = new QTimer(reply);
     replyTimeout->setSingleShot(true);
     replyTimeout->start(3000);
-    connect(replyTimeout, &QTimer::timeout, [sendAsbServicePortReply](){
-        if(sendAsbServicePortReply) {
-            sendAsbServicePortReply->abort();
-            sendAsbServicePortReply->deleteLater();
+    connect(replyTimeout, &QTimer::timeout, [reply](){
+        if(reply) {
+            reply->abort();
         }
     });
-    connect(sendAsbServicePortReply, &QNetworkReply::finished, this, [this, replyTimeout, sendAsbServicePortReply](){
-        replyTimeout->stop();
-        qCDebug(AirlinkStreamBridgeManagerLog) << "emitting sendAsbServicePortReply";
-        emit sendAsbServicePortCompleted(sendAsbServicePortReply->readAll(), sendAsbServicePortReply->error());
-        sendAsbServicePortReply->deleteLater();
+    connect(reply, &QNetworkReply::finished, this, [this, replyTimeout, reply](){
+        if(replyTimeout->isActive()) {
+            replyTimeout->stop();
+        }
+        if(reply) {
+            qCDebug(AirlinkStreamBridgeManagerLog) << "emitting sendAsbServicePortReply";
+            QByteArray data = reply->readAll();
+            QNetworkReply::NetworkError error = reply->error();
+            reply->deleteLater();
+            emit sendAsbServicePortCompleted(data, error);
+        }
     });
 }
 
 void AirlinkStreamBridgeManager::checkAlive() {
-    QPointer<QNetworkReply> checkAliveReply = manager.get(checkAliveRequest);
-    QTimer* replyTimeout = new QTimer(checkAliveReply);
+    QPointer<QNetworkReply> reply = manager.get(checkAliveRequest);
+    QTimer* replyTimeout = new QTimer(reply);
     replyTimeout->setSingleShot(true);
     replyTimeout->start(1000);
-    connect(replyTimeout, &QTimer::timeout, [checkAliveReply](){
+    connect(replyTimeout, &QTimer::timeout, [reply](){
         qCDebug(AirlinkStreamBridgeManagerLog) << "abort checkAliveReply";
-        if(checkAliveReply) {
-            checkAliveReply->abort();
-            checkAliveReply->deleteLater();
+        if(reply) {
+            reply->abort();
         }
     });
-    connect(checkAliveReply, &QNetworkReply::finished, this, [this, replyTimeout, checkAliveReply](){
-        replyTimeout->stop();
-        qCDebug(AirlinkStreamBridgeManagerLog) << "emitting checkAliveReply";
-        emit checkAliveCompleted(checkAliveReply->readAll(), checkAliveReply->error());
-        checkAliveReply->deleteLater();
+    connect(reply, &QNetworkReply::finished, this, [this, replyTimeout, reply](){
+        if(replyTimeout->isActive()) {
+            replyTimeout->stop();
+        }
+        if(reply) {
+            qCDebug(AirlinkStreamBridgeManagerLog) << "emitting checkAliveReply";
+            QByteArray data = reply->readAll();
+            QNetworkReply::NetworkError error = reply->error();
+            reply->deleteLater();
+            emit checkAliveCompleted(data, error);
+        }
     });
 }
 }

@@ -117,8 +117,9 @@ void AirlinkManager::restartASBProcess() {
     qCDebug(AirlinkManagerLog) << "Starting AirlinkStreamBridge...";
     asbProcess.start();
     asbProcess.waitForStarted(3000);
+    thread()->sleep(1000);
     if(asbEnabled->rawValue().toBool()) {
-        asbEnabledChanged(asbEnabled->rawValue());
+        emit asbEnabledTrue(lastConnectedModem);
     }
 }
 
