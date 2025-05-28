@@ -23,19 +23,13 @@ private:
 
     QNetworkAccessManager manager;
     QNetworkRequest createWebrtcDefaultRequest;
-    QNetworkReply* createWebrtcDefaultReply = nullptr;
     QNetworkRequest enableVideoTransmitRequest;
-    QNetworkReply* enableVideoTransmitReply = nullptr;
     QNetworkRequest isWebrtcReceiverConnectedRequest;
-    QNetworkReply* isWebrtcReceiverConnectedReply = nullptr;
     QNetworkRequest openPeerRequest;
-    QNetworkReply* openPeerReply = nullptr;
+
     QNetworkRequest closePeerRequest;
-    QNetworkReply* closePeerReply = nullptr;
     QNetworkRequest sendAsbServicePortRequest;
-    QNetworkReply* sendAsbServicePortReply = nullptr;
     QNetworkRequest checkAliveRequest;
-    QNetworkReply* checkAliveReply = nullptr;
 
 
 signals:

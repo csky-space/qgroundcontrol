@@ -92,3 +92,4 @@ Qt*-linux*.tar.*
 node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+*.AppImage

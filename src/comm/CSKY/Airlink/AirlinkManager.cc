@@ -150,8 +150,6 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
     connect(asbPort, &Fact::rawValueChanged, this, &AirlinkManager::setupPort);
     connect(asbAutotune, &Fact::rawValueChanged, this, &AirlinkManager::asbAutotuneChanged);
 
-    //asbPort->setRawValue(asbPort->rawValue());
-
 
     asbProcess.start();
     asbProcess.waitForStarted(2000);
@@ -289,11 +287,11 @@ void AirlinkManager::_setConnects() {
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
 #endif
-    connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::activeVehicleAvailableChanged, this, [this](bool realChanged){
+    connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::activeVehicleAvailableChanged, this, [](bool realChanged){
         if(realChanged) {
-            auto link = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()->vehicleLinkManager()->primaryLink().lock();
-            QString linkName = link->linkConfiguration()->name();
-            Airlink* airlink = dynamic_cast<Airlink*>(link.get());
+            //auto link = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()->vehicleLinkManager()->primaryLink().lock();
+            //QString linkName = link->linkConfiguration()->name();
+            //Airlink* airlink = dynamic_cast<Airlink*>(link.get());
             //if(airlink && !modems.contains(linkName)) {
             //    LinkManager
             //}
