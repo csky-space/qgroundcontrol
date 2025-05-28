@@ -49,8 +49,8 @@ public:
 	Q_INVOKABLE void updateCredentials(const QString &login, const QString &pass);
     Q_INVOKABLE QString getAirlinkHost() const {return airlinkHost;}
 
-    Q_INVOKABLE bool fullBlock() const {return _fullBlockUI;}
-    Q_INVOKABLE void setFullBlock(bool block) {_fullBlockUI = block;}
+    Q_INVOKABLE bool fullBlock() const {return _fullBlockUI.load(std::memory_order_acquire);}
+    Q_INVOKABLE void setFullBlock(bool block) {_fullBlockUI.store(block, std::memory_order_release);}
 
 	explicit AirlinkManager(QGCApplication *app, QGCToolbox *toolbox);
 	~AirlinkManager() override;
@@ -97,7 +97,7 @@ private:
 private:
     QMutex modemsModifyMutex;
     QNetworkAccessManager connectTelemetryManager;
-    bool _fullBlockUI;
+    std::atomic<bool> _fullBlockUI;
     QString asbPath;
     AirlinkStreamBridgeManager manager;
     QTimer* watchdogTimer = nullptr;
