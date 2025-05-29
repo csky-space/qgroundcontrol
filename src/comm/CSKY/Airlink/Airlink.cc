@@ -24,14 +24,27 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
     connect(airlinkManager, &AirlinkManager::asbClosed, this, &Airlink::asbClosed);
     connect(airlinkManager, &AirlinkManager::asbEnabledTrue, this, &Airlink::connectVideo);
     connect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
-    connect(airlinkManager, &AirlinkManager::onConnectedAirlinkAdded, this, &Airlink::connectVideo, Qt::DirectConnection);
-    connect(airlinkManager, &AirlinkManager::onDisconnectedAirlinkRemoved, this, &Airlink::disconnectVideo, Qt::DirectConnection);
+
+    connect(this, &Airlink::connected, airlinkManager, [this](){
+        airlinkManager->addAirlink(this);
+    });
+    connect(this, &Airlink::connected, this, &Airlink::connectVideo);
+
+    connect(this, &Airlink::disconnected, airlinkManager, [this](){
+        qCDebug(AirlinkLog) << "disconnect video check for ours";
+        qCDebug(AirlinkLog) << "Disconnect video?";
+        if (airlinkManager->getAsbProcess().state() != QProcess::NotRunning) {
+            airlinkManager->blockUI();
+            qCDebug(AirlinkLog) << "Disconnect video";
+            airlinkManager->closePeer();
+        }
+    });
+    connect(this, &Airlink::disconnected, airlinkManager, [this](){
+        airlinkManager->removeAirlink(this);
+    });
 
 
-    connect(this, &Airlink::connected, this, &Airlink::retranslateSelfConnected, Qt::DirectConnection);
-    connect(this, &Airlink::disconnected, this, &Airlink::retranslateSelfDisconnected, Qt::DirectConnection);
-    connect(this, &Airlink::airlinkConnected, airlinkManager, &AirlinkManager::addAirlink);
-    connect(this, &Airlink::airlinkDisconnected, airlinkManager, &AirlinkManager::removeAirlink);
+    connect(this, &Airlink::blockUI, airlinkManager, &AirlinkManager::blockUI);
 #endif
 }
 
@@ -241,10 +254,13 @@ void Airlink::retranslateSelfDisconnected() {
     emit airlinkDisconnected(this);
 }
 
-void Airlink::connectVideo(Airlink* airlink) {
-    if(airlink != this) {
+void Airlink::connectVideo() {
+    if(!isConnected())
         return;
-    }
+    if(asbEnabled == nullptr)
+        asbEnabled = airlinkManager->getAsbEnabled();
+    if(asbPort == nullptr)
+        asbPort = airlinkManager->getPort();
     if ((airlinkManager->getAsbProcess().state() == QProcess::Running) && asbEnabled->rawValue().toBool()) {
         qCDebug(AirlinkLog) << "asb is on";
         auto configuration = std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
@@ -256,29 +272,27 @@ void Airlink::connectVideo(Airlink* airlink) {
 
         if(!webtrcReceiverCreated) {
             qCDebug(AirlinkLog()) << "Airlink video connecting for " << configuration->modemName();
-            airlinkManager->blockUI();
+            emit blockUI();
 
             emit  airlinkManager->createWebrtcDefault(AirlinkManager::airlinkHost, configuration->modemName(), configuration->password(), asbPort->rawValue().toUInt());
         }
         else {
-            airlinkManager->blockUI();
+            emit blockUI();
             emit airlinkManager->openPeer();
         }
     }
-    else if ((airlinkManager->getAsbProcess().state() != QProcess::Running)){
+    else if ((airlinkManager->getAsbProcess().state() != QProcess::Running) && asbEnabled){
         asbEnabled->setRawValue(false);
         qCDebug(AirlinkLog) << "Airlink AirlinkStreamBridge didn't run";
     }
 }
 
-void Airlink::disconnectVideo(Airlink* airlink) {
-    if(airlink != this) {
-        return;
-    }
-    qDebug() << "Disconnect video?";
+void Airlink::disconnectVideo() {
+    qCDebug(AirlinkLog) << "disconnect video check for ours";
+    qCDebug(AirlinkLog) << "Disconnect video?";
     if (airlinkManager->getAsbProcess().state() != QProcess::NotRunning) {
-        airlinkManager->blockUI();
-        qDebug() << "Disconnect video";
+        emit blockUI();
+        qCDebug(AirlinkLog) << "Disconnect video";
         emit airlinkManager->closePeer();
     }
 }

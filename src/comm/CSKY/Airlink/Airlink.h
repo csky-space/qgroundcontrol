@@ -1,6 +1,8 @@
 #ifndef AIRLINK_H
 #define AIRLINK_H
 
+#include <QNetworkReply>
+
 #include <UDPLink.h>
 
 class Fact;
@@ -49,10 +51,11 @@ private:
 signals:
     void airlinkConnected(Airlink* link = nullptr);
     void airlinkDisconnected(Airlink* link = nullptr);
+    void blockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
 private slots:
 
-    void connectVideo(Airlink* airlink = nullptr);
-    void disconnectVideo(Airlink* airlink = nullptr);
+    void connectVideo();
+    void disconnectVideo();
 public slots:
     void retranslateSelfConnected();
     void retranslateSelfDisconnected();

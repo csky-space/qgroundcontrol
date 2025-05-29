@@ -117,7 +117,7 @@ void AirlinkManager::restartASBProcess() {
     qCDebug(AirlinkManagerLog) << "Starting AirlinkStreamBridge...";
     asbProcess.start();
     asbProcess.waitForStarted(3000);
-    thread()->sleep(1000);
+    //thread()->sleep(1000);
     if(asbEnabled->rawValue().toBool()) {
         emit asbEnabledTrue(lastConnectedModem);
     }
@@ -134,6 +134,13 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
     videoSource = toolbox->settingsManager()->videoSettings()->videoSource();
     
     qgcVideoManager = toolbox->videoManager();
+    auto linkManager = toolbox->linkManager();
+    for(auto link : linkManager->links()) {
+        if(std::shared_ptr<Airlink> airlink = std::dynamic_pointer_cast<Airlink>(link)) {
+            airlink->setAsbEnabled(asbEnabled);
+            airlink->setAsbPort(asbPort);
+        }
+    }
 
     for(auto airlinkIt = modems.keyValueBegin(); airlinkIt != modems.keyValueEnd(); ++airlinkIt) {
         airlinkIt->second->setAsbEnabled(asbEnabled);
@@ -496,16 +503,19 @@ void AirlinkManager::unblockUI(QByteArray replyData, QNetworkReply::NetworkError
 void AirlinkManager::addAirlink(Airlink* airlink) {
     if(airlink) {
 
-        QString modemName = airlink->getConfig()->modemName();
-        if(!modems.contains(modemName)) {
-            if(lastConnectedModem && lastConnectedModem->isConnected())
-                lastConnectedModem->disconnect();
-            modems[modemName] = airlink;
-            lastConnectedModem = airlink;
-            lastConnectedModem->setAsbEnabled(asbEnabled);
-            lastConnectedModem->setAsbPort(asbPort);
-            emit onConnectedAirlinkAdded(airlink);
-        }
+        //QString modemName = airlink->getConfig()->modemName();
+        //if(!modems.contains(modemName)) {
+        //    if(lastConnectedModem && lastConnectedModem->isConnected())
+        //        lastConnectedModem->disconnect();
+        //    modems[modemName] = airlink;
+        //    lastConnectedModem = airlink;
+        //    lastConnectedModem->setAsbEnabled(asbEnabled);
+        //    lastConnectedModem->setAsbPort(asbPort);
+        //    emit onConnectedAirlinkAdded(airlink);
+        //}
+        if(lastConnectedModem && lastConnectedModem->isConnected())
+            lastConnectedModem->disconnect();
+        lastConnectedModem = airlink;
     }
 
 }
@@ -514,12 +524,12 @@ void AirlinkManager::removeAirlink(Airlink* airlink) {
     qDebug() << "remove airlink?";
     if(airlink) {
         lastConnectedModem = nullptr;
-        QString modemName = airlink->getConfig()->modemName();
-        if(modems.contains(modemName)) {
-            qDebug() << "removing airlink";
-            modems.remove(modemName);
-            emit onDisconnectedAirlinkRemoved(airlink);
-        }
+        //QString modemName = airlink->getConfig()->modemName();
+        //if(modems.contains(modemName)) {
+        //    qCDebug(AirlinkManagerLog) << "removing airlink";
+        //    modems.remove(modemName);
+        //    emit onDisconnectedAirlinkRemoved(airlink);
+        //}
     }
 }
 
