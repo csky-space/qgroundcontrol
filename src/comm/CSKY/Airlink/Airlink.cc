@@ -269,7 +269,7 @@ void Airlink::connectVideo() {
 #ifndef __ANDROID__
     if(airlinkManager->getAsbProcess().state() != QProcess::Running)
         return;
-#else
+#endif
     if (asbEnabled->rawValue().toBool()) {
         qCDebug(AirlinkLog) << "asb is on";
         auto configuration = std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
@@ -290,7 +290,6 @@ void Airlink::connectVideo() {
             emit airlinkManager->openPeer();
         }
     }
-#endif
 }
 
 void Airlink::disconnectVideo() {
