@@ -351,8 +351,9 @@ void AirlinkManager::_setConnects() {
 
     connect(&manager, &AirlinkStreamBridgeManager::closePeerCompleted, this, &AirlinkManager::unblockUI);
 
-    connect(&manager, &AirlinkStreamBridgeManager::closePeerCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
+    connect(&manager, &AirlinkStreamBridgeManager::closePeerCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
         qCDebug(AirlinkManagerLog) << "peer closed";
+        emit closePeerCompleted();
     });
 
     connect(&manager, &AirlinkStreamBridgeManager::checkAliveCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err) {
@@ -503,17 +504,6 @@ void AirlinkManager::unblockUI(QByteArray replyData, QNetworkReply::NetworkError
 
 void AirlinkManager::addAirlink(Airlink* airlink) {
     if(airlink) {
-
-        //QString modemName = airlink->getConfig()->modemName();
-        //if(!modems.contains(modemName)) {
-        //    if(lastConnectedModem && lastConnectedModem->isConnected())
-        //        lastConnectedModem->disconnect();
-        //    modems[modemName] = airlink;
-        //    lastConnectedModem = airlink;
-        //    lastConnectedModem->setAsbEnabled(asbEnabled);
-        //    lastConnectedModem->setAsbPort(asbPort);
-        //    emit onConnectedAirlinkAdded(airlink);
-        //}
         if(lastConnectedModem && lastConnectedModem->isConnected())
             lastConnectedModem->disconnect();
         lastConnectedModem = airlink;
@@ -525,12 +515,6 @@ void AirlinkManager::removeAirlink(Airlink* airlink) {
     qDebug() << "remove airlink?";
     if(airlink) {
         lastConnectedModem = nullptr;
-        //QString modemName = airlink->getConfig()->modemName();
-        //if(modems.contains(modemName)) {
-        //    qCDebug(AirlinkManagerLog) << "removing airlink";
-        //    modems.remove(modemName);
-        //    emit onDisconnectedAirlinkRemoved(airlink);
-        //}
     }
 }
 

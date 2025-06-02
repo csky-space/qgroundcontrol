@@ -94,7 +94,7 @@ Rectangle {
         QGCButton {
             width:      ScreenTools.defaultFontPixelWidth * 10
             text:       qsTr("Delete")
-            enabled:    _currentSelection && !_currentSelection.dynamic
+            enabled:    _currentSelection && !_currentSelection.dynamic && !QGroundControl.airlinkManager.fullBlock
             onClicked:  deleteDialog.visible = true
 
             MessageDialog {
@@ -115,21 +115,22 @@ Rectangle {
         }
         QGCButton {
             text:       qsTr("Edit")
-            enabled:    _currentSelection && !_currentSelection.link
+            enabled:    _currentSelection && !_currentSelection.link && !QGroundControl.airlinkManager.fullBlock
             onClicked:  _linkRoot.openCommSettings(_currentSelection)
         }
         QGCButton {
             text:       qsTr("Add")
             onClicked:  _linkRoot.openCommSettings(null)
+            enabled:    !QGroundControl.airlinkManager.fullBlock
         }
         QGCButton {
             text:       qsTr("Connect")
-            enabled:    _currentSelection && !_currentSelection.link
+            enabled:    _currentSelection && !_currentSelection.link && !QGroundControl.airlinkManager.fullBlock
             onClicked:  QGroundControl.linkManager.createConnectedLink(_currentSelection)
         }
         QGCButton {
             text:       qsTr("Disconnect")
-            enabled:    _currentSelection && _currentSelection.link
+            enabled:    _currentSelection && _currentSelection.link && !QGroundControl.airlinkManager.fullBlock
             onClicked:  {
                 _currentSelection.link.disconnect()
                 _currentSelection.linkChanged()

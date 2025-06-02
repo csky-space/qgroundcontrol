@@ -33,11 +33,14 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
     connect(this, &Airlink::disconnected, airlinkManager, [this](){
         qCDebug(AirlinkLog) << "disconnect video check for ours";
         qCDebug(AirlinkLog) << "Disconnect video?";
-        if (airlinkManager->getAsbProcess().state() != QProcess::NotRunning) {
-            airlinkManager->blockUI();
-            qCDebug(AirlinkLog) << "Disconnect video";
-            airlinkManager->closePeer();
+#ifndef __ANDROID__
+        if (airlinkManager->getAsbProcess().state() == QProcess::NotRunning) {
+            return
         }
+#endif
+        emit blockUI();
+        qCDebug(AirlinkLog) << "Disconnect video";
+        emit airlinkManager->closePeer();
     });
     connect(this, &Airlink::disconnected, airlinkManager, [this](){
         airlinkManager->removeAirlink(this);
@@ -54,6 +57,7 @@ Airlink::~Airlink()
 
 void Airlink::disconnect()
 {
+    setWebrtcCreated(false);
     qCDebug(AirlinkLog) << "Disconnecting airlink telemetry\n";
 
 
@@ -195,7 +199,7 @@ bool Airlink::_connect()
 
 void Airlink::_configureUdpSettings()
 {
-    quint16 availablePort = 14550;
+    static quint16 availablePort = 14550;
     QUdpSocket udpSocket;
     while (!udpSocket.bind(QHostAddress::LocalHost, availablePort))
         availablePort++;
@@ -203,6 +207,7 @@ void Airlink::_configureUdpSettings()
     udpConfig->addHost(AirlinkManager::airlinkHost, AirlinkManager::airlinkPort);
     udpConfig->setLocalPort(availablePort);
     udpConfig->setDynamic(false);
+    availablePort += 1;
 }
 
 void Airlink::_sendLoginMsgToAirLink()
@@ -262,26 +267,8 @@ void Airlink::connectVideo() {
     if(asbPort == nullptr)
         asbPort = airlinkManager->getPort();
 #ifndef __ANDROID__
-    if ((airlinkManager->getAsbProcess().state() == QProcess::Running) && asbEnabled->rawValue().toBool()) {
-        qCDebug(AirlinkLog) << "asb is on";
-        auto configuration = std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
-        if(!configuration) {
-            asbEnabled->setRawValue(false);
-            qCDebug(AirlinkLog) << "Airlink configuration doesn't exist yet";
-            return;
-        }
-
-        if(!webtrcReceiverCreated) {
-            qCDebug(AirlinkLog()) << "Airlink video connecting for " << configuration->modemName();
-            emit blockUI();
-
-            emit  airlinkManager->createWebrtcDefault(AirlinkManager::airlinkHost, configuration->modemName(), configuration->password(), asbPort->rawValue().toUInt());
-        }
-        else {
-            emit blockUI();
-            emit airlinkManager->openPeer();
-        }
-    }
+    if(airlinkManager->getAsbProcess().state() != QProcess::Running)
+        return;
 #else
     if (asbEnabled->rawValue().toBool()) {
         qCDebug(AirlinkLog) << "asb is on";
@@ -310,10 +297,8 @@ void Airlink::disconnectVideo() {
     qCDebug(AirlinkLog) << "disconnect video check for ours";
     qCDebug(AirlinkLog) << "Disconnect video?";
 #ifndef __ANDROID__
-    if (airlinkManager->getAsbProcess().state() != QProcess::NotRunning) {
-        emit blockUI();
-        qCDebug(AirlinkLog) << "Disconnect video";
-        emit airlinkManager->closePeer();
+    if (airlinkManager->getAsbProcess().state() == QProcess::NotRunning) {
+        return;
     }
 #else
     emit blockUI();

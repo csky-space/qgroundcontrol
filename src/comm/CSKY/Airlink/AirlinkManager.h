@@ -87,6 +87,7 @@ signals:
     void isWebrtcReceiverConnected();
     void openPeer();
     void closePeer();
+    void closePeerCompleted();
 
     void asbEnabledTrue(Airlink* airlink);
     void asbEnabledFalse(Airlink* airlink);
