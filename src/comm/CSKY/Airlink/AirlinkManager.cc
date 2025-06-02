@@ -52,7 +52,9 @@ const QString AirlinkManager::airlinkHost = airlinkHostPrefix + "air-link.space"
 
 AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)
     : QGCTool(app, toolbox)
+#ifdef __ANDROID__
     , serverController("com/csky/airlinkstreambridge/mobile/ServerController")
+#endif
     , connectTelemetryManager(this)
     , asbProcess(this)
 {

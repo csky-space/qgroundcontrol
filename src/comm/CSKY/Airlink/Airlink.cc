@@ -35,7 +35,7 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
         qCDebug(AirlinkLog) << "Disconnect video?";
 #ifndef __ANDROID__
         if (airlinkManager->getAsbProcess().state() == QProcess::NotRunning) {
-            return
+            return;
         }
 #endif
         emit blockUI();
