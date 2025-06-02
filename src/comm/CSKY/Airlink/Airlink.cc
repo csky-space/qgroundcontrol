@@ -261,6 +261,7 @@ void Airlink::connectVideo() {
         asbEnabled = airlinkManager->getAsbEnabled();
     if(asbPort == nullptr)
         asbPort = airlinkManager->getPort();
+#ifndef __ANDROID__
     if ((airlinkManager->getAsbProcess().state() == QProcess::Running) && asbEnabled->rawValue().toBool()) {
         qCDebug(AirlinkLog) << "asb is on";
         auto configuration = std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
@@ -281,20 +282,44 @@ void Airlink::connectVideo() {
             emit airlinkManager->openPeer();
         }
     }
-    else if ((airlinkManager->getAsbProcess().state() != QProcess::Running) && asbEnabled){
-        asbEnabled->setRawValue(false);
-        qCDebug(AirlinkLog) << "Airlink AirlinkStreamBridge didn't run";
+#else
+    if (asbEnabled->rawValue().toBool()) {
+        qCDebug(AirlinkLog) << "asb is on";
+        auto configuration = std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
+        if(!configuration) {
+            asbEnabled->setRawValue(false);
+            qCDebug(AirlinkLog) << "Airlink configuration doesn't exist yet";
+            return;
+        }
+
+        if(!webtrcReceiverCreated) {
+            qCDebug(AirlinkLog()) << "Airlink video connecting for " << configuration->modemName();
+            emit blockUI();
+
+            emit  airlinkManager->createWebrtcDefault(AirlinkManager::airlinkHost, configuration->modemName(), configuration->password(), asbPort->rawValue().toUInt());
+        }
+        else {
+            emit blockUI();
+            emit airlinkManager->openPeer();
+        }
     }
+#endif
 }
 
 void Airlink::disconnectVideo() {
     qCDebug(AirlinkLog) << "disconnect video check for ours";
     qCDebug(AirlinkLog) << "Disconnect video?";
+#ifndef __ANDROID__
     if (airlinkManager->getAsbProcess().state() != QProcess::NotRunning) {
         emit blockUI();
         qCDebug(AirlinkLog) << "Disconnect video";
         emit airlinkManager->closePeer();
     }
+#else
+    emit blockUI();
+    qCDebug(AirlinkLog) << "Disconnect video";
+    emit airlinkManager->closePeer();
+#endif
 }
 
 void Airlink::asbClosed(Airlink* airlink) {

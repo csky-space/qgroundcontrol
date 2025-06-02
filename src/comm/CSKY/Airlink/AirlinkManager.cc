@@ -38,7 +38,10 @@
 QGC_LOGGING_CATEGORY(AirlinkManagerLog, "AirlinkManagerLog")
 
 
+
 namespace CSKY {
+
+
 
 #if defined(QGC_AIRLINK_STAGE)
     const QString AirlinkManager::airlinkHostPrefix = "stage.";
@@ -49,51 +52,24 @@ const QString AirlinkManager::airlinkHost = airlinkHostPrefix + "air-link.space"
 
 AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)
     : QGCTool(app, toolbox)
+    , serverController("com/csky/airlinkstreambridge/mobile/ServerController")
     , connectTelemetryManager(this)
     , asbProcess(this)
 {
-    qCDebug(AirlinkManagerLog) << "airlink host on: " << AirlinkManager::airlinkHost;
-    setFullBlock(false);
-    emit fullBlockChanged(false);
+
+    qDebug(AirlinkManagerLog) << "airlink host on: " << AirlinkManager::airlinkHost;
+
 #ifdef __ANDROID__
-
-#ifdef __arm__
-    QFile sourceFile(":/assets/ASB/resources/AirlinkStreamBridge_armeabi-v7a");
-#elif __aarch64__
-    QFile sourceFile(":/assets/ASB/resources/AirlinkStreamBridge_arm64-v8a");
-#elif __i386__
-    QFile sourceFile(":/assets/ASB/resources/AirlinkStreamBridge_x86");
-#endif
-    asbPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/AirlinkStreamBridge";
-    if (sourceFile.open(QIODevice::ReadOnly)) {
-        QFile targetFile(asbPath);
-        if (targetFile.open(QIODevice::WriteOnly)) {
-            targetFile.write(sourceFile.readAll());
-            targetFile.close();
-
-            if (QFile::setPermissions(asbPath, QFileDevice::ExeUser | QFileDevice::ReadUser)) {
-                qCDebug(AirlinkManagerLog) << "File successfully copied to: " << asbPath;
-            } else {
-                qCWarning(AirlinkManagerLog) << "Failed attempt to set permissions for: " << asbPath;
-            }
-        } else {
-            qCWarning(AirlinkManagerLog) << "Unable to open file: " << asbPath;
-        }
-        sourceFile.close();
-    } else {
-        qCWarning(AirlinkManagerLog) << "Unable to open file from assets: " << sourceFile.fileName();
-    }
+    startAndroidASB();
 #else
     asbPath = QCoreApplication::applicationDirPath() + QDir::separator() +  "AirlinkStreamBridge";
-#endif
-
     asbProcess.setProcessEnvironment(QProcessEnvironment::systemEnvironment());
     asbProcess.setStandardInputFile(QProcess::nullDevice());
     asbProcess.setProcessChannelMode(QProcess::SeparateChannels);
-    //asbProcess.setProgram(asbPath);
-    QProcess::execute("chmod 755 " + asbPath, {});
-    asbProcess.setProgram(asbPath);
+    QProcess::execute("chmod", {"755", asbPath});
 
+    asbProcess.setProgram(asbPath);
+#endif
 
     requestsThread = new QThread();
     manager.moveToThread(requestsThread);
@@ -101,14 +77,26 @@ AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)
 }
 
 AirlinkManager::~AirlinkManager() {
+#ifndef __ANDROID__
     stopWatchdog();
     if (asbProcess.state() != QProcess::NotRunning) {
         asbProcess.terminate();
         asbProcess.waitForFinished();
     }
+#else
+    serverController.callMethod<void>("close");
+#endif
 }
 
+#ifdef __ANDROID__
+
+void AirlinkManager::startAndroidASB() const {
+    serverController.callMethod<void>("start");
+}
+#endif
+
 void AirlinkManager::restartASBProcess() {
+#ifndef __ANDROID__
     if (asbProcess.state() != QProcess::NotRunning) {
         asbProcess.terminate();
         asbProcess.waitForFinished();
@@ -116,11 +104,10 @@ void AirlinkManager::restartASBProcess() {
 
     qCDebug(AirlinkManagerLog) << "Starting AirlinkStreamBridge...";
     asbProcess.start();
-    asbProcess.waitForStarted(3000);
-    //thread()->sleep(1000);
-    if(asbEnabled->rawValue().toBool()) {
-        emit asbEnabledTrue(lastConnectedModem);
-    }
+#else
+    startAndroidASB();
+#endif
+
 }
 
 void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
@@ -132,7 +119,7 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
 
     videoUDPPort = toolbox->settingsManager()->videoSettings()->udpPort();
     videoSource = toolbox->settingsManager()->videoSettings()->videoSource();
-    
+
     qgcVideoManager = toolbox->videoManager();
     auto linkManager = toolbox->linkManager();
     for(auto link : linkManager->links()) {
@@ -158,9 +145,9 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
     connect(asbPort, &Fact::rawValueChanged, this, &AirlinkManager::setupPort);
     connect(asbAutotune, &Fact::rawValueChanged, this, &AirlinkManager::asbAutotuneChanged);
 
-
+#ifndef __ANDROID__
     asbProcess.start();
-    asbProcess.waitForStarted(2000);
+    asbProcess.waitForStarted(4000);
     if ((asbProcess.error() == QProcess::FailedToStart) ||
         (asbProcess.error() == QProcess::Crashed) ||
         (asbProcess.state() == QProcess::NotRunning)) {
@@ -192,19 +179,25 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
 
 
 
+
+
+#endif
     watchdogTimer = new QTimer(this);
     watchdogTimer->setInterval(5000);
 
     auto asbProcessWatchdog = connect(watchdogTimer, &QTimer::timeout, this, &AirlinkManager::checkAndRestartASB);
     QObject::connect(qApp, &QCoreApplication::aboutToQuit, [asbProcessWatchdog, this]() {
         qCDebug(AirlinkManagerLog) << "off watchdog on quiting...";
+#ifndef __ANDROID__
         asbProcess.kill();
         asbProcess.waitForFinished();
+#else
+        serverController.callMethod<void>("close");
+#endif
         QObject::disconnect(asbProcessWatchdog);
     });
     startWatchdog();
     _setConnects();
-
     QTimer::singleShot(0, this, [this]() {
         if(asbEnabled->rawValue().toBool()) {
             asbEnabledChanged(asbEnabled->rawValue());
@@ -319,7 +312,7 @@ void AirlinkManager::_setConnects() {
         if(err != QNetworkReply::NoError) {
             QMutexLocker locker(&processMutex);
 
-            qCDebug(AirlinkManagerLog) << "[Watchdog] HTTP server unreachable. Restarting ASB...";
+            qCDebug(AirlinkManagerLog) << "[Watchdog] HTTP server unreachable. " << "Error: " << err <<  "Restarting ASB...";
             isRestarting = true;
             restartASBProcess();
             isRestarting = false;
@@ -344,7 +337,7 @@ void AirlinkManager::_setConnects() {
 
         }else {
             lastConnectedModem->setWebrtcCreated(false);
-            qCDebug(AirlinkManagerLog) << "create webrtc failed: " << replyData;
+            qCDebug(AirlinkManagerLog) << "create webrtc failed: " << replyData << ". err: " << err;
         }
 
     });
@@ -366,6 +359,8 @@ void AirlinkManager::_setConnects() {
         if(lastConnectedModem)
             lastConnectedModem->setWebrtcCreated(false);
     });
+    setFullBlock(false);
+    emit fullBlockChanged(false);
 }
 
 void AirlinkManager::_parseAnswer(const QByteArray &ba) {
@@ -457,8 +452,9 @@ void AirlinkManager::checkAndRestartASB() {
     if (isRestarting) {
         return;
     }
-
+#ifndef __ANDROID__
     if (asbProcess.state() != QProcess::Running) {
+        asbEnabled->setRawValue(false);
         emit asbClosed(lastConnectedModem);
         qCDebug(AirlinkManagerLog) << "[Watchdog] ASB process not running. Restarting...";
         isRestarting = true;
@@ -466,7 +462,12 @@ void AirlinkManager::checkAndRestartASB() {
         isRestarting = false;
         return;
     }
-
+    else {
+        if(lastConnectedModem && lastConnectedModem->isConnected() && !lastConnectedModem->webrtcCreated() && !asbEnabled->rawValue().toBool()) {
+            asbEnabled->setRawValue(true);
+        }
+    }
+#endif
     emit checkAlive();
 }
 

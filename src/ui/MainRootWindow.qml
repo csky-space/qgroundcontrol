@@ -194,6 +194,10 @@ ApplicationWindow {
     property bool _forceClose: false
 
     function finishCloseProcess() {
+        console.log("stopping watch")
+        QGroundControl.airlinkManager.stopWatchdog()
+        QGroundControl.airlinkManager.terminateASB()
+        console.log("watch stopped")
         _forceClose = true
         // For some reason on the Qml side Qt doesn't automatically disconnect a signal when an object is destroyed.
         // So we have to do it ourselves otherwise the signal flows through on app shutdown to an object which no longer exists.
@@ -250,11 +254,6 @@ ApplicationWindow {
             close.accepted = false
             checkForUnsavedMission()
         }
-        console.log("stopping watch")
-        QGroundControl.airlinkManager.stopWatchdog()
-        QGroundControl.airlinkManager.terminateASB()
-        console.log("watch stopped")
-
     }
 
     //-------------------------------------------------------------------------

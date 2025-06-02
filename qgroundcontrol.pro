@@ -28,17 +28,11 @@ contains(QMAKE_COMPILER, gcc) {
 }
 
 contains(DEFINES, QGC_AIRLINK_ENABLED) {
-
+android {
+    QT += androidextras
+}
     include($$PWD/src/comm/CSKY/AirlinkStreamBridge.pri)
-    android {
-        contains(ANDROID_TARGET_ARCH, arm64-v8a) {
-            RESOURCES += $$PWD/src/comm/CSKY/Android/arm64-v8a/Airlink.qrc
-        }else:contains(ANDROID_TARGET_ARCH, armeabi-v7a){
-            RESOURCES += $$PWD/src/comm/CSKY/Android/armeabi-v7a/Airlink.qrc
-        }else:contains(ANDROID_TARGET_ARCH, x86) {
-            RESOURCES += $$PWD/src/comm/CSKY/Android/x86/Airlink.qrc
-        }
-    }
+
     QMAKE_EXTRA_COMPILERS += go_target
 }
 #------------------------------------------------------------------------------------------------

@@ -16,6 +16,15 @@
 #include <QProcess>
 #include <QNetworkAccessManager>
 
+#ifdef __ANDROID__
+
+
+#include <QtAndroid>
+#include <QAndroidJniEnvironment>
+#include <QAndroidJniObject>
+#endif
+
+
 #include <Fact.h>
 #include <QGCToolbox.h>
 
@@ -54,7 +63,9 @@ public:
 
 	explicit AirlinkManager(QGCApplication *app, QGCToolbox *toolbox);
 	~AirlinkManager() override;
-
+#ifdef __ANDROID__
+    void startAndroidASB() const;
+#endif
     void restartASBProcess();
     void checkAirlinkService();
 
@@ -95,6 +106,9 @@ private:
 	void _processReplyAirlinkServer(QNetworkReply &reply);
 	void _findAirlinkConfiguration();
 private:
+#ifdef __ANDROID__
+    QAndroidJniObject serverController;
+#endif
     QMutex modemsModifyMutex;
     QNetworkAccessManager connectTelemetryManager;
     std::atomic<bool> _fullBlockUI;

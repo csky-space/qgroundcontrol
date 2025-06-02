@@ -18,4 +18,5 @@ class AndroidInterface
 {
 public:
     static QString getSDCardPath();
+    static bool checkStoragePermission();
 };
