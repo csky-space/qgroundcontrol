@@ -436,7 +436,7 @@ GstVideoReceiver::startDecoding(void* sink)
 
     if (!_streaming) {
         _dispatchSignal([this](){
-            emit onStartDecodingComplete(STATUS_FAIL);
+            emit onStartDecodingComplete(STATUS_INVALID_STATE);
         });
         return;
     }
