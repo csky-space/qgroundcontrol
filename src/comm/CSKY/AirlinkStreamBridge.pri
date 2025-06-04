@@ -4,9 +4,9 @@ MAIN_PWD = $$PWD/../../..
 GO_SRC_DIR = $$PWD/AirlinkStreamBridge
 GO_SRC = $$GO_SRC_DIR/main.go
 !android {
-    GO_OUT_BASE = $$OUT_PWD/AirlinkStreamBridge
+    GO_OUT_BASE = $$OUT_PWD/
 } else {
-    GO_OUT_BASE = $$MAIN_PWD/android/libs/AirlinkStreamBridge
+    GO_OUT_BASE = $$MAIN_PWD/android/libs/
 }
 GO_FILES = $$files($$GO_SRC_DIR/*.go, true)
 
@@ -18,7 +18,7 @@ win32 {
     GO_EXT =
 }
 GO_EXECUTABLE_NAME="AirlinkStreamBridge$$GO_EXT"
-GO_OUT_FULL = $$GO_OUT_BASE$$GO_EXT
+GO_OUT_FULL = $$GO_OUT_BASE$$GO_EXECUTABLE_NAME
 
 go_target.name = AirlinkStreamBridgeCompiler
 go_target.input = GO_FILES
@@ -55,7 +55,15 @@ export(go_target)
 
 
 HEADERS += \
+    src/comm/CSKY/Airlink/AirlinkConfiguration.h \
+    src/comm/CSKY/Airlink/AirlinkManager.h \
+    src/comm/CSKY/Airlink/airlinkstreambridgemanager.h \
+    src/Settings/AirlinkStreamBridgeSettings.h \
     $$PWD/Airlink/Airlink.h
 
 SOURCES += \
+    src/Settings/AirlinkStreamBridgeSettings.cc \
+    src/comm/CSKY/Airlink/AirlinkConfiguration.cc \
+    src/comm/CSKY/Airlink/AirlinkManager.cc \
+    src/comm/CSKY/Airlink/airlinkstreambridgemanager.cc \
     $$PWD/Airlink/Airlink.cc

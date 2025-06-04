@@ -19,23 +19,21 @@ DEFINES += QGC_GST_MICROHARD_DISABLED
 DEFINES += QGC_AIRLINK_ENABLED
 
 #--AirlinkStreamBridge build----------------------------------------
-contains(QMAKE_COMPILER, gcc) {
-    !android{
-        QMAKE_LFLAGS += -fuse-ld=lld
-        QMAKE_CXXFLAGS += -fuse-ld=lld
-        QMAKE_LD = lld
-    }
-}
-
 contains(DEFINES, QGC_AIRLINK_ENABLED) {
-android {
-    QT += androidextras
-}
+    contains(QMAKE_COMPILER, gcc) {
+        !android{
+            QMAKE_LFLAGS += -fuse-ld=lld
+            QMAKE_CXXFLAGS += -fuse-ld=lld
+            QMAKE_LD = lld
+        }
+    }
+
+
     include($$PWD/src/comm/CSKY/AirlinkStreamBridge.pri)
 
     QMAKE_EXTRA_COMPILERS += go_target
 }
-#------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------
 
 exists($${OUT_PWD}/qgroundcontrol.pro) {
     error("You must use shadow build (e.g. mkdir build; cd build; qmake ../qgroundcontrol.pro).")
@@ -790,12 +788,6 @@ HEADERS += \
     src/AnalyzeView/GeoTagController.h \
     src/AnalyzeView/ExifParser.h \
 
-contains(DEFINES, QGC_AIRLINK_ENABLED) {
-    HEADERS +=  src/comm/CSKY/Airlink/AirlinkConfiguration.h \
-                src/comm/CSKY/Airlink/AirlinkManager.h \
-                src/comm/CSKY/Airlink/airlinkstreambridgemanager.h \
-                src/Settings/AirlinkStreamBridgeSettings.h \
-}
 contains (DEFINES, QGC_ENABLE_PAIRING) {
     HEADERS += \
         src/PairingManager/PairingManager.h \
@@ -1056,13 +1048,6 @@ SOURCES += \
     src/uas/UASMessageHandler.cc \
     src/AnalyzeView/GeoTagController.cc \
     src/AnalyzeView/ExifParser.cc \
-
-contains(DEFINES, QGC_AIRLINK_ENABLED) {
-    SOURCES +=  src/Settings/AirlinkStreamBridgeSettings.cc \
-                src/comm/CSKY/Airlink/AirlinkConfiguration.cc \
-                src/comm/CSKY/Airlink/AirlinkManager.cc \
-                src/comm/CSKY/Airlink/airlinkstreambridgemanager.cc \
-}
 
 contains (DEFINES, QGC_ENABLE_PAIRING) {
     SOURCES += \
