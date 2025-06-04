@@ -28,6 +28,11 @@ public:
     void setAsbEnabled(Fact* asbEnabled);
     void setAsbPort(Fact* asbPort);
 private:
+    QMetaObject::Connection* onAddAirlinkConnection = new QMetaObject::Connection;
+    QMetaObject::Connection* onRemoveAirlinkConnection = new QMetaObject::Connection;
+    void setConnections();
+    void unsetConnections();
+
     bool webtrcReceiverCreated = false;
     QMutex _mutex;
     /// Access this varible only with _mutex locked
@@ -38,7 +43,6 @@ private:
     Fact* asbEnabled = nullptr;
     Fact* asbPort = nullptr;
 
-    void findSelf();
     /// LinkInterface overrides
     bool _connect(void) override;
 
@@ -46,8 +50,6 @@ private:
     void _sendLoginMsgToAirLink();
     bool _stillConnecting();
     void _setConnectFlag(bool connect);
-
-
 signals:
     void airlinkConnected(Airlink* link = nullptr);
     void airlinkDisconnected(Airlink* link = nullptr);
@@ -57,8 +59,6 @@ private slots:
     void connectVideo();
     void disconnectVideo();
 public slots:
-    void retranslateSelfConnected();
-    void retranslateSelfDisconnected();
     void asbClosed(Airlink* airlink);
 };
 }

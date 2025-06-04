@@ -20,34 +20,6 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
 #ifdef QGC_AIRLINK_ENABLED
     airlinkManager = qgcApp()->toolbox()->airlinkManager();
     asbManager = &airlinkManager->getASBManager();
-
-    connect(airlinkManager, &AirlinkManager::asbClosed, this, &Airlink::asbClosed);
-    connect(airlinkManager, &AirlinkManager::asbEnabledTrue, this, &Airlink::connectVideo);
-    connect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
-
-    connect(this, &Airlink::connected, airlinkManager, [this](){
-        airlinkManager->addAirlink(this);
-    });
-    connect(this, &Airlink::connected, this, &Airlink::connectVideo);
-
-    connect(this, &Airlink::disconnected, airlinkManager, [this](){
-        qCDebug(AirlinkLog) << "disconnect video check for ours";
-        qCDebug(AirlinkLog) << "Disconnect video?";
-#ifndef __ANDROID__
-        if (airlinkManager->getAsbProcess().state() == QProcess::NotRunning) {
-            return;
-        }
-#endif
-        emit blockUI();
-        qCDebug(AirlinkLog) << "Disconnect video";
-        emit airlinkManager->closePeer();
-    });
-    connect(this, &Airlink::disconnected, airlinkManager, [this](){
-        airlinkManager->removeAirlink(this);
-    });
-
-
-    connect(this, &Airlink::blockUI, airlinkManager, &AirlinkManager::blockUI);
 #endif
 }
 
@@ -63,6 +35,7 @@ void Airlink::disconnect()
 
     _setConnectFlag(false);
     UDPLink::disconnect();
+    unsetConnections();
 }
 
 std::shared_ptr<AirlinkConfiguration> Airlink::getConfig() const {
@@ -85,86 +58,55 @@ void Airlink::setAsbPort(Fact* asbPort) {
     this->asbPort = asbPort;
 }
 
-static bool is_ip(const QString& address)
-{
-    QHostAddress addr;
+void Airlink::setConnections() {
+#ifdef QGC_AIRLINK_ENABLED
+    connect(airlinkManager, &AirlinkManager::asbClosed, this, &Airlink::asbClosed);
+    connect(airlinkManager, &AirlinkManager::asbEnabledTrue, this, &Airlink::connectVideo);
+    connect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
 
-    return addr.setAddress(address);
+    *onAddAirlinkConnection = connect(this, &Airlink::connected, airlinkManager, [this](){
+        airlinkManager->addAirlink(this);
+    });
+    connect(this, &Airlink::connected, this, &Airlink::connectVideo);
+    *onRemoveAirlinkConnection = connect(this, &Airlink::disconnected, airlinkManager, [this](){
+        qCDebug(AirlinkLog) << "disconnect video check for ours";
+        qCDebug(AirlinkLog) << "Disconnect video?";
+#ifndef __ANDROID__
+        if (airlinkManager->getAsbProcess().state() == QProcess::NotRunning) {
+            return;
+        }
+#endif
+        emit blockUI();
+        qCDebug(AirlinkLog) << "Disconnect video";
+        emit airlinkManager->closePeer();
+    });
+    connect(this, &Airlink::disconnected, airlinkManager, [this](){
+        airlinkManager->removeAirlink(this);
+    });
+
+
+    connect(this, &Airlink::blockUI, airlinkManager, &AirlinkManager::blockUI);
+#endif
 }
 
-static QString get_ip_address(const QString& address)
-{
-    if (is_ip(address)) {
-        return address;
-    }
-    // Need to look it up
-    QHostInfo info = QHostInfo::fromName(address);
-    if (info.error() == QHostInfo::NoError) {
-        QList<QHostAddress> hostAddresses = info.addresses();
-        for (int i=0; i<hostAddresses.size(); i++) {
-            // Exclude all IPv6 addresses
-            if (!hostAddresses.at(i).toString().contains(":")) {
-                return hostAddresses.at(i).toString();
-            }
-        }
-    }
-    return QString();
-}
-
-void Airlink::findSelf() {
-    LinkManager* manager = qgcApp()->toolbox()->linkManager();
-    if (!manager) {
-        qCWarning(AirlinkLog) << "LinkManager is null!";
-        return;
-    }
-
-    const QList<SharedLinkInterfacePtr> links = manager->links();
-    qCDebug(AirlinkLog) << "Number of links:" << links.size();
-
-    for (const auto& link : links) {
-        if (!link || !link->linkConfiguration()) {
-            qCDebug(AirlinkLog) << "Skipping invalid link or link configuration";
-            continue;
-        }
-
-        qCDebug(AirlinkLog) << "Checking link:" << link->linkConfiguration()->name()
-                            << "Type:" << link->linkConfiguration()->type();
-
-        auto udpConfig = std::dynamic_pointer_cast<UDPConfiguration>(link->linkConfiguration());
-        if (!udpConfig) {
-            qCDebug(AirlinkLog) << "Not a UDPConfiguration, skipping";
-            continue;
-        }
-
-        qCDebug(AirlinkLog) << "Found UDPConfiguration. Checking host list...";
-
-        const QString targetHost = get_ip_address(AirlinkManager::airlinkHost + ":" + QString::number(AirlinkManager::airlinkPort));
-        const auto hostList = udpConfig->hostList();
-
-        for (const auto& host : hostList) {
-            qCDebug(AirlinkLog) << "Checking host:" << host;
-            if (host == targetHost && link->isConnected()) {
-                qCDebug(AirlinkLog) << "Match found! Setting connect flag to true.";
-                std::shared_ptr<UDPLink> udpLink = std::dynamic_pointer_cast<UDPLink>(link);
-                if(udpLink)
-                    connectedLink = std::dynamic_pointer_cast<UDPLink>(link);
-                else
-                    connectedLink = nullptr;
-                _setConnectFlag(true);
-                return;
-            }
-        }
-    }
-
-    qCDebug(AirlinkLog) << "No matching connected UDP link found.";
-    _setConnectFlag(false);
+void Airlink::unsetConnections() {
+#ifdef QGC_AIRLINK_ENABLED
+    QObject::disconnect(airlinkManager, &AirlinkManager::asbClosed, this, &Airlink::asbClosed);
+    QObject::disconnect(airlinkManager, &AirlinkManager::asbEnabledTrue, this, &Airlink::connectVideo);
+    QObject::disconnect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
+    QObject::disconnect(*onAddAirlinkConnection);
+    QObject::disconnect(this, &Airlink::connected, this, &Airlink::connectVideo);
+    QObject::disconnect(*onRemoveAirlinkConnection);
+    QObject::disconnect(this, &Airlink::blockUI, airlinkManager, &AirlinkManager::blockUI);
+#endif
 }
 
 bool Airlink::_connect()
 {
+    setConnections();
     start(NormalPriority);
-    QTimer *pendingTimer = new QTimer;
-    connect(pendingTimer, &QTimer::timeout, [this, pendingTimer] {
+    QTimer *pendingTimer = new QTimer(this);
+    connect(pendingTimer, &QTimer::timeout, this, [this, pendingTimer] {
         pendingTimer->setInterval(3000);
         if (_stillConnecting()) {
             qCDebug(AirlinkLog) << "Connecting...";
@@ -177,7 +119,7 @@ bool Airlink::_connect()
     });
     MAVLinkProtocol *mavlink = qgcApp()->toolbox()->mavlinkProtocol();
     auto conn = std::make_shared<QMetaObject::Connection>();
-    *conn = connect(mavlink, &MAVLinkProtocol::messageReceived, [this, conn] (LinkInterface* linkSrc, mavlink_message_t message) {
+    *conn = connect(mavlink, &MAVLinkProtocol::messageReceived, this, [this, conn] (LinkInterface* linkSrc, mavlink_message_t message) {
         if ((this != linkSrc) || (message.msgid != MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE)) {
             return;
         }
@@ -249,19 +191,7 @@ void Airlink::_setConnectFlag(bool connect)
     _needToConnect.store(connect, std::memory_order_release);
 }
 
-void Airlink::retranslateSelfConnected() {
-    qCDebug(AirlinkLog) << "airlink connected retranslation";
-    emit airlinkConnected(this);
-}
-
-void Airlink::retranslateSelfDisconnected() {
-    qCDebug(AirlinkLog) << "airlink disconnected retranslation";
-    emit airlinkDisconnected(this);
-}
-
 void Airlink::connectVideo() {
-    if(!isConnected())
-        return;
     if(asbEnabled == nullptr)
         asbEnabled = airlinkManager->getAsbEnabled();
     if(asbPort == nullptr)
@@ -299,11 +229,10 @@ void Airlink::disconnectVideo() {
     if (airlinkManager->getAsbProcess().state() == QProcess::NotRunning) {
         return;
     }
-#else
+#endif
     emit blockUI();
     qCDebug(AirlinkLog) << "Disconnect video";
     emit airlinkManager->closePeer();
-#endif
 }
 
 void Airlink::asbClosed(Airlink* airlink) {
