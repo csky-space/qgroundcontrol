@@ -1,10 +1,14 @@
 #ifndef AIRLINKSTREAMBRIDGEMANAGER_H
 #define AIRLINKSTREAMBRIDGEMANAGER_H
 
+#include <functional>
+
 #include <qsslconfiguration.h>
 #include <QNetworkRequest>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+
+class QTimer;
 
 namespace CSKY {
 class AirlinkStreamBridgeManager : public QObject {
@@ -13,6 +17,11 @@ public:
     AirlinkStreamBridgeManager();
     ~AirlinkStreamBridgeManager();
 private:
+    QTimer* createReplyTimer(size_t timeout, const std::function<void()>& onTimeout, QNetworkReply* replyParent) const;
+    void baseRequest(QNetworkRequest& request, const QString& reqType, QJsonDocument& jsonDoc,
+                     const std::function<void(QByteArray replyData, QNetworkReply::NetworkError err)>& onReplyFinished,
+                     size_t timeout, const std::function<void()>& onTimeout = [](){});
+
     QSslConfiguration sslConfig;
 
     QString baseASBRequestsPath = "https://localhost:8443/";
