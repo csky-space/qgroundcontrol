@@ -1,6 +1,0 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
-    <qresource prefix="/assets/ASB/resources">
-        <file alias="AirlinkStreamBridge_arm64-v8a">../../../../../resources/arm64-v8a/AirlinkStreamBridge_arm64-v8a</file>
-    </qresource>
-</RCC>
