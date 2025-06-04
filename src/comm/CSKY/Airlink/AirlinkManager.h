@@ -56,10 +56,10 @@ public:
 	Q_INVOKABLE bool isOnline(const QString &drone);
 	Q_INVOKABLE void connectToAirLinkServer(const QString &login, const QString &pass);
 	Q_INVOKABLE void updateCredentials(const QString &login, const QString &pass);
-    Q_INVOKABLE QString getAirlinkHost() const {return airlinkHost;}
+    Q_INVOKABLE QString getAirlinkHost() const;
 
-    Q_INVOKABLE bool fullBlock() const {return _fullBlockUI.load(std::memory_order_acquire);}
-    Q_INVOKABLE void setFullBlock(bool block) {_fullBlockUI.store(block, std::memory_order_release);}
+    Q_INVOKABLE bool fullBlock() const;
+    Q_INVOKABLE void setFullBlock(bool block);
 
 	explicit AirlinkManager(QGCApplication *app, QGCToolbox *toolbox);
 	~AirlinkManager() override;
@@ -82,12 +82,7 @@ public:
     Fact* getAsbEnabled() const;
     Fact* getPort() const;
 signals:
-    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
     void enableVideoTransmit();
-    void isWebrtcReceiverConnected();
-    void openPeer();
-    void closePeer();
-    void closePeerCompleted();
 
     void asbEnabledTrue(Airlink* airlink);
     void asbEnabledFalse(Airlink* airlink);
@@ -101,6 +96,8 @@ signals:
     void checkAlive();
     void onConnectedAirlinkAdded(Airlink* link = nullptr);
     void onDisconnectedAirlinkRemoved(Airlink* link = nullptr);
+
+    void airlinkAdded();
 private:
     void _setConnects();
 	void _parseAnswer(const QByteArray &ba);
@@ -120,8 +117,6 @@ private:
     bool isRestarting = false;
 	QMap<QString, bool> _vehiclesFromServer;
     QNetworkReply *_reply = nullptr;
-	QString _login;
-	QString _pass;
 	QString droneModem = "";
 	std::shared_ptr<AirlinkConfiguration> config = nullptr;
   

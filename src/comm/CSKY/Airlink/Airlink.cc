@@ -9,17 +9,20 @@
 
 #include "AirlinkManager.h"
 #include "AirlinkConfiguration.h"
+#include "AirlinkVideo.h"
 
 QGC_LOGGING_CATEGORY(AirlinkLog, "AirlinkLog")
 
 namespace CSKY {
-Airlink::Airlink(SharedLinkConfigurationPtr &config) : UDPLink(config)
+Airlink::Airlink(SharedLinkConfigurationPtr &config)
+    : UDPLink(config)
 {
     qCInfo(AirlinkLog) << "Airlink created";
     _configureUdpSettings();
 #ifdef QGC_AIRLINK_ENABLED
     airlinkManager = qgcApp()->toolbox()->airlinkManager();
     asbManager = &airlinkManager->getASBManager();
+    _video = new AirlinkVideo(asbManager, airlinkManager, this);
 #endif
 }
 
@@ -29,7 +32,7 @@ Airlink::~Airlink()
 
 void Airlink::disconnect()
 {
-    setWebrtcCreated(false);
+    disconnectVideo();
     qCDebug(AirlinkLog) << "Disconnecting airlink telemetry\n";
 
 
@@ -40,14 +43,6 @@ void Airlink::disconnect()
 
 std::shared_ptr<AirlinkConfiguration> Airlink::getConfig() const {
     return std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
-}
-
-void Airlink::setWebrtcCreated(bool created) {
-    webtrcReceiverCreated = created;
-}
-
-bool Airlink::webrtcCreated() const {
-    return webtrcReceiverCreated;
 }
 
 void Airlink::setAsbEnabled(Fact* asbEnabled) {
@@ -61,29 +56,20 @@ void Airlink::setAsbPort(Fact* asbPort) {
 void Airlink::setConnections() {
 #ifdef QGC_AIRLINK_ENABLED
     connect(airlinkManager, &AirlinkManager::asbClosed, this, &Airlink::asbClosed);
+    connect(this, &Airlink::_asbClosed, _video, &AirlinkVideo::asbFailed);
     connect(airlinkManager, &AirlinkManager::asbEnabledTrue, this, &Airlink::connectVideo);
     connect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
 
     *onAddAirlinkConnection = connect(this, &Airlink::connected, airlinkManager, [this](){
         airlinkManager->addAirlink(this);
     });
-    connect(this, &Airlink::connected, this, &Airlink::connectVideo);
-    *onRemoveAirlinkConnection = connect(this, &Airlink::disconnected, airlinkManager, [this](){
-        qCDebug(AirlinkLog) << "disconnect video check for ours";
-        qCDebug(AirlinkLog) << "Disconnect video?";
-#ifndef __ANDROID__
-        if (airlinkManager->getAsbProcess().state() == QProcess::NotRunning) {
-            return;
-        }
-#endif
-        emit blockUI();
-        qCDebug(AirlinkLog) << "Disconnect video";
-        emit airlinkManager->closePeer();
-    });
-    connect(this, &Airlink::disconnected, airlinkManager, [this](){
+    connect(airlinkManager, &AirlinkManager::airlinkAdded, this, &Airlink::connectVideo);
+    connect(this, &Airlink::connectVideoReady, _video, &AirlinkVideo::_connect);
+
+    *onRemoveAirlinkConnection = connect(this, &Airlink::disconnectVideoReady, airlinkManager, [this](){
         airlinkManager->removeAirlink(this);
     });
-
+    connect(this, &Airlink::disconnectVideoReady, _video, &AirlinkVideo::_disconnect);
 
     connect(this, &Airlink::blockUI, airlinkManager, &AirlinkManager::blockUI);
 #endif
@@ -92,11 +78,17 @@ void Airlink::setConnections() {
 void Airlink::unsetConnections() {
 #ifdef QGC_AIRLINK_ENABLED
     QObject::disconnect(airlinkManager, &AirlinkManager::asbClosed, this, &Airlink::asbClosed);
+    QObject::disconnect(this, &Airlink::_asbClosed, _video, &AirlinkVideo::asbFailed);
     QObject::disconnect(airlinkManager, &AirlinkManager::asbEnabledTrue, this, &Airlink::connectVideo);
     QObject::disconnect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
+
     QObject::disconnect(*onAddAirlinkConnection);
-    QObject::disconnect(this, &Airlink::connected, this, &Airlink::connectVideo);
+    QObject::disconnect(airlinkManager, &AirlinkManager::airlinkAdded, this, &Airlink::connectVideo);
+    QObject::disconnect(this, &Airlink::connectVideoReady, _video, &AirlinkVideo::_connect);
+
     QObject::disconnect(*onRemoveAirlinkConnection);
+    QObject::disconnect(this, &Airlink::disconnectVideoReady, _video, &AirlinkVideo::_disconnect);
+
     QObject::disconnect(this, &Airlink::blockUI, airlinkManager, &AirlinkManager::blockUI);
 #endif
 }
@@ -208,17 +200,7 @@ void Airlink::connectVideo() {
             qCDebug(AirlinkLog) << "Airlink configuration doesn't exist yet";
             return;
         }
-
-        if(!webtrcReceiverCreated) {
-            qCDebug(AirlinkLog()) << "Airlink video connecting for " << configuration->modemName();
-            emit blockUI();
-
-            emit  airlinkManager->createWebrtcDefault(AirlinkManager::airlinkHost, configuration->modemName(), configuration->password(), asbPort->rawValue().toUInt());
-        }
-        else {
-            emit blockUI();
-            emit airlinkManager->openPeer();
-        }
+        emit connectVideoReady(configuration->modemName(), configuration->password(), asbPort->rawValue().toUInt());
     }
 }
 
@@ -230,15 +212,18 @@ void Airlink::disconnectVideo() {
         return;
     }
 #endif
-    emit blockUI();
-    qCDebug(AirlinkLog) << "Disconnect video";
-    emit airlinkManager->closePeer();
+    emit disconnectVideoReady();
+}
+
+void Airlink::emitVideoDisconnected() {
+    emit videoDisconnected();
 }
 
 void Airlink::asbClosed(Airlink* airlink) {
     if(airlink != this) {
         return;
     }
-    webtrcReceiverCreated = false;
+    emit _asbClosed();
 }
+
 }

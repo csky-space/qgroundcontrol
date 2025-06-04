@@ -12,6 +12,7 @@ namespace CSKY {
 class AirlinkConfiguration;
 class AirlinkManager;
 class AirlinkStreamBridgeManager;
+class AirlinkVideo;
 
 
 class Airlink : public UDPLink
@@ -23,17 +24,16 @@ public:
 
     void disconnect (void) override;
     std::shared_ptr<AirlinkConfiguration> getConfig() const;
-    void setWebrtcCreated(bool created);
-    bool webrtcCreated() const;
     void setAsbEnabled(Fact* asbEnabled);
     void setAsbPort(Fact* asbPort);
 private:
+    AirlinkVideo* _video;
+
     QMetaObject::Connection* onAddAirlinkConnection = new QMetaObject::Connection;
     QMetaObject::Connection* onRemoveAirlinkConnection = new QMetaObject::Connection;
     void setConnections();
     void unsetConnections();
 
-    bool webtrcReceiverCreated = false;
     QMutex _mutex;
     /// Access this varible only with _mutex locked
     std::atomic<bool> _needToConnect{false};
@@ -54,11 +54,18 @@ signals:
     void airlinkConnected(Airlink* link = nullptr);
     void airlinkDisconnected(Airlink* link = nullptr);
     void blockUI(QByteArray replyData = {}, QNetworkReply::NetworkError err = QNetworkReply::NoError);
+
+    void connectVideoReady(QString modemName, QString password, quint16 port);
+    void disconnectVideoReady();
+
+    void _asbClosed();
+    void videoDisconnected();
 private slots:
 
     void connectVideo();
     void disconnectVideo();
 public slots:
+    void emitVideoDisconnected();
     void asbClosed(Airlink* airlink);
 };
 }
