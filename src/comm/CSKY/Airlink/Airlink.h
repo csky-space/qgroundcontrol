@@ -27,6 +27,7 @@ public:
     void setAsbEnabled(Fact* asbEnabled);
     void setAsbPort(Fact* asbPort);
 private:
+    QThread* _videoThread;
     AirlinkVideo* _video;
 
     QMetaObject::Connection* onAddAirlinkConnection = new QMetaObject::Connection;

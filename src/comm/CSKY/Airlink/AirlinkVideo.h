@@ -18,7 +18,6 @@ public:
     ~AirlinkVideo();
 
 private:
-    QThread* _videoThread;
     AirlinkStreamBridgeManager* _asbManager;
     AirlinkManager* _airlinkManager;
     bool webtrcReceiverCreated;

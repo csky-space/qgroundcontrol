@@ -61,6 +61,8 @@ QTimer* AirlinkStreamBridgeManager::createReplyTimer(size_t timeout, const std::
 void AirlinkStreamBridgeManager::baseRequest(QNetworkRequest& request, const QString& reqType, QJsonDocument& jsonDoc,
                                              const std::function<void(QByteArray replyData, QNetworkReply::NetworkError err)>& onReplyFinished,
                                              size_t timeout, const std::function<void()>& onTimeout) {
+    if(manager.thread() != thread())
+        manager.moveToThread(thread());
     QPointer<QNetworkReply> reply = nullptr;
     if((reqType != "GET") && (reqType != "HEAD"))
         reply = manager.sendCustomRequest(request, reqType.toLatin1(), jsonDoc.toJson(QJsonDocument::Compact).trimmed());
@@ -72,15 +74,15 @@ void AirlinkStreamBridgeManager::baseRequest(QNetworkRequest& request, const QSt
             onTimeout();
         }
     }, reply);
-    connect(reply, &QNetworkReply::finished, replyTimeoutTimer, &QTimer::stop, Qt::QueuedConnection);
+    connect(reply, &QNetworkReply::finished, replyTimeoutTimer, &QTimer::stop);
     connect(reply, &QNetworkReply::finished, this, [reply, onReplyFinished](){
         if(reply) {
             QByteArray data = reply->readAll();
             QNetworkReply::NetworkError error = reply->error();
             onReplyFinished(data, error);
         }
-    }, Qt::QueuedConnection);
-    connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater, Qt::QueuedConnection);
+    });
+    connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
 }
 
 void AirlinkStreamBridgeManager::createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port) {

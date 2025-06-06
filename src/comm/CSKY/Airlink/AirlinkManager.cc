@@ -176,7 +176,8 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
 
 #endif
 
-
+    watchdogTimer = new QTimer(this);
+    watchdogTimer->setInterval(5000);
     auto asbProcessWatchdog = connect(watchdogTimer, &QTimer::timeout, this, &AirlinkManager::checkAndRestartASB);
     QObject::connect(qApp, &QCoreApplication::aboutToQuit, [asbProcessWatchdog, this]() {
         qCDebug(AirlinkManagerLog) << "off watchdog on quiting...";
@@ -385,7 +386,7 @@ void AirlinkManager::portConstraint(QVariant value) {
 }
 
 void AirlinkManager::startWatchdog() {
-    if(!watchdogTimer) [[unlikely]]{
+    if(!watchdogTimer) {
         watchdogTimer = new QTimer(this);
         watchdogTimer->setInterval(5000);
     }

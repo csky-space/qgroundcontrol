@@ -9,6 +9,7 @@
 
 #include "airlinkstreambridgemanager.h"
 #include "AirlinkManager.h"
+#include "Airlink.h"
 
 QGC_LOGGING_CATEGORY(AirlinkVideoLog, "AirlinkVideoLog")
 
@@ -16,35 +17,32 @@ namespace CSKY {
 
 AirlinkVideo::AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManager* airlinkManager, QObject* parent)
     : QObject(parent)
-    , _videoThread(new QThread(this))
     , _asbManager(asbManager)
     , _airlinkManager(airlinkManager)
     , webtrcReceiverCreated(false)
 {
-    moveToThread(_videoThread);
-    _videoThread->start(QThread::NormalPriority);
+
 }
 
 AirlinkVideo::~AirlinkVideo() {
-    _videoThread->quit();
 }
 
 void AirlinkVideo::setConnections() {
     connect(this, &AirlinkVideo::blockUI, _airlinkManager, &AirlinkManager::blockUI);
 
-    connect(this, &AirlinkVideo::createWebrtcDefault, _asbManager, &AirlinkStreamBridgeManager::createWebrtcDefault);
-    connect(this, &AirlinkVideo::isWebrtcReceiverConnected, _asbManager, &AirlinkStreamBridgeManager::isWebrtcReceiverConnected);
-    connect(this, &AirlinkVideo::openPeer, _asbManager, &AirlinkStreamBridgeManager::openPeer);
-    connect(this, &AirlinkVideo::closePeer, _asbManager, &AirlinkStreamBridgeManager::closePeer);
+    connect(this, &AirlinkVideo::createWebrtcDefault, _asbManager, &AirlinkStreamBridgeManager::createWebrtcDefault, Qt::QueuedConnection);
+    connect(this, &AirlinkVideo::isWebrtcReceiverConnected, _asbManager, &AirlinkStreamBridgeManager::isWebrtcReceiverConnected, Qt::QueuedConnection);
+    connect(this, &AirlinkVideo::openPeer, _asbManager, &AirlinkStreamBridgeManager::openPeer, Qt::QueuedConnection);
+    connect(this, &AirlinkVideo::closePeer, _asbManager, &AirlinkStreamBridgeManager::closePeer, Qt::QueuedConnection);
 
-    connect(_asbManager, &AirlinkStreamBridgeManager::createWebrtcCompleted, _airlinkManager, &AirlinkManager::unblockUI);
-    connect(_asbManager, &AirlinkStreamBridgeManager::createWebrtcCompleted, this, &AirlinkVideo::webrtcCreated);
+    connect(_asbManager, &AirlinkStreamBridgeManager::createWebrtcCompleted, _airlinkManager, &AirlinkManager::unblockUI, Qt::QueuedConnection);
+    connect(_asbManager, &AirlinkStreamBridgeManager::createWebrtcCompleted, this, &AirlinkVideo::webrtcCreated, Qt::QueuedConnection);
 
-    connect(_asbManager, &AirlinkStreamBridgeManager::openPeerCompleted, _airlinkManager, &AirlinkManager::unblockUI);
-    connect(_asbManager, &AirlinkStreamBridgeManager::openPeerCompleted, this, &AirlinkVideo::peerOpened);
+    connect(_asbManager, &AirlinkStreamBridgeManager::openPeerCompleted, _airlinkManager, &AirlinkManager::unblockUI, Qt::QueuedConnection);
+    connect(_asbManager, &AirlinkStreamBridgeManager::openPeerCompleted, this, &AirlinkVideo::peerOpened, Qt::QueuedConnection);
 
-    connect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, _airlinkManager, &AirlinkManager::unblockUI);
-    connect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, this, &AirlinkVideo::peerClosed);
+    connect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, _airlinkManager, &AirlinkManager::unblockUI, Qt::QueuedConnection);
+    connect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, this, &AirlinkVideo::peerClosed, Qt::QueuedConnection);
 }
 
 void AirlinkVideo::unsetConnections() {

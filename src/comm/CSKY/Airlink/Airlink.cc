@@ -16,18 +16,25 @@ QGC_LOGGING_CATEGORY(AirlinkLog, "AirlinkLog")
 namespace CSKY {
 Airlink::Airlink(SharedLinkConfigurationPtr &config)
     : UDPLink(config)
+    , _videoThread(new QThread())
 {
     qCInfo(AirlinkLog) << "Airlink created";
     _configureUdpSettings();
 #ifdef QGC_AIRLINK_ENABLED
     airlinkManager = qgcApp()->toolbox()->airlinkManager();
     asbManager = &airlinkManager->getASBManager();
-    _video = new AirlinkVideo(asbManager, airlinkManager, this);
+    _video = new AirlinkVideo(asbManager, airlinkManager);
+    _video->moveToThread(_videoThread);
 #endif
 }
 
 Airlink::~Airlink()
 {
+    unsetConnections();
+    _video->deleteLater();
+    if(_videoThread->isRunning())
+        _videoThread->quit();
+    _videoThread->deleteLater();
 }
 
 void Airlink::disconnect()
@@ -62,14 +69,16 @@ void Airlink::setConnections() {
 
     *onAddAirlinkConnection = connect(this, &Airlink::connected, airlinkManager, [this](){
         airlinkManager->addAirlink(this);
+        _videoThread->start(QThread::HighPriority);
     });
-    connect(airlinkManager, &AirlinkManager::airlinkAdded, this, &Airlink::connectVideo);
+    connect(_videoThread, &QThread::started, this, &Airlink::connectVideo);
     connect(this, &Airlink::connectVideoReady, _video, &AirlinkVideo::_connect);
 
     *onRemoveAirlinkConnection = connect(this, &Airlink::disconnectVideoReady, airlinkManager, [this](){
         airlinkManager->removeAirlink(this);
     });
     connect(this, &Airlink::disconnectVideoReady, _video, &AirlinkVideo::_disconnect);
+    connect(_video, &AirlinkVideo::disconnected, _videoThread, &QThread::quit);
 
     connect(this, &Airlink::blockUI, airlinkManager, &AirlinkManager::blockUI);
 #endif
@@ -83,7 +92,7 @@ void Airlink::unsetConnections() {
     QObject::disconnect(airlinkManager, &AirlinkManager::asbEnabledFalse, this, &Airlink::disconnectVideo);
 
     QObject::disconnect(*onAddAirlinkConnection);
-    QObject::disconnect(airlinkManager, &AirlinkManager::airlinkAdded, this, &Airlink::connectVideo);
+    QObject::disconnect(_videoThread, &QThread::started, this, &Airlink::connectVideo);
     QObject::disconnect(this, &Airlink::connectVideoReady, _video, &AirlinkVideo::_connect);
 
     QObject::disconnect(*onRemoveAirlinkConnection);
@@ -97,7 +106,10 @@ bool Airlink::_connect()
 {
     setConnections();
     start(NormalPriority);
-    QTimer *pendingTimer = new QTimer(this);
+
+    QTimer *pendingTimer = new QTimer();
+    pendingTimer->moveToThread(this);
+    connect(this, &Airlink::destroyed, pendingTimer, &QTimer::deleteLater);
     connect(pendingTimer, &QTimer::timeout, this, [this, pendingTimer] {
         pendingTimer->setInterval(3000);
         if (_stillConnecting()) {
@@ -127,7 +139,8 @@ bool Airlink::_connect()
         _setConnectFlag(false);
     });
     _setConnectFlag(true);
-    pendingTimer->start(0);
+    QMetaObject::invokeMethod(pendingTimer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
+
     return true;
 }
 
