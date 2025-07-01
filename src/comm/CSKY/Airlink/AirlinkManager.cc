@@ -48,7 +48,7 @@ namespace CSKY {
 #else
     const QString AirlinkManager::airlinkHostPrefix = "";
 #endif
-const QString AirlinkManager::airlinkHost = airlinkHostPrefix + "air-link.space";
+const QString AirlinkManager::airlinkHost = airlinkHostPrefix + "astra.csky.space";
 
 AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)
     : QGCTool(app, toolbox)
@@ -243,6 +243,9 @@ void AirlinkManager::connectToAirLinkServer(const QString &login, const QString 
     qCDebug(AirlinkManagerLog) << "airlinkHost: " << airlinkHost;
     const QUrl url(QString("https://") + airlinkHost + "/api/gs/getModems");
     QNetworkRequest request(url);
+    QSslConfiguration conf;
+    conf.setPeerVerifyMode(QSslSocket::PeerVerifyMode::VerifyNone);
+    request.setSslConfiguration(conf);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     QJsonObject obj;
