@@ -104,6 +104,7 @@ void Airlink::unsetConnections() {
 
 bool Airlink::_connect()
 {
+    qCDebug(AirlinkLog) << "Airlink link addr to connect: " << this;
     setConnections();
     start(NormalPriority);
 
@@ -111,7 +112,7 @@ bool Airlink::_connect()
     pendingTimer->moveToThread(this);
     connect(this, &Airlink::destroyed, pendingTimer, &QTimer::deleteLater);
     connect(pendingTimer, &QTimer::timeout, this, [this, pendingTimer] {
-        pendingTimer->setInterval(3000);
+        pendingTimer->setInterval(5000);
         if (_stillConnecting()) {
             qCDebug(AirlinkLog) << "Connecting...";
             _sendLoginMsgToAirLink();
@@ -124,7 +125,13 @@ bool Airlink::_connect()
     MAVLinkProtocol *mavlink = qgcApp()->toolbox()->mavlinkProtocol();
     auto conn = std::make_shared<QMetaObject::Connection>();
     *conn = connect(mavlink, &MAVLinkProtocol::messageReceived, this, [this, conn] (LinkInterface* linkSrc, mavlink_message_t message) {
-        if ((this != linkSrc) || (message.msgid != MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE)) {
+        qCDebug(AirlinkLog) << "Arlink mavlink message received";
+        if(this == linkSrc)
+            qCDebug(AirlinkLog) << "our airlink???";
+        if(message.msgid == MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE) {
+            qCDebug(AirlinkLog) << "our msg???  ptr is: " << linkSrc << ". should be " << dynamic_cast<UDPLink*>(this);
+        }
+        if ((dynamic_cast<UDPLink*>(this) != linkSrc) || (message.msgid != MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE)) {
             return;
         }
         mavlink_airlink_auth_response_t responseMsg;
@@ -146,7 +153,7 @@ bool Airlink::_connect()
 
 void Airlink::_configureUdpSettings()
 {
-    static quint16 availablePort = 14550;
+    static quint16 availablePort = 14552;
     QUdpSocket udpSocket;
     while (!udpSocket.bind(QHostAddress::LocalHost, availablePort))
         availablePort++;

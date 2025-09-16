@@ -718,6 +718,7 @@ QStringList LinkManager::linkTypeStrings(void) const
 #endif
 #ifdef QGC_AIRLINK_ENABLED
         list += tr("Air-link");
+        //list += tr("Astra");
 #endif
 #ifndef __mobile__
         list += tr("Log Replay");

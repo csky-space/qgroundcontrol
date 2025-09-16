@@ -44,15 +44,15 @@ namespace CSKY {
 
 
 #if defined(QGC_AIRLINK_STAGE)
-    const QString AirlinkManager::airlinkHostPrefix = "stage.";
+    QString AirlinkManager::airlinkHostPrefix = "stage.";
 #else
-const QString AirlinkManager::airlinkHostPrefix = "";
+    QString AirlinkManager::airlinkHostPrefix = "";
 #endif
 
 #if defined(QGC_TRANSPORT_FEATURE)
-    const QString AirlinkManager::airlinkHost = airlinkHostPrefix + "airlink.biruch.ru";
+    QString AirlinkManager::airlinkHost = airlinkHostPrefix + "airlink.biruch.ru";
 #else
-    const QString AirlinkManager::airlinkHost = airlinkHostPrefix + "air-link.space";
+    QString AirlinkManager::airlinkHost = airlinkHostPrefix + "astra.csky.space";
 #endif
 
 AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)

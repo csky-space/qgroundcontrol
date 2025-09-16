@@ -27,6 +27,8 @@ public:
     void setAsbEnabled(Fact* asbEnabled);
     void setAsbPort(Fact* asbPort);
 private:
+    QString hostName;
+
     QThread* _videoThread;
     AirlinkVideo* _video;
 

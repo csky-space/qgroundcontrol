@@ -73,14 +73,16 @@ public:
 	QStringList droneList() const;
     QList<bool> droneOnlineList() const;
 
-    static const QString airlinkHostPrefix;
-	static const QString airlinkHost;
+    static QString airlinkHostPrefix;
+    static QString airlinkHost;
 	static constexpr int airlinkPort = 10000;
 
     AirlinkStreamBridgeManager& getASBManager();
     QProcess& getAsbProcess();
     Fact* getAsbEnabled() const;
     Fact* getPort() const;
+
+    void setHost(AirlinkConfiguration* config);
 signals:
     void enableVideoTransmit();
 

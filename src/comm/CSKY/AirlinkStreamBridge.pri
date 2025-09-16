@@ -60,6 +60,7 @@ HEADERS += \
     src/comm/CSKY/Airlink/airlinkstreambridgemanager.h \
     src/Settings/AirlinkStreamBridgeSettings.h \
     $$PWD/Airlink/Airlink.h \
+    $$PWD/Airlink/AstraConfiguration.h \
     $$PWD/Airlink/AirlinkVideo.h
 
 SOURCES += \
@@ -68,4 +69,5 @@ SOURCES += \
     src/comm/CSKY/Airlink/AirlinkManager.cc \
     src/comm/CSKY/Airlink/airlinkstreambridgemanager.cc \
     $$PWD/Airlink/Airlink.cc \
+    $$PWD/Airlink/AstraConfiguration.cc \
     $$PWD/Airlink/AirlinkVideo.cc

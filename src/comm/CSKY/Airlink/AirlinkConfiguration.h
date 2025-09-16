@@ -45,7 +45,7 @@ signals:
     void modemNameChanged   (void);
     void onlineChanged      (void);
 
-private:
+protected:
     void _copyFrom          (LinkConfiguration *source);
 
 
