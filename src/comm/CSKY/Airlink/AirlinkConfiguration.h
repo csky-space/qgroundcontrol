@@ -13,6 +13,8 @@ public:
     Q_PROPERTY(QString password     READ password       WRITE setPassword   NOTIFY passwordChanged)
     Q_PROPERTY(QString modemName    READ modemName      WRITE setModemName  NOTIFY modemNameChanged)
     Q_PROPERTY(QString online       READ online         WRITE setOnline     NOTIFY onlineChanged)
+    Q_PROPERTY(QString modemType    READ modemType      CONSTANT)
+    Q_PROPERTY(QString hostName     READ hostName CONSTANT)
 
     AirlinkConfiguration(const QString& name);
     AirlinkConfiguration(AirlinkConfiguration* source);
@@ -30,7 +32,9 @@ public:
 
     /// LinkConfiguration overrides
 #ifdef QGC_AIRLINK_ENABLED
-    LinkType    type                 (void) override { return LinkConfiguration::TypeAirlink; }
+    LinkType            type                 (void) override { return LinkConfiguration::TypeAirlink; }
+    virtual QString     hostName             (void) {return "air-link.space";}
+    virtual QString     modemType            (void) {return "Airlink";}
 #endif
     void        loadSettings         (QSettings& settings, const QString& root) override;
     void        saveSettings         (QSettings& settings, const QString& root) override;

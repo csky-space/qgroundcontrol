@@ -56,18 +56,18 @@ export(go_target)
 
 HEADERS += \
     src/comm/CSKY/Airlink/AirlinkConfiguration.h \
+    src/comm/CSKY/Airlink/AstraConfiguration.h \
     src/comm/CSKY/Airlink/AirlinkManager.h \
     src/comm/CSKY/Airlink/airlinkstreambridgemanager.h \
     src/Settings/AirlinkStreamBridgeSettings.h \
     $$PWD/Airlink/Airlink.h \
-    $$PWD/Airlink/AstraConfiguration.h \
     $$PWD/Airlink/AirlinkVideo.h
 
 SOURCES += \
     src/Settings/AirlinkStreamBridgeSettings.cc \
     src/comm/CSKY/Airlink/AirlinkConfiguration.cc \
+    src/comm/CSKY/Airlink/AstraConfiguration.cc \
     src/comm/CSKY/Airlink/AirlinkManager.cc \
     src/comm/CSKY/Airlink/airlinkstreambridgemanager.cc \
     $$PWD/Airlink/Airlink.cc \
-    $$PWD/Airlink/AstraConfiguration.cc \
     $$PWD/Airlink/AirlinkVideo.cc

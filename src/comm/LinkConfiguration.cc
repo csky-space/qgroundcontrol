@@ -22,6 +22,7 @@
 #endif
 #ifdef QGC_AIRLINK_ENABLED
 #include <CSKY/Airlink/AirlinkConfiguration.h>
+#include <CSKY/Airlink/AstraConfiguration.h>
 #endif
 #define LINK_SETTING_ROOT "LinkConfigurations"
 
@@ -94,6 +95,9 @@ LinkConfiguration* LinkConfiguration::createSettings(int type, const QString& na
         case LinkConfiguration::TypeAirlink:
             config = new CSKY::AirlinkConfiguration(name);
             break;
+        case LinkConfiguration::TypeAstra:
+            config = new CSKY::AstraConfiguration(name);
+            break;
 #endif
 #ifdef QT_DEBUG
         case LinkConfiguration::TypeMock:
@@ -135,6 +139,8 @@ LinkConfiguration* LinkConfiguration::duplicateSettings(LinkConfiguration* sourc
         case TypeAirlink:
             dupe = new CSKY::AirlinkConfiguration(qobject_cast<CSKY::AirlinkConfiguration*>(source));
             break;
+        case TypeAstra:
+            dupe = new CSKY::AstraConfiguration(qobject_cast<CSKY::AstraConfiguration*>(source));
 #endif
 #ifdef QT_DEBUG
         case TypeMock:

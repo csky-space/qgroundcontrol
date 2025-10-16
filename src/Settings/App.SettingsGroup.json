@@ -352,6 +352,12 @@
     "shortDesc": "AirLink Password",
     "type": "string",
     "default": ""
+},
+{
+    "name": "hostName",
+    "shortDesc": "AirLink hostName",
+    "type": "string",
+    "default": ""
 }
 ]
 }

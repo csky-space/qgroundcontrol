@@ -36,7 +36,7 @@ ColumnLayout {
     }
 
     function updateConnectionName(modem) {
-            nameField.text = "Airlink " + modem
+            nameField.text = subEditConfig.modemType + " " + modem
     }
 
     GridLayout {
@@ -78,7 +78,7 @@ ColumnLayout {
             anchors.fill:   parent
             hoverEnabled:   true
             cursorShape:    Qt.PointingHandCursor
-            onClicked:      Qt.openUrlExternally("https://" + QGroundControl.airlinkManager.airlinkHost + "/forgot-pass")
+            onClicked:      Qt.openUrlExternally("https://" + subEditConfig.hostName + "/forgot-pass")
         }
     }
 
@@ -96,7 +96,7 @@ ColumnLayout {
                 anchors.fill:   parent
                 hoverEnabled:   true
                 cursorShape:    Qt.PointingHandCursor
-                onClicked:      Qt.openUrlExternally("https://" + QGroundControl.airlinkManager.airlinkHost + "/registration")
+                onClicked:      Qt.openUrlExternally("https://" + subEditConfig.hostName + "/registration")
             }
         }
     }
@@ -152,9 +152,9 @@ ColumnLayout {
         QGCButton {
             text:       qsTr("Refresh")
             onClicked:  {
-                QGroundControl.airlinkManager.updateDroneList(loginField.text, passwordField.text)
+                QGroundControl.airlinkManager.updateDroneList(loginField.text, passwordField.text, subEditConfig.hostName)
                 refreshHint.visible = false
-                QGroundControl.airlinkManager.updateCredentials(loginField.text, passwordField.text)
+                QGroundControl.airlinkManager.updateCredentials(loginField.text, passwordField.text, subEditConfig.hostName)
             }
         }
     }

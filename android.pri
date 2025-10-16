@@ -93,10 +93,10 @@ OTHER_FILES += \
     $$PWD/android/src/org/freedesktop/gstreamer/androidmedia/GstAmcOnFrameAvailableListener.java
 
 DISTFILES += \
+    $$PWD/android/build-extras.gradle \
     $$PWD/android/gradle/wrapper/gradle-wrapper.jar \
     $$PWD/android/gradlew \
     $$PWD/android/res/values/libs.xml \
-    $$PWD/android/build.gradle \
     $$PWD/android/gradle/wrapper/gradle-wrapper.properties \
     $$PWD/android/gradlew.bat
 

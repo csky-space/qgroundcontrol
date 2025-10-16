@@ -226,7 +226,7 @@ Rectangle {
                                             // Save current name
                                             var name = nameField.text
                                             // Create new link configuration
-                                            editingConfig = QGroundControl.linkManager.createConfiguration(index, name)
+                                            editingConfig = QGroundControl.linkManager.createConfiguration(index, name, editingConfig.hostName)
                                         }
                                     }
                                 }

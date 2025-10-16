@@ -7,6 +7,7 @@
 #include <QNetworkRequest>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QScopedPointer>
 
 class QTimer;
 
@@ -16,6 +17,9 @@ class AirlinkStreamBridgeManager : public QObject {
 public:
     AirlinkStreamBridgeManager();
     ~AirlinkStreamBridgeManager();
+
+    void startConstrainVideoCodec();
+    void stopConstrainVideoCodec();
 private:
     QTimer* createReplyTimer(size_t timeout, const std::function<void()>& onTimeout, QNetworkReply* replyParent) const;
     void baseRequest(QNetworkRequest& request, const QString& reqType, QJsonDocument& jsonDoc,
@@ -39,6 +43,10 @@ private:
     QNetworkRequest closePeerRequest;
     QNetworkRequest sendAsbServicePortRequest;
     QNetworkRequest checkAliveRequest;
+    QNetworkRequest getCodecRequest;
+
+    QScopedPointer<QTimer> codecWatchdogTimer;
+    QString currentCodec;
 
 
 signals:
@@ -49,6 +57,7 @@ signals:
     void closePeerCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void sendAsbServicePortCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void checkAliveCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
+    void getCodecCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
 public slots:
     //requests
     void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
@@ -58,6 +67,7 @@ public slots:
     void closePeer();
     void sendAsbServicePort(quint16 port);
     void checkAlive();
+    void getCodec();
 };
 }
 

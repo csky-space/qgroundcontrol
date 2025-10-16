@@ -101,6 +101,11 @@ AirlinkManager::~AirlinkManager() {
 void AirlinkManager::startAndroidASB() const {
     serverController.callMethod<void>("start");
 }
+
+void AirlinkManager::stopAndroidASB() const {
+    serverController.callMethod<void>("close");
+}
+
 #endif
 
 void AirlinkManager::restartASBProcess() {
@@ -146,7 +151,7 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
     connect(videoUDPPort, &Fact::rawValueChanged, this, &AirlinkManager::portConstraint);
     connect(videoSource, &Fact::rawValueChanged, this, [this](QVariant value){
         if(asbAutotune->rawValue().toBool()) {
-            setupVideoStream("");
+            manager.startConstrainVideoCodec();
         }
     });
 
@@ -231,9 +236,11 @@ Fact* AirlinkManager::getPort() const {
 }
 
 void AirlinkManager::updateDroneList(const QString &login,
-                                     const QString &pass) {
-                                        
-    connectToAirLinkServer(login, pass);
+                                     const QString &pass, const QString& hostName) {
+
+    _vehiclesFromServer.clear();
+    emit droneListChanged();
+    connectToAirLinkServer(login, pass, hostName);
 }
 
 bool AirlinkManager::isOnline(const QString &drone) {
@@ -244,9 +251,9 @@ bool AirlinkManager::isOnline(const QString &drone) {
     }
 }
 
-void AirlinkManager::connectToAirLinkServer(const QString &login, const QString &pass) {
-    qCDebug(AirlinkManagerLog) << "airlinkHost: " << airlinkHost;
-    const QUrl url(QString("https://") + airlinkHost + "/api/gs/getModems");
+void AirlinkManager::connectToAirLinkServer(const QString &login, const QString &pass, const QString& hostName) {
+    qCDebug(AirlinkManagerLog) << "airlinkHost: " << hostName;
+    const QUrl url(QString("https://") + hostName + "/api/gs/getModems");
     QNetworkRequest request(url);
     QSslConfiguration conf;
     conf.setPeerVerifyMode(QSslSocket::PeerVerifyMode::VerifyNone);
@@ -268,10 +275,11 @@ void AirlinkManager::connectToAirLinkServer(const QString &login, const QString 
 }
 
 void AirlinkManager::updateCredentials(const QString &login,
-                                       const QString &pass) {
+                                       const QString &pass, const QString& hostName) {
     _toolbox->settingsManager()->appSettings()->loginAirLink()->setRawValue(
       login);
     _toolbox->settingsManager()->appSettings()->passAirLink()->setRawValue(pass);
+    _toolbox->settingsManager()->appSettings()->hostName()->setRawValue(hostName);
 }
 
 QString AirlinkManager::getAirlinkHost() const {return airlinkHost;}
@@ -453,7 +461,12 @@ void AirlinkManager::asbEnabledChanged(QVariant value) {
 void AirlinkManager::asbAutotuneChanged(QVariant value) {
     if(value.toBool()) {
         videoUDPPort->setRawValue(asbPort->rawValue());
-        setupVideoStream("");
+        qCDebug(AirlinkManagerLog) << "start constrain video codec";
+        manager.startConstrainVideoCodec();
+    }
+    else {
+        qCDebug(AirlinkManagerLog) << "stop constrain video codec";
+        manager.stopConstrainVideoCodec();
     }
 }
 

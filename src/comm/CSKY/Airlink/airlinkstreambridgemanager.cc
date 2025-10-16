@@ -5,6 +5,8 @@
 #include <QJsonObject>
 #include <QTimer>
 #include <QPointer>
+#include <QGCApplication.h>
+#include <SettingsManager.h>
 
 QGC_LOGGING_CATEGORY(AirlinkStreamBridgeManagerLog, "AirlinkStreamBridgeManagerLog")
 
@@ -12,6 +14,8 @@ namespace CSKY {
 AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
     : sslConfig(QSslConfiguration::defaultConfiguration())
     , manager(this)
+    , codecWatchdogTimer(new QTimer())
+    , currentCodec(VideoSettings::videoDisabled)
 {
     sslConfig.setProtocol(QSsl::TlsV1_2OrLater);
     sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
@@ -44,10 +48,49 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
     checkAliveRequest.setUrl(QUrl(baseASBRequestsPath));
     checkAliveRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     checkAliveRequest.setSslConfiguration(sslConfig);
+
+    getCodecRequest.setUrl(QUrl(baseASBRequestsPath + baseVideoRequestsPath + "getCodec"));
+    getCodecRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    getCodecRequest.setSslConfiguration(sslConfig);
+
+    connect(codecWatchdogTimer.get(), &QTimer::timeout, this, [this](){
+        getCodec();
+    });
+    connect(this, &AirlinkStreamBridgeManager::getCodecCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
+        qCDebug(AirlinkStreamBridgeManagerLog) << "getCodecCompleted with error: " << err;
+        if(err == QNetworkReply::NoError) {
+            qCDebug(AirlinkStreamBridgeManagerLog) << "setup codec from ASB";
+            QJsonDocument d = QJsonDocument::fromJson(replyData);
+            if(!d.isEmpty() && d.object().contains("codec") && d.object()["codec"].isString() && !d.object()["codec"].toString().isEmpty()) {
+                if(d["codec"].toString().contains("h264", Qt::CaseInsensitive)) {
+                    currentCodec = VideoSettings::videoSourceUDPH264;
+                }
+                else if(d["codec"].toString().contains("h265", Qt::CaseInsensitive)) {
+                    currentCodec = VideoSettings::videoSourceUDPH265;
+                }
+                else {
+                    currentCodec = VideoSettings::videoDisabled;
+                }
+                qgcApp()->toolbox()->settingsManager()->videoSettings()->videoSource()->setRawValue(currentCodec);
+            }
+            //d["codec"]
+
+        }
+
+    });
 }
 
 AirlinkStreamBridgeManager::~AirlinkStreamBridgeManager() {
 
+}
+
+void AirlinkStreamBridgeManager::startConstrainVideoCodec() {
+    qCDebug(AirlinkStreamBridgeManagerLog) << "start constrain video codec";
+    codecWatchdogTimer->start(500);
+}
+
+void AirlinkStreamBridgeManager::stopConstrainVideoCodec() {
+    codecWatchdogTimer->stop();
 }
 
 QTimer* AirlinkStreamBridgeManager::createReplyTimer(size_t timeout, const std::function<void()>& onTimeout, QNetworkReply* replyParent) const {
@@ -161,6 +204,16 @@ void AirlinkStreamBridgeManager::checkAlive() {
                     emit checkAliveCompleted(data, error);
                 }, 1000);
 }
+
+void AirlinkStreamBridgeManager::getCodec() {
+    QJsonDocument d;
+    baseRequest(getCodecRequest, "GET", d,
+                [this](QByteArray data, QNetworkReply::NetworkError error){
+                    qCDebug(AirlinkStreamBridgeManagerLog) << "emitting getCodecCompleted";
+                    emit getCodecCompleted(data, error);
+                }, 1000);
+}
+
 }
 
 

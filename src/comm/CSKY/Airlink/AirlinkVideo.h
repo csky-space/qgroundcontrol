@@ -10,16 +10,19 @@ class QThread;
 namespace CSKY {
 class AirlinkStreamBridgeManager;
 class AirlinkManager;
+class Airlink;
 
 class AirlinkVideo : public QObject {
     Q_OBJECT
 public:
-    explicit AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManager* airlinkManager, QObject* parent = nullptr);
+    explicit AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManager* airlinkManager, Airlink* modem, QObject* parent = nullptr);
     ~AirlinkVideo();
 
 private:
     AirlinkStreamBridgeManager* _asbManager;
     AirlinkManager* _airlinkManager;
+    Airlink* _modem;
+
     bool webtrcReceiverCreated;
 
     void setConnections();

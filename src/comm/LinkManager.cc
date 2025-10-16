@@ -40,6 +40,7 @@
 #ifdef QGC_AIRLINK_ENABLED
 #include <CSKY/Airlink/AirlinkManager.h>
 #include <CSKY/Airlink/AirlinkConfiguration.h>
+#include <CSKY/Airlink/AstraConfiguration.h>
 #include <CSKY/Airlink/Airlink.h>
 #endif
 
@@ -142,6 +143,10 @@ bool LinkManager::createConnectedLink(SharedLinkConfigurationPtr& config, bool i
         break;
 #ifdef QGC_AIRLINK_ENABLED
     case LinkConfiguration::TypeAirlink:
+        qDebug() << "creating link";
+        link = std::make_shared<CSKY::Airlink>(config);
+        break;
+    case LinkConfiguration::TypeAstra:
         qDebug() << "creating link";
         link = std::make_shared<CSKY::Airlink>(config);
         break;
@@ -352,6 +357,9 @@ void LinkManager::loadLinkConfigurationList()
                             case LinkConfiguration::TypeAirlink:
                                 qDebug() << "creating configuration";
                                 link = new CSKY::AirlinkConfiguration(name);
+                                break;
+                            case LinkConfiguration::TypeAstra:
+                                link = new CSKY::AstraConfiguration(name);
                                 break;
 #endif
                             case LinkConfiguration::TypeLast:
@@ -718,7 +726,7 @@ QStringList LinkManager::linkTypeStrings(void) const
 #endif
 #ifdef QGC_AIRLINK_ENABLED
         list += tr("Air-link");
-        //list += tr("Astra");
+        list += tr("Astra");
 #endif
 #ifndef __mobile__
         list += tr("Log Replay");

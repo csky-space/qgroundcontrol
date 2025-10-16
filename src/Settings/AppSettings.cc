@@ -174,6 +174,7 @@ DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkHostName)
 DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkAPMSupportHostName)
 DECLARE_SETTINGSFACT(AppSettings, loginAirLink)
 DECLARE_SETTINGSFACT(AppSettings, passAirLink)
+DECLARE_SETTINGSFACT(AppSettings, hostName)
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)
 {

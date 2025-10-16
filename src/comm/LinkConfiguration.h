@@ -58,6 +58,7 @@ public:
 #endif
 #ifdef QGC_AIRLINK_ENABLED
         TypeAirlink,
+        TypeAstra,
 #endif
         TypeLogReplay,
         TypeLast        // Last type value (type >= TypeLast == invalid)

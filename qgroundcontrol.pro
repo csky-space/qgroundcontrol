@@ -7,7 +7,7 @@
 #
 ################################################################################
 
-#CONFIG += installer
+CONFIG += installer
 
 QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in makefiles
 
@@ -29,10 +29,10 @@ contains(DEFINES, QGC_AIRLINK_ENABLED) {
     #    }
     #}
 
-
     include($$PWD/src/comm/CSKY/AirlinkStreamBridge.pri)
 
     QMAKE_EXTRA_COMPILERS += go_target
+    ANDROID_EXTRA_GRADLE_FILES += $$PWD/android/build-extras.gradle
 }
 #-------------------------------------------------------------------
 

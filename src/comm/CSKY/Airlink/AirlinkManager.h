@@ -52,10 +52,10 @@ public:
 
     Q_PROPERTY(bool fullBlock READ fullBlock WRITE setFullBlock NOTIFY fullBlockChanged)
 
-	Q_INVOKABLE void updateDroneList(const QString &login, const QString &pass);
+    Q_INVOKABLE void updateDroneList(const QString &login, const QString &pass, const QString& hostName);
 	Q_INVOKABLE bool isOnline(const QString &drone);
-	Q_INVOKABLE void connectToAirLinkServer(const QString &login, const QString &pass);
-	Q_INVOKABLE void updateCredentials(const QString &login, const QString &pass);
+    Q_INVOKABLE void connectToAirLinkServer(const QString &login, const QString &pass, const QString& hostName);
+    Q_INVOKABLE void updateCredentials(const QString &login, const QString &pass, const QString& hostName);
     Q_INVOKABLE QString getAirlinkHost() const;
 
     Q_INVOKABLE bool fullBlock() const;
@@ -65,6 +65,7 @@ public:
 	~AirlinkManager() override;
 #ifdef __ANDROID__
     void startAndroidASB() const;
+    void stopAndroidASB() const;
 #endif
     void restartASBProcess();
     void checkAirlinkService();

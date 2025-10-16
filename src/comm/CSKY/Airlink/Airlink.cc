@@ -9,6 +9,7 @@
 
 #include "AirlinkManager.h"
 #include "AirlinkConfiguration.h"
+#include "AstraConfiguration.h"
 #include "AirlinkVideo.h"
 
 QGC_LOGGING_CATEGORY(AirlinkLog, "AirlinkLog")
@@ -18,12 +19,20 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config)
     : UDPLink(config)
     , _videoThread(new QThread())
 {
+    if(config->type() == LinkConfiguration::TypeAirlink) {
+        hostName = "air-link.space";
+        type = LinkConfiguration::TypeAirlink;
+    }
+    else if(config->type() == LinkConfiguration::TypeAstra) {
+        hostName = "astra.csky.space";
+        type = LinkConfiguration::TypeAstra;
+    }
     qCInfo(AirlinkLog) << "Airlink created";
     _configureUdpSettings();
 #ifdef QGC_AIRLINK_ENABLED
     airlinkManager = qgcApp()->toolbox()->airlinkManager();
     asbManager = &airlinkManager->getASBManager();
-    _video = new AirlinkVideo(asbManager, airlinkManager);
+    _video = new AirlinkVideo(asbManager, airlinkManager, this);
     _video->moveToThread(_videoThread);
 #endif
 }
@@ -49,7 +58,10 @@ void Airlink::disconnect()
 }
 
 std::shared_ptr<AirlinkConfiguration> Airlink::getConfig() const {
-    return std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
+    if(type == LinkConfiguration::TypeAirlink)
+        return std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
+    else
+        return std::dynamic_pointer_cast<AstraConfiguration>(_config);
 }
 
 void Airlink::setAsbEnabled(Fact* asbEnabled) {
@@ -58,6 +70,10 @@ void Airlink::setAsbEnabled(Fact* asbEnabled) {
 
 void Airlink::setAsbPort(Fact* asbPort) {
     this->asbPort = asbPort;
+}
+
+const QString& Airlink::getHost() const {
+    return hostName;
 }
 
 void Airlink::setConnections() {
@@ -158,7 +174,7 @@ void Airlink::_configureUdpSettings()
     while (!udpSocket.bind(QHostAddress::LocalHost, availablePort))
         availablePort++;
     UDPConfiguration* udpConfig = dynamic_cast<UDPConfiguration*>(UDPLink::_config.get());
-    udpConfig->addHost(AirlinkManager::airlinkHost, AirlinkManager::airlinkPort);
+    udpConfig->addHost(hostName, AirlinkManager::airlinkPort);
     udpConfig->setLocalPort(availablePort);
     udpConfig->setDynamic(false);
     availablePort += 1;
@@ -173,6 +189,8 @@ void Airlink::_sendLoginMsgToAirLink()
     qCDebug(AirlinkLog) << "before conf gets";
     QString login = config->modemName();
     QString pass = config->password();
+    qCDebug(AirlinkLog) << "login: " << login;
+    qCDebug(AirlinkLog) << "pass: " << pass;
 
     std::fill(std::begin(auth.login), std::end(auth.login), 0);
     std::fill(std::begin(auth.password), std::end(auth.password), 0);

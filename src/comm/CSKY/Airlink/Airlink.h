@@ -26,7 +26,9 @@ public:
     std::shared_ptr<AirlinkConfiguration> getConfig() const;
     void setAsbEnabled(Fact* asbEnabled);
     void setAsbPort(Fact* asbPort);
+    const QString& getHost() const;
 private:
+    LinkConfiguration::LinkType type;
     QString hostName;
 
     QThread* _videoThread;

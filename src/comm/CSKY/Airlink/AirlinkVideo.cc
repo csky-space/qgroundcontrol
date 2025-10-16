@@ -15,10 +15,11 @@ QGC_LOGGING_CATEGORY(AirlinkVideoLog, "AirlinkVideoLog")
 
 namespace CSKY {
 
-AirlinkVideo::AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManager* airlinkManager, QObject* parent)
+AirlinkVideo::AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManager* airlinkManager, Airlink* modem, QObject* parent)
     : QObject(parent)
     , _asbManager(asbManager)
     , _airlinkManager(airlinkManager)
+    , _modem(modem)
     , webtrcReceiverCreated(false)
 {
 
@@ -70,7 +71,7 @@ void AirlinkVideo::_connect(QString modemName, QString password, quint16 port) {
         qCDebug(AirlinkVideoLog) << "Airlink video connecting for " << modemName;
         emit blockUI();
 
-        emit createWebrtcDefault(AirlinkManager::airlinkHost, modemName, password, port);
+        emit createWebrtcDefault(_modem->getHost(), modemName, password, port);
     }
     else {
         emit blockUI();
