@@ -20,15 +20,27 @@ AirlinkVideo::AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManage
     , _asbManager(asbManager)
     , _airlinkManager(airlinkManager)
     , _modem(modem)
-    , webtrcReceiverCreated(false)
+    , _webrtcReceiverCreated(false)
 {
-
+    if (!_asbManager || !_airlinkManager || !_modem) {
+        qCWarning(AirlinkVideoLog) << "AirlinkVideo created with null pointers";
+    }
 }
 
 AirlinkVideo::~AirlinkVideo() {
+    unsetConnections();
+
+    disconnect(this, nullptr, nullptr, nullptr);
+
+    qCDebug(AirlinkVideoLog) << "AirlinkVideo destroyed";
 }
 
 void AirlinkVideo::setConnections() {
+    if (!_asbManager || !_airlinkManager) {
+        qCWarning(AirlinkVideoLog) << "Cannot set connections: null manager pointers";
+        return;
+    }
+
     connect(this, &AirlinkVideo::blockUI, _airlinkManager, &AirlinkManager::blockUI);
 
     connect(this, &AirlinkVideo::createWebrtcDefault, _asbManager, &AirlinkStreamBridgeManager::createWebrtcDefault, Qt::QueuedConnection);
@@ -44,9 +56,16 @@ void AirlinkVideo::setConnections() {
 
     connect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, _airlinkManager, &AirlinkManager::unblockUI, Qt::QueuedConnection);
     connect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, this, &AirlinkVideo::peerClosed, Qt::QueuedConnection);
+
+    _connectionsEstablished = true;
+    emit qtConnectionsEstablished();
+    emit qtConnectionsStateChanged(_connectionsEstablished);
 }
 
 void AirlinkVideo::unsetConnections() {
+    if (!_asbManager || !_airlinkManager) {
+        return;
+    }
     disconnect(this, &AirlinkVideo::blockUI, _airlinkManager, &AirlinkManager::blockUI);
 
     disconnect(this, &AirlinkVideo::createWebrtcDefault, _asbManager, &AirlinkStreamBridgeManager::createWebrtcDefault);
@@ -62,12 +81,25 @@ void AirlinkVideo::unsetConnections() {
 
     disconnect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, _airlinkManager, &AirlinkManager::unblockUI);
     disconnect(_asbManager, &AirlinkStreamBridgeManager::closePeerCompleted, this, &AirlinkVideo::peerClosed);
+    _connectionsEstablished = false;
+    emit qtConnectionsUnstablished();
+    emit qtConnectionsStateChanged(_connectionsEstablished);
 }
 
 void AirlinkVideo::_connect(QString modemName, QString password, quint16 port) {
+    if (!_asbManager || !_airlinkManager || !_modem) {
+        qCWarning(AirlinkVideoLog) << "Cannot connect video: null pointers";
+        return;
+    }
+
+    if (modemName.isEmpty() || password.isEmpty()) {
+        qCWarning(AirlinkVideoLog) << "Cannot connect video: empty modem name or password";
+        return;
+    }
+
     setConnections();
     qCDebug(AirlinkVideoLog) << "asb is on";
-    if(!webtrcReceiverCreated) {
+    if(!_webrtcReceiverCreated) {
         qCDebug(AirlinkVideoLog) << "Airlink video connecting for " << modemName;
         emit blockUI();
 
@@ -83,41 +115,78 @@ void AirlinkVideo::_disconnect() {
     qCDebug(AirlinkVideoLog) << "disconnect video check for ours";
     qCDebug(AirlinkVideoLog) << "Disconnect video?";
 
-    emit blockUI();
+    if (!_asbManager) {
+        qCWarning(AirlinkVideoLog) << "Cannot disconnect: ASB manager is null";
+        return;
+    }
+
+    //emit blockUI();
     qCDebug(AirlinkVideoLog) << "Disconnect video";
     emit closePeer();
 }
 
 void AirlinkVideo::webrtcCreated(QByteArray replyData, QNetworkReply::NetworkError err) {
     if(err == QNetworkReply::NoError) {
-        qCDebug(AirlinkVideoLog) << "create webrtc completed";
-        webtrcReceiverCreated = true;
+        qCDebug(AirlinkVideoLog) << "WebRTC receiver created successfully";
+        _webrtcReceiverCreated = true;
+
         emit blockUI();
         emit openPeer();
+    } else {
+        _webrtcReceiverCreated = false;
+        qCWarning(AirlinkVideoLog) << "WebRTC creation failed. Error:" << err
+                                   << "Response:" << replyData;
 
-    }else {
-        webtrcReceiverCreated = false;
-        qCDebug(AirlinkVideoLog) << "create webrtc failed: " << replyData << ". err: " << err;
+        emit connectionFailed(tr("WebRTC creation failed: %1").arg(err));
     }
 }
 
 void AirlinkVideo::peerOpened(QByteArray replyData, QNetworkReply::NetworkError err) {
-    qCDebug(AirlinkVideoLog) << "peer opened";
-    qgcApp()->toolbox()->videoManager()->stopVideo();
+    if (err == QNetworkReply::NoError) {
+        qCDebug(AirlinkVideoLog) << "Peer opened successfully";
+
+        VideoManager* videoManager = qgcApp()->toolbox()->videoManager();
+        if (videoManager) {
+            videoManager->stopVideo();
+        } else {
+            qCWarning(AirlinkVideoLog) << "Video manager not available";
+        }
+
+        //emit videoConnected();
+    } else {
+        qCWarning(AirlinkVideoLog) << "Failed to open peer. Error:" << err
+                                   << "Response:" << replyData;
+        emit connectionFailed(tr("Failed to open peer: %1").arg(err));
+    }
 }
 
 void AirlinkVideo::peerClosed(QByteArray replyData, QNetworkReply::NetworkError err) {
-    qCDebug(AirlinkVideoLog) << "peer closed";
+    if (err == QNetworkReply::NoError) {
+        qCDebug(AirlinkVideoLog) << "Peer closed successfully";
+    } else {
+        qCWarning(AirlinkVideoLog) << "Peer closure completed with error:" << err
+                                   << "Response:" << replyData;
+    }
+
+    _webrtcReceiverCreated = false;
     unsetConnections();
-    //emit closePeerCompleted();
+    //emit videoDisconnected();
 }
 
 void AirlinkVideo::setWebrtcCreated(bool created) {
-    webtrcReceiverCreated = created;
+    _webrtcReceiverCreated = created;
 }
 
 void AirlinkVideo::asbFailed() {
-    webtrcReceiverCreated = false;
+    qCWarning(AirlinkVideoLog) << "ASB connection failed";
+    _webrtcReceiverCreated = false;
+
+    if (_airlinkManager) {
+        QMetaObject::invokeMethod(_airlinkManager, "unblockUI", Qt::QueuedConnection);
+    }
+
+    emit connectionFailed(tr("ASB connection failed"));
+    //emit videoDisconnected();
 }
 
 }

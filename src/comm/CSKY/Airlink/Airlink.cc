@@ -40,10 +40,18 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config)
 Airlink::~Airlink()
 {
     unsetConnections();
-    _video->deleteLater();
-    if(_videoThread->isRunning())
+#ifdef QGC_AIRLINK_ENABLED
+    if (_video) {
+        _video->deleteLater();
+    }
+    if (_videoThread && _videoThread->isRunning()) {
         _videoThread->quit();
-    _videoThread->deleteLater();
+        _videoThread->wait(3000);
+    }
+    if (_videoThread) {
+        _videoThread->deleteLater();
+    }
+#endif
 }
 
 void Airlink::disconnect()
@@ -60,8 +68,9 @@ void Airlink::disconnect()
 std::shared_ptr<AirlinkConfiguration> Airlink::getConfig() const {
     if(type == LinkConfiguration::TypeAirlink)
         return std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
-    else
+    else if(type == LinkConfiguration::TypeAstra)
         return std::dynamic_pointer_cast<AstraConfiguration>(_config);
+    return nullptr;
 }
 
 void Airlink::setAsbEnabled(Fact* asbEnabled) {
@@ -125,7 +134,7 @@ bool Airlink::_connect()
     start(NormalPriority);
 
     QTimer *pendingTimer = new QTimer();
-    pendingTimer->moveToThread(this);
+    pendingTimer->moveToThread(thread());
     connect(this, &Airlink::destroyed, pendingTimer, &QTimer::deleteLater);
     connect(pendingTimer, &QTimer::timeout, this, [this, pendingTimer] {
         pendingTimer->setInterval(5000);
@@ -147,7 +156,7 @@ bool Airlink::_connect()
         if(message.msgid == MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE) {
             qCDebug(AirlinkLog) << "our msg???  ptr is: " << linkSrc << ". should be " << dynamic_cast<UDPLink*>(this);
         }
-        if ((dynamic_cast<UDPLink*>(this) != linkSrc) || (message.msgid != MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE)) {
+        if ((this != linkSrc) || (message.msgid != MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE)) {
             return;
         }
         mavlink_airlink_auth_response_t responseMsg;
@@ -169,7 +178,7 @@ bool Airlink::_connect()
 
 void Airlink::_configureUdpSettings()
 {
-    static quint16 availablePort = 14552;
+    static quint16 availablePort = 14550;
     QUdpSocket udpSocket;
     while (!udpSocket.bind(QHostAddress::LocalHost, availablePort))
         availablePort++;
@@ -185,30 +194,35 @@ void Airlink::_sendLoginMsgToAirLink()
     __mavlink_airlink_auth_t auth;
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
     mavlink_message_t mavmsg;
+
     AirlinkConfiguration* config = dynamic_cast<AirlinkConfiguration*>(_config.get());
-    qCDebug(AirlinkLog) << "before conf gets";
+    if (!config) {
+        qCDebug(AirlinkLog) << "Invalid configuration type";
+        return;
+    }
+
+    if (!_stillConnecting()) {
+        qCDebug(AirlinkLog) << "Abort: not connecting";
+        return;
+    }
+
     QString login = config->modemName();
     QString pass = config->password();
-    qCDebug(AirlinkLog) << "login: " << login;
-    qCDebug(AirlinkLog) << "pass: " << pass;
 
-    std::fill(std::begin(auth.login), std::end(auth.login), 0);
-    std::fill(std::begin(auth.password), std::end(auth.password), 0);
-    qCDebug(AirlinkLog) << "before print authorization";
-    snprintf(auth.login, sizeof(auth.login), "%s", login.toUtf8().constData());
-    snprintf(auth.password, sizeof(auth.password), "%s", pass.toUtf8().constData());
+    if (static_cast<unsigned long>(login.length()) >= sizeof(auth.login) || static_cast<unsigned long>(pass.length()) >= sizeof(auth.password)) {
+        qCDebug(AirlinkLog) << "Login or password too long";
+        return;
+    }
 
-    qCDebug(AirlinkLog) << "before auth";
+    memset(&auth, 0, sizeof(auth));
+
+    strncpy(auth.login, login.toUtf8().constData(), sizeof(auth.login) - 1);
+    strncpy(auth.password, pass.toUtf8().constData(), sizeof(auth.password) - 1);
+
     mavlink_msg_airlink_auth_pack(0, 0, &mavmsg, auth.login, auth.password);
     uint16_t len = mavlink_msg_to_send_buffer(buffer, &mavmsg);
 
-    if (!_stillConnecting()) {
-        qCDebug(AirlinkLog) << "Force exit from connection";
-        return;
-    }
-    qCDebug(AirlinkLog) << "before write bytes";
-    this->writeBytesThreadSafe((const char*)buffer, len);
-    qCDebug(AirlinkLog) << "after write bytes";
+    this->writeBytesThreadSafe(reinterpret_cast<const char*>(buffer), len);
 }
 
 bool Airlink::_stillConnecting()

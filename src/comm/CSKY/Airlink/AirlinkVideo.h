@@ -23,11 +23,17 @@ private:
     AirlinkManager* _airlinkManager;
     Airlink* _modem;
 
-    bool webtrcReceiverCreated;
+    bool _webrtcReceiverCreated;
+    bool _connectionsEstablished;
 
     void setConnections();
     void unsetConnections();
 signals:
+    void qtConnectionsEstablished();
+    void qtConnectionsUnstablished();
+    void qtConnectionsStateChanged(bool established);
+    void connectionFailed(const QString& errorMessage);
+
     void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
     void enableVideoTransmit();
     void isWebrtcReceiverConnected();
