@@ -248,7 +248,7 @@ void Airlink::connectVideo() {
         qCDebug(AirlinkLog) << "asb is on";
         auto configuration = std::dynamic_pointer_cast<AirlinkConfiguration>(_config);
         if(!configuration) {
-            asbEnabled->setRawValue(false);
+            //asbEnabled->setRawValue(false);
             qCDebug(AirlinkLog) << "Airlink configuration doesn't exist yet";
             return;
         }

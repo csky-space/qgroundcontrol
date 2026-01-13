@@ -177,10 +177,16 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
             qCDebug(AirlinkManagerLog) << "QProcess error:" << error;
         });
         connect(&asbProcess, &QProcess::readyReadStandardOutput, this, [this]() {
-            qCDebug(AirlinkManagerLog) << asbProcess.readAllStandardOutput();
+            QString output = QString::fromLocal8Bit(asbProcess.readAllStandardOutput());
+            QStringList list = output.split('\n');
+            list.removeAll("");
+            qCDebug(AirlinkManagerLog) << list;
         });
         connect(&asbProcess, &QProcess::readyReadStandardError, this, [this]() {
-            qCDebug(AirlinkManagerLog) << asbProcess.readAllStandardError();
+            QString output = QString::fromLocal8Bit(asbProcess.readAllStandardError());
+            QStringList list = output.split('\n');
+            list.removeAll("");
+            qCDebug(AirlinkManagerLog) << list;
         });
     }
 
@@ -430,7 +436,6 @@ void AirlinkManager::checkAndRestartASB() {
     }
 #ifndef __ANDROID__
     if (asbProcess.state() != QProcess::Running) {
-        asbEnabled->setRawValue(false);
         emit asbClosed(lastConnectedModem);
         qCDebug(AirlinkManagerLog) << "[Watchdog] ASB process not running. Restarting...";
         isRestarting = true;
