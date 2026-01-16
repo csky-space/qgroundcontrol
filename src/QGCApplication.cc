@@ -854,12 +854,12 @@ void QGCApplication::_qgcCurrentStableVersionDownloadComplete(QString /*remoteFi
                 if (_majorVersion < majorVersion ||
                         (_majorVersion == majorVersion && _minorVersion < minorVersion) ||
                         (_majorVersion == majorVersion && _minorVersion == minorVersion && _buildVersion < buildVersion)) {
-                    showAppMessage(tr("There is a newer version of %1 available. You can download it from %2.").arg(applicationName()).arg(toolbox()->corePlugin()->stableDownloadLocation()), tr("New Version Available"));
+                    //showAppMessage(tr("There is a newer version of %1 available. You can download it from %2.").arg(applicationName()).arg(toolbox()->corePlugin()->stableDownloadLocation()), tr("New Version Available"));
                 }
             }
         }
     } else {
-        qDebug() << "Download QGC stable version failed" << errorMsg;
+        //qDebug() << "Download QGC stable version failed" << errorMsg;
     }
 
     sender()->deleteLater();

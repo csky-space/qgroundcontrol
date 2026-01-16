@@ -150,7 +150,7 @@ bool Airlink::_connect()
     MAVLinkProtocol *mavlink = qgcApp()->toolbox()->mavlinkProtocol();
     auto conn = std::make_shared<QMetaObject::Connection>();
     *conn = connect(mavlink, &MAVLinkProtocol::messageReceived, this, [this, conn] (LinkInterface* linkSrc, mavlink_message_t message) {
-        qCDebug(AirlinkLog) << "Arlink mavlink message received";
+        //qCDebug(AirlinkLog) << "Arlink mavlink message received";
         if(this == linkSrc)
             qCDebug(AirlinkLog) << "our airlink???";
         if(message.msgid == MAVLINK_MSG_ID_AIRLINK_AUTH_RESPONSE) {

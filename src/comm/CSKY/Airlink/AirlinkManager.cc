@@ -36,7 +36,7 @@
 
 
 QGC_LOGGING_CATEGORY(AirlinkManagerLog, "AirlinkManagerLog")
-
+QGC_LOGGING_CATEGORY(AirlinkStreamBridgeLog, "AirlinkStreamBridgeLog")
 
 
 namespace CSKY {
@@ -180,13 +180,13 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
             QString output = QString::fromLocal8Bit(asbProcess.readAllStandardOutput());
             QStringList list = output.split('\n');
             list.removeAll("");
-            qCDebug(AirlinkManagerLog) << list;
+            qCDebug(AirlinkStreamBridgeLog) << list;
         });
         connect(&asbProcess, &QProcess::readyReadStandardError, this, [this]() {
             QString output = QString::fromLocal8Bit(asbProcess.readAllStandardError());
             QStringList list = output.split('\n');
             list.removeAll("");
-            qCDebug(AirlinkManagerLog) << list;
+            qCDebug(AirlinkStreamBridgeLog) << list;
         });
     }
 
