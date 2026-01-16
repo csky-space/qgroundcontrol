@@ -82,6 +82,7 @@ public:
     QProcess& getAsbProcess();
     Fact* getAsbEnabled() const;
     Fact* getPort() const;
+    Fact* getAutotuneEnabled() const;
 
     void setHost(AirlinkConfiguration* config);
 signals:

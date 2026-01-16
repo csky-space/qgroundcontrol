@@ -8,6 +8,8 @@
 #include <QGCApplication.h>
 #include <SettingsManager.h>
 
+#include "AirlinkManager.h"
+
 QGC_LOGGING_CATEGORY(AirlinkStreamBridgeManagerLog, "AirlinkStreamBridgeManagerLog")
 
 namespace CSKY {
@@ -53,6 +55,10 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
     getCodecRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     getCodecRequest.setSslConfiguration(sslConfig);
 
+    videoIsRunningRequest.setUrl(QUrl(baseASBRequestsPath + baseVideoRequestsPath + "isRunning"));
+    videoIsRunningRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    videoIsRunningRequest.setSslConfiguration(sslConfig);
+
     connect(codecWatchdogTimer.get(), &QTimer::timeout, this, [this](){
         getCodec();
     });
@@ -63,18 +69,50 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
             QJsonDocument d = QJsonDocument::fromJson(replyData);
             if(!d.isEmpty() && d.object().contains("codec") && d.object()["codec"].isString() && !d.object()["codec"].toString().isEmpty()) {
                 if(d["codec"].toString().contains("h264", Qt::CaseInsensitive)) {
+                    qCDebug(AirlinkStreamBridgeManagerLog) << "current codec is: " << VideoSettings::videoSourceUDPH264;
                     currentCodec = VideoSettings::videoSourceUDPH264;
                 }
                 else if(d["codec"].toString().contains("h265", Qt::CaseInsensitive)) {
+                    qCDebug(AirlinkStreamBridgeManagerLog) << "current codec is: " << VideoSettings::videoSourceUDPH265;
                     currentCodec = VideoSettings::videoSourceUDPH265;
                 }
                 else {
+                    qCDebug(AirlinkStreamBridgeManagerLog) << "current codec is: " << VideoSettings::videoDisabled;
                     currentCodec = VideoSettings::videoDisabled;
                 }
-                qgcApp()->toolbox()->settingsManager()->videoSettings()->videoSource()->setRawValue(currentCodec);
+            } else if (!d.isEmpty() && d.object().contains("codec") && d.object()["codec"].isString()){
+                qCDebug(AirlinkStreamBridgeManagerLog) << "current codec is: " << d.object()["codec"].toString();
             }
             //d["codec"]
 
+        }
+
+    });
+
+    connect(this, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
+        qCDebug(AirlinkStreamBridgeManagerLog) << "sendAsbServicePortCompleted with error: " << err;
+        if(err == QNetworkReply::NoError) {
+            qgcApp()->toolbox()->settingsManager()->videoSettings()->videoSource()->setRawValue(currentCodec);
+        }
+    });
+
+    connect(this, &AirlinkStreamBridgeManager::videoIsRunningCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
+        qCDebug(AirlinkStreamBridgeManagerLog) << "videoIsRunningCompleted with error: " << err;
+        if(err == QNetworkReply::NoError) {
+            qCDebug(AirlinkStreamBridgeManagerLog) << "setup codec from ASB";
+            QJsonDocument d = QJsonDocument::fromJson(replyData);
+            static qint16 port = qgcApp()->toolbox()->airlinkManager()->getPort()->rawValue().toInt();
+            if(!d.isEmpty() && d.object().contains("isConnected") && d.object()["isConnected"].isBool() && d.object()["isConnected"].toBool()) {
+                if(!_isRunning) {
+                    static bool odd = false;
+                    odd = !odd;
+                    port += odd ? 10 : -10;
+                    qgcApp()->toolbox()->airlinkManager()->getPort()->setRawValue(port);
+                }
+                _isRunning = true;
+            } else {
+                _isRunning = false;
+            }
         }
 
     });
@@ -211,6 +249,15 @@ void AirlinkStreamBridgeManager::getCodec() {
                 [this](QByteArray data, QNetworkReply::NetworkError error){
                     qCDebug(AirlinkStreamBridgeManagerLog) << "emitting getCodecCompleted";
                     emit getCodecCompleted(data, error);
+                }, 1000);
+}
+
+void AirlinkStreamBridgeManager::isRunning() {
+    QJsonDocument d;
+    baseRequest(videoIsRunningRequest, "GET", d,
+                [this](QByteArray data, QNetworkReply::NetworkError error){
+                    qCDebug(AirlinkStreamBridgeManagerLog) << "emitting videoIsRunningCompleted";
+                    emit videoIsRunningCompleted(data, error);
                 }, 1000);
 }
 

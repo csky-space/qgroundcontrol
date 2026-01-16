@@ -44,10 +44,11 @@ private:
     QNetworkRequest sendAsbServicePortRequest;
     QNetworkRequest checkAliveRequest;
     QNetworkRequest getCodecRequest;
+    QNetworkRequest videoIsRunningRequest;
 
     QScopedPointer<QTimer> codecWatchdogTimer;
     QString currentCodec;
-
+    bool _isRunning = false;
 
 signals:
     void createWebrtcCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
@@ -58,6 +59,7 @@ signals:
     void sendAsbServicePortCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void checkAliveCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void getCodecCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
+    void videoIsRunningCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
 public slots:
     //requests
     void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
@@ -68,6 +70,7 @@ public slots:
     void sendAsbServicePort(quint16 port);
     void checkAlive();
     void getCodec();
+    void isRunning();
 };
 }
 

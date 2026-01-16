@@ -25,6 +25,14 @@ AirlinkVideo::AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManage
     if (!_asbManager || !_airlinkManager || !_modem) {
         qCWarning(AirlinkVideoLog) << "AirlinkVideo created with null pointers";
     }
+
+#ifdef WIN32
+    _videoRunningWatchdog.start(2000);
+    connect(this, &AirlinkVideo::isVideoRunning, _asbManager, &AirlinkStreamBridgeManager::isRunning);
+    connect(&_videoRunningWatchdog, &QTimer::timeout, this, [this](){
+        emit isVideoRunning();
+    });
+#endif
 }
 
 AirlinkVideo::~AirlinkVideo() {
@@ -151,7 +159,7 @@ void AirlinkVideo::peerOpened(QByteArray replyData, QNetworkReply::NetworkError 
         } else {
             qCWarning(AirlinkVideoLog) << "Video manager not available";
         }
-
+        _asbManager->isRunning();
         //emit videoConnected();
     } else {
         qCWarning(AirlinkVideoLog) << "Failed to open peer. Error:" << err

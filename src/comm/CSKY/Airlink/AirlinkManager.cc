@@ -241,6 +241,10 @@ Fact* AirlinkManager::getPort() const {
     return asbPort;
 }
 
+Fact* AirlinkManager::getAutotuneEnabled() const {
+    return asbAutotune;
+}
+
 void AirlinkManager::updateDroneList(const QString &login,
                                      const QString &pass, const QString& hostName) {
 

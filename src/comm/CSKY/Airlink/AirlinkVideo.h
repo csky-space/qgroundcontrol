@@ -19,12 +19,14 @@ public:
     ~AirlinkVideo();
 
 private:
+    QTimer _videoRunningWatchdog;
     AirlinkStreamBridgeManager* _asbManager;
     AirlinkManager* _airlinkManager;
     Airlink* _modem;
 
     bool _webrtcReceiverCreated;
     bool _connectionsEstablished;
+    bool _isRunning;
 
     void setConnections();
     void unsetConnections();
@@ -43,6 +45,7 @@ signals:
 
     void blockUI(QByteArray replyData = {}, QNetworkReply::NetworkError = QNetworkReply::NoError);
     void disconnected();
+    void isVideoRunning();
 public slots:
     void _connect(QString modemName, QString password, quint16 port);
     void _disconnect();
