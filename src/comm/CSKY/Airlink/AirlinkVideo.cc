@@ -17,6 +17,7 @@ namespace CSKY {
 
 AirlinkVideo::AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManager* airlinkManager, Airlink* modem, QObject* parent)
     : QObject(parent)
+    , _videoRunningWatchdog(this)
     , _asbManager(asbManager)
     , _airlinkManager(airlinkManager)
     , _modem(modem)

@@ -80,6 +80,7 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
                     qCDebug(AirlinkStreamBridgeManagerLog) << "current codec is: " << VideoSettings::videoDisabled;
                     currentCodec = VideoSettings::videoDisabled;
                 }
+                qgcApp()->toolbox()->settingsManager()->videoSettings()->videoSource()->setRawValue(currentCodec);
             } else if (!d.isEmpty() && d.object().contains("codec") && d.object()["codec"].isString()){
                 qCDebug(AirlinkStreamBridgeManagerLog) << "current codec is: " << d.object()["codec"].toString();
             }
