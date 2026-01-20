@@ -135,6 +135,7 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
 
     qgcVideoManager = toolbox->videoManager();
     auto linkManager = toolbox->linkManager();
+
     for(auto link : linkManager->links()) {
         if(std::shared_ptr<Airlink> airlink = std::dynamic_pointer_cast<Airlink>(link)) {
             airlink->setAsbEnabled(asbEnabled);
@@ -146,7 +147,8 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
         airlinkIt->second->setAsbEnabled(asbEnabled);
         airlinkIt->second->setAsbPort(asbPort);
     }
-
+    connect(this, &AirlinkManager::initManager, &manager, &AirlinkStreamBridgeManager::init);
+    emit initManager();
     connect(asbEnabled, &Fact::rawValueChanged, this, &AirlinkManager::asbEnabledChanged);
     connect(videoUDPPort, &Fact::rawValueChanged, this, &AirlinkManager::portConstraint);
     connect(videoSource, &Fact::rawValueChanged, this, [this](QVariant value){
@@ -298,6 +300,7 @@ void AirlinkManager::setFullBlock(bool block) {_fullBlockUI.store(block, std::me
 
 void signalHandler(int signal) {
     qDebug() << "signal handle";
+    qgcApp()->toolbox()->airlinkManager()->getASBManager().setToInitialPort();
     std::signal(signal, SIG_DFL);
     qgcApp()->mainRootWindow()->close();
     QEvent event{QEvent::Quit};
@@ -409,6 +412,10 @@ void AirlinkManager::portConstraint(QVariant value) {
         qDebug() << "port constraining to " << asbPort->rawValue().toUInt();
         videoUDPPort->setRawValue(asbPort->rawValue().toUInt());
     }
+}
+
+void AirlinkManager::setPortToInitial() {
+    manager.setToInitialPort();
 }
 
 void AirlinkManager::startWatchdog() {

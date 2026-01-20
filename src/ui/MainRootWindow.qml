@@ -197,6 +197,7 @@ ApplicationWindow {
         console.log("stopping watch")
         QGroundControl.airlinkManager.stopWatchdog()
         QGroundControl.airlinkManager.terminateASB()
+        QGroundControl.airlinkManager.setPortToInitial()
         console.log("watch stopped")
         _forceClose = true
         // For some reason on the Qml side Qt doesn't automatically disconnect a signal when an object is destroyed.

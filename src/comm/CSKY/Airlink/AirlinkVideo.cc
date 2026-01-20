@@ -26,14 +26,6 @@ AirlinkVideo::AirlinkVideo(AirlinkStreamBridgeManager* asbManager, AirlinkManage
     if (!_asbManager || !_airlinkManager || !_modem) {
         qCWarning(AirlinkVideoLog) << "AirlinkVideo created with null pointers";
     }
-
-#ifdef WIN32
-    _videoRunningWatchdog.start(2000);
-    connect(this, &AirlinkVideo::isVideoRunning, _asbManager, &AirlinkStreamBridgeManager::isRunning);
-    connect(&_videoRunningWatchdog, &QTimer::timeout, this, [this](){
-        emit isVideoRunning();
-    });
-#endif
 }
 
 AirlinkVideo::~AirlinkVideo() {
@@ -54,6 +46,11 @@ void AirlinkVideo::setConnections() {
 
     connect(this, &AirlinkVideo::createWebrtcDefault, _asbManager, &AirlinkStreamBridgeManager::createWebrtcDefault, Qt::QueuedConnection);
     connect(this, &AirlinkVideo::isWebrtcReceiverConnected, _asbManager, &AirlinkStreamBridgeManager::isWebrtcReceiverConnected, Qt::QueuedConnection);
+    _videoRunningWatchdog.start(2000);
+    connect(this, &AirlinkVideo::isVideoRunning, _asbManager, &AirlinkStreamBridgeManager::isRunning, Qt::QueuedConnection);
+    connect(&_videoRunningWatchdog, &QTimer::timeout, this, [this](){
+        emit isVideoRunning();
+    });
     connect(this, &AirlinkVideo::openPeer, _asbManager, &AirlinkStreamBridgeManager::openPeer, Qt::QueuedConnection);
     connect(this, &AirlinkVideo::closePeer, _asbManager, &AirlinkStreamBridgeManager::closePeer, Qt::QueuedConnection);
 
@@ -79,6 +76,7 @@ void AirlinkVideo::unsetConnections() {
 
     disconnect(this, &AirlinkVideo::createWebrtcDefault, _asbManager, &AirlinkStreamBridgeManager::createWebrtcDefault);
     disconnect(this, &AirlinkVideo::isWebrtcReceiverConnected, _asbManager, &AirlinkStreamBridgeManager::isWebrtcReceiverConnected);
+    disconnect(this, &AirlinkVideo::isVideoRunning, _asbManager, &AirlinkStreamBridgeManager::isRunning);
     disconnect(this, &AirlinkVideo::openPeer, _asbManager, &AirlinkStreamBridgeManager::openPeer);
     disconnect(this, &AirlinkVideo::closePeer, _asbManager, &AirlinkStreamBridgeManager::closePeer);
 
@@ -160,7 +158,7 @@ void AirlinkVideo::peerOpened(QByteArray replyData, QNetworkReply::NetworkError 
         } else {
             qCWarning(AirlinkVideoLog) << "Video manager not available";
         }
-        _asbManager->isRunning();
+        emit isVideoRunning();
         //emit videoConnected();
     } else {
         qCWarning(AirlinkVideoLog) << "Failed to open peer. Error:" << err

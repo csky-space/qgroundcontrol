@@ -48,6 +48,8 @@ private:
 
     QScopedPointer<QTimer> codecWatchdogTimer;
     QString currentCodec;
+    qint16 _initialPort;
+    bool _selfSetupPort = false;
     bool _isRunning = false;
 
 signals:
@@ -62,6 +64,8 @@ signals:
     void videoIsRunningCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
 public slots:
     //requests
+    void init();
+    void setToInitialPort();
     void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
     void enableVideoTransmit();
     void isWebrtcReceiverConnected();

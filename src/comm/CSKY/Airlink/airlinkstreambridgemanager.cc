@@ -18,6 +18,7 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
     , manager(this)
     , codecWatchdogTimer(new QTimer())
     , currentCodec(VideoSettings::videoDisabled)
+    , _initialPort(9050)
 {
     sslConfig.setProtocol(QSsl::TlsV1_2OrLater);
     sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
@@ -102,12 +103,13 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
         if(err == QNetworkReply::NoError) {
             qCDebug(AirlinkStreamBridgeManagerLog) << "setup codec from ASB";
             QJsonDocument d = QJsonDocument::fromJson(replyData);
+            qCDebug(AirlinkStreamBridgeManagerLog) << "isRunning response: " << replyData;
             static qint16 port = qgcApp()->toolbox()->airlinkManager()->getPort()->rawValue().toInt();
             if(!d.isEmpty() && d.object().contains("isConnected") && d.object()["isConnected"].isBool() && d.object()["isConnected"].toBool()) {
-                if(!_isRunning) {
-                    static bool odd = false;
-                    odd = !odd;
-                    port += odd ? 10 : -10;
+                if(!_isRunning && qgcApp()->toolbox()->settingsManager()->asbSettings()->asbAutotune()->rawValue().toBool()) {
+                    qCDebug(AirlinkStreamBridgeManagerLog) << "Increment port";
+                    port += 1;
+                    _selfSetupPort = true;
                     qgcApp()->toolbox()->airlinkManager()->getPort()->setRawValue(port);
                 }
                 _isRunning = true;
@@ -165,6 +167,21 @@ void AirlinkStreamBridgeManager::baseRequest(QNetworkRequest& request, const QSt
         }
     });
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
+}
+
+void AirlinkStreamBridgeManager::init() {
+    connect(qgcApp()->toolbox()->airlinkManager()->getPort(), &Fact::rawValueChanged, this, [this](QVariant changedValue){
+        if(!_selfSetupPort) {
+            _initialPort = changedValue.toInt();
+        }
+        else {
+            _selfSetupPort = false;
+        }
+    });
+}
+
+void AirlinkStreamBridgeManager::setToInitialPort() {
+    qgcApp()->toolbox()->settingsManager()->asbSettings()->asbPort()->setRawValue(_initialPort);
 }
 
 void AirlinkStreamBridgeManager::createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port) {

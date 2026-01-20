@@ -86,6 +86,7 @@ public:
 
     void setHost(AirlinkConfiguration* config);
 signals:
+    void initManager();
     void enableVideoTransmit();
 
     void asbEnabledTrue(Airlink* airlink);
@@ -142,6 +143,7 @@ private:
     Airlink* lastConnectedModem = nullptr;
     Airlink* prevConnectedModem = nullptr;
 public slots:
+    Q_INVOKABLE void setPortToInitial();
     void startWatchdog();
     Q_INVOKABLE void stopWatchdog();
     Q_INVOKABLE void terminateASB();

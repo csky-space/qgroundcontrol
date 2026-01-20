@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QNetworkReply>
 #include <QByteArray>
+#include <QTimer>
 
 class QThread;
 
@@ -39,13 +40,13 @@ signals:
     void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
     void enableVideoTransmit();
     void isWebrtcReceiverConnected();
+    void isVideoRunning();
     void openPeer();
     void closePeer();
     void closePeerCompleted();
 
     void blockUI(QByteArray replyData = {}, QNetworkReply::NetworkError = QNetworkReply::NoError);
     void disconnected();
-    void isVideoRunning();
 public slots:
     void _connect(QString modemName, QString password, quint16 port);
     void _disconnect();
