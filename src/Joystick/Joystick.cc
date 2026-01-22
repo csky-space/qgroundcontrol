@@ -697,18 +697,27 @@ void Joystick::_handleAxis()
             qCDebug(JoystickValuesLog) << "name:roll:pitch:yaw:throttle:gimbalPitch:gimbalYaw" << name() << roll << -pitch << yaw << throttle << gimbalPitch << gimbalYaw;
             // NOTE: The buttonPressedBits going to MANUAL_CONTROL are currently used by ArduSub (and it only handles 16 bits)
             // Set up button bitmap
-            quint64 buttonPressedBits = 0;  // Buttons pressed for manualControl signal
-            for (int buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
-                quint64 buttonBit = static_cast<quint64>(1LL << buttonIndex);
-                if (_rgButtonValues[buttonIndex] != BUTTON_UP) {
-                    // Mark the button as pressed as long as its pressed
-                    buttonPressedBits |= buttonBit;
-                }
-            }
-            emit axisValues(roll, pitch, yaw, throttle);
+            //quint64 buttonPressedBits = 0;  // Buttons pressed for manualControl signal
+            //for (int buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
+            //    quint64 buttonBit = static_cast<quint64>(1LL << buttonIndex);
+            //    if (_rgButtonValues[buttonIndex] != BUTTON_UP) {
+            //        // Mark the button as pressed as long as its pressed
+            //        buttonPressedBits |= buttonBit;
+            //    }
+            //}
+            //emit axisValues(roll, pitch, yaw, throttle);
 
-            uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
-            _activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
+            //uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
+            //_activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
+            std::array<uint8_t, 14> rcOverrideButtons;
+            if(_totalButtonCount < 14) {
+                memcpy(rcOverrideButtons.data(), _rgButtonValues, _totalButtonCount);
+                memset(rcOverrideButtons.data() + _totalButtonCount, 0, 14 - _totalButtonCount);
+            } else {
+                memcpy(rcOverrideButtons.data(), _rgButtonValues, 14);
+            }
+
+            _activeVehicle->sendJoystickRCOverrideDataThreadSafe(roll, pitch, yaw, throttle, rcOverrideButtons);
         }
     }
 }
