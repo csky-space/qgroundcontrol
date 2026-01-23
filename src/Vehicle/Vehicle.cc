@@ -7,6 +7,8 @@
  *
  ****************************************************************************/
 
+#include <array>
+
 #include <QTime>
 #include <QDateTime>
 #include <QLocale>
