@@ -10,6 +10,7 @@
 #include "airlinkstreambridgemanager.h"
 #include "AirlinkManager.h"
 #include "Airlink.h"
+#include "AirlinkConfiguration.h"
 
 QGC_LOGGING_CATEGORY(AirlinkVideoLog, "AirlinkVideoLog")
 
@@ -50,6 +51,12 @@ void AirlinkVideo::setConnections() {
     connect(this, &AirlinkVideo::isVideoRunning, _asbManager, &AirlinkStreamBridgeManager::isRunning, Qt::QueuedConnection);
     connect(&_videoRunningWatchdog, &QTimer::timeout, this, [this](){
         emit isVideoRunning();
+    });
+    connect(_asbManager, &AirlinkStreamBridgeManager::videoIsRunningCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
+        if((err != QNetworkReply::NoError) && _airlinkManager->getAsbEnabled()->rawValue().toBool() && _modem->isConnected()) {
+            AirlinkConfiguration* conf = dynamic_cast<AirlinkConfiguration*>(_modem->getConfig().get());
+            emit createWebrtcDefault(_modem->getHost(), conf->modemName(), conf->password(), _airlinkManager->getPort()->rawValue().toInt());
+        }
     });
     connect(this, &AirlinkVideo::openPeer, _asbManager, &AirlinkStreamBridgeManager::openPeer, Qt::QueuedConnection);
     connect(this, &AirlinkVideo::closePeer, _asbManager, &AirlinkStreamBridgeManager::closePeer, Qt::QueuedConnection);
