@@ -191,7 +191,7 @@ void AirlinkStreamBridgeManager::createWebrtcDefault(QString hostName, QString m
     obj["password"] = password;
     obj["UDPPort"] = port;
     QJsonDocument d(obj);
-    qCDebug(AirlinkStreamBridgeManagerLog) << "create webrtc with: " << d.toJson();
+    //qCDebug(AirlinkStreamBridgeManagerLog) << "create webrtc with: " << d.toJson();
     baseRequest(createWebrtcDefaultRequest, "POST", d,
                 [this](QByteArray data, QNetworkReply::NetworkError error){
                     qCDebug(AirlinkStreamBridgeManagerLog) << "emitting createWebrtcCompleted";
