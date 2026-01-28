@@ -39,6 +39,14 @@ QGC_LOGGING_CATEGORY(AirlinkManagerLog, "AirlinkManagerLog")
 QGC_LOGGING_CATEGORY(AirlinkStreamBridgeLog, "AirlinkStreamBridgeLog")
 
 
+void killService(QString serviceName) {
+#ifdef Q_OS_WIN
+    QProcess::execute("taskkill", {"/F", "/IM", serviceName + ".exe"});
+#else
+    QProcess::execute("pkill", {"-f", serviceName});
+#endif
+}
+
 namespace CSKY {
 
 
@@ -65,7 +73,7 @@ AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)
 {
 
     qDebug(AirlinkManagerLog) << "airlink host on: " << AirlinkManager::airlinkHost;
-
+    killService("AirlinkStreamBridge");
 #ifdef __ANDROID__
     startAndroidASB();
 #else
@@ -113,6 +121,7 @@ void AirlinkManager::restartASBProcess() {
     if (asbProcess.state() != QProcess::NotRunning) {
         asbProcess.terminate();
         asbProcess.waitForFinished();
+        killService("AirlinkStreamBridge");
     }
 
     qCDebug(AirlinkManagerLog) << "Starting AirlinkStreamBridge...";
