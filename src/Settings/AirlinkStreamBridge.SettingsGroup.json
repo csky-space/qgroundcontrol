@@ -21,8 +21,8 @@
 },
 {
     "name":                 "asbPort",
-    "shortDesc":     "Airlink Stream Bridge autotune",
-    "longDesc":      "Airlink Stream Bridge autotune for gstreamer video",
+    "shortDesc":     "Airlink Stream Bridge port",
+    "longDesc":      "Airlink Stream Bridge port for gstreamer video",
     "type":                 "uint16",
     "default":         9050,
     "qgcRebootRequired":    false

@@ -36,6 +36,9 @@ Rectangle {
     property Fact _userBrandImageOutdoor:               QGroundControl.settingsManager.brandImageSettings.userBrandImageOutdoor
     property Fact _virtualJoystick:                     QGroundControl.settingsManager.appSettings.virtualJoystick
     property Fact _virtualJoystickAutoCenterThrottle:   QGroundControl.settingsManager.appSettings.virtualJoystickAutoCenterThrottle
+    property Fact _asbEnabled:                           QGroundControl.settingsManager.asbSettings.asbEnabled
+    property Fact _asbAutotune:                           QGroundControl.settingsManager.asbSettings.asbAutotune
+    property Fact _asbPort:                           QGroundControl.settingsManager.asbSettings.asbPort
 
     property real   _labelWidth:                ScreenTools.defaultFontPixelWidth * 20
     property real   _comboFieldWidth:           ScreenTools.defaultFontPixelWidth * 30
@@ -429,10 +432,12 @@ Rectangle {
                         visible: QGroundControl.settingsManager.airlinkCompiled
                     }
                     Rectangle {
+                        property bool changedBlock: !QGroundControl.airlinkManager.fullBlock
                         Layout.preferredHeight: asbCol.height + (_margins * 2)
                         Layout.preferredWidth:  asbCol.width + (_margins * 2)
                         color:                  qgcPal.windowShade
                         visible:                asbSectionLabel.visible
+                        enabled:                changedBlock
                         Layout.fillWidth:       true
 
                         ColumnLayout {
@@ -443,38 +448,60 @@ Rectangle {
                             spacing:                    _margins
 
                             FactCheckBox {
+                                id:         asbEnableCheckbox
                                 text:       qsTr("Enabled")
-                                fact:       _asbSettings.asbEnabled
-                                visible:    _asbSettings.asbEnabled.visible
-                                enabled:    !QGroundControl.airlinkManager.fullBlock
+                                fact:       _asbEnabled
+                                // visible:    _asbEnabled.visible
                             }
                             FactCheckBox {
+                                id:                 asbAutotuneCheckbox
                                 text:               qsTr("Autotune gstreamer to receive video")
-                                fact:               _asbSettings.asbAutotune
-                                visible:            _asbSettings.asbAutotune.visible
-                                enabled:            !QGroundControl.airlinkManager.fullBlock
-                                onCheckedChanged:   {
-                                    videoSource.enabled = !checked
-                                    videoUDPPort.enabled = !checked
-                                }
+                                fact:               _asbAutotune
+                                focus: true
+                                MouseArea {
+                                       anchors.fill: parent
+                                       propagateComposedEvents: true
+
+                                       onPressed: {
+                                            console.log(`MouseArea pressed. asbPortField.activeFocus is ${asbPortField.activeFocus}`)
+                                            //if(asbPortField.activeFocus === true) {
+                                            asbPortField.focus = false
+                                            asbAutotuneCheckbox.forceActiveFocus()
+                                           var newValue = _asbAutotune.value > 0 ? 0 : 1
+                                            //}
+                                            _asbAutotune.rawValue = newValue
+                                            mouse.accepted = true
+                                           videoSource.enabled = newValue === 0
+                                           videoUDPPort.enabled = newValue === 0
+                                       }
+                                   }
+
+                                   onCheckedChanged: {
+                                       if (!_internalUpdate) {
+                                           videoSource.enabled = !checked
+                                           videoUDPPort.enabled = !checked
+                                       }
+                                   }
+
+                                   property bool _internalUpdate: false
                             }
                             GridLayout {
                                 id:         asbGrid
                                 columns:    2
-                                visible:    _asbSettings.visible
+                                // visible:    _asbSettings.visible
                                 QGCLabel {
-                                id:         asbUdpPortLabel
-                                text:       qsTr("UDP port")
-                                visible:    udpPortLabel.visible
+                                    //id:         asbUdpPortLabel
+                                    text:       qsTr("UDP port")
+                                    //visible:    udpPortLabel.visible
                                 }
                                 FactTextField {
+                                    id:                     asbPortField
                                     Layout.preferredWidth:  _comboFieldWidth
-                                    fact:                   _asbSettings.asbPort
-                                    visible:                _asbSettings.asbPort.visible
-                                    enabled:                !QGroundControl.airlinkManager.fullBlock
+                                    fact:                   _asbPort
+                                    focus: true
+                                    // visible:                _asbPort.visible
                                 }
                             }
-                            
                         }
                     }
 

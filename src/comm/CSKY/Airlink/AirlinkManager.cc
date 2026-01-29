@@ -167,6 +167,9 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
     });
 
     connect(asbPort, &Fact::rawValueChanged, this, &AirlinkManager::setupPort);
+    connect(asbAutotune, &Fact::rawValueChanged, this, [this](QVariant checked) {
+        unblockUI();
+    });
     connect(asbAutotune, &Fact::rawValueChanged, this, &AirlinkManager::asbAutotuneChanged);
 
 #ifndef __ANDROID__
@@ -314,6 +317,7 @@ void signalHandler(int signal) {
     qgcApp()->mainRootWindow()->close();
     QEvent event{QEvent::Quit};
     qgcApp()->event(&event);
+    killService("AirlinkStreamBridge");
 }
 
 void AirlinkManager::_setConnects() {
@@ -339,8 +343,13 @@ void AirlinkManager::_setConnects() {
     connect(this, &AirlinkManager::checkAlive, &manager, &AirlinkStreamBridgeManager::checkAlive);
 
     connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, &AirlinkManager::unblockUI);
-    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
+    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
 
+        //unblockUI();
+        //asbAutotune->blockSignals(false);
+        //asbAutotune->setSendValueChangedSignals(true);
+        //emit fullBlockChanged(_fullBlockUI.load());
+        //asbAutotune->
     });
 
     connect(&manager, &AirlinkStreamBridgeManager::checkAliveCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err) {
@@ -406,14 +415,13 @@ void AirlinkManager::setupVideoStream(QVariant value) {
 }
 
 void AirlinkManager::setupPort(QVariant value) {
-    qCDebug(AirlinkManagerLog) << "set port";
+    qCWarning(AirlinkManagerLog) << "set port";
     if(asbAutotune->rawValue().toBool()) {
         qCDebug(AirlinkManagerLog) << "port constraining to " << value;
         videoUDPPort->setRawValue(value);
     }
     blockUI();
     emit sendAsbServicePort(value.toUInt());
-
 }
 
 void AirlinkManager::portConstraint(QVariant value) {
@@ -484,6 +492,7 @@ void AirlinkManager::asbEnabledChanged(QVariant value) {
 }
 
 void AirlinkManager::asbAutotuneChanged(QVariant value) {
+    qCWarning(AirlinkManagerLog) << "autotune changed";
     if(value.toBool()) {
         videoUDPPort->setRawValue(asbPort->rawValue());
         qCDebug(AirlinkManagerLog) << "start constrain video codec";
