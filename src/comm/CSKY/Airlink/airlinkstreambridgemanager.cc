@@ -65,7 +65,7 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
     });
     connect(this, &AirlinkStreamBridgeManager::getCodecCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
         qCDebug(AirlinkStreamBridgeManagerLog) << "getCodecCompleted with error: " << err;
-        if(err == QNetworkReply::NoError) {
+        if((err == QNetworkReply::NoError) && qgcApp()->toolbox()->airlinkManager()->getAutotuneEnabled()->rawValue().toBool()) {
             qCDebug(AirlinkStreamBridgeManagerLog) << "setup codec from ASB";
             QJsonDocument d = QJsonDocument::fromJson(replyData);
             if(!d.isEmpty() && d.object().contains("codec") && d.object()["codec"].isString() && !d.object()["codec"].toString().isEmpty()) {
@@ -91,11 +91,11 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
 
     });
 
-    connect(this, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
+    connect(this, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
         qCDebug(AirlinkStreamBridgeManagerLog) << "sendAsbServicePortCompleted with error: " << err;
-        if(err == QNetworkReply::NoError) {
-            qgcApp()->toolbox()->settingsManager()->videoSettings()->videoSource()->setRawValue(currentCodec);
-        }
+        //if((err == QNetworkReply::NoError) && ) {
+        //    qgcApp()->toolbox()->settingsManager()->videoSettings()->videoSource()->setRawValue(currentCodec);
+        //}
     });
 
     connect(this, &AirlinkStreamBridgeManager::videoIsRunningCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
