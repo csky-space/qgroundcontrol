@@ -451,7 +451,21 @@ Rectangle {
                                 id:         asbEnableCheckbox
                                 text:       qsTr("Enabled")
                                 fact:       _asbEnabled
-                                // visible:    _asbEnabled.visible
+                                focus: true
+                                MouseArea {
+                                    anchors.fill: parent
+                                    propagateComposedEvents: true
+
+                                    onPressed: {
+                                        console.log(`MouseArea pressed. asbPortField.activeFocus is ${asbPortField.activeFocus}`)
+                                        asbPortField.focus = false
+                                        asbEnableCheckbox.forceActiveFocus()
+                                        var newValue = _asbEnabled.value > 0 ? 0 : 1
+
+                                        _asbEnabled.rawValue = newValue
+                                        mouse.accepted = true
+                                    }
+                                }
                             }
                             FactCheckBox {
                                 id:                 asbAutotuneCheckbox
@@ -459,31 +473,26 @@ Rectangle {
                                 fact:               _asbAutotune
                                 focus: true
                                 MouseArea {
-                                       anchors.fill: parent
-                                       propagateComposedEvents: true
+                                    anchors.fill: parent
+                                    propagateComposedEvents: true
 
-                                       onPressed: {
-                                            console.log(`MouseArea pressed. asbPortField.activeFocus is ${asbPortField.activeFocus}`)
-                                            //if(asbPortField.activeFocus === true) {
-                                            asbPortField.focus = false
-                                            asbAutotuneCheckbox.forceActiveFocus()
-                                           var newValue = _asbAutotune.value > 0 ? 0 : 1
-                                            //}
-                                            _asbAutotune.rawValue = newValue
-                                            mouse.accepted = true
-                                           videoSource.enabled = newValue === 0
-                                           videoUDPPort.enabled = newValue === 0
-                                       }
-                                   }
+                                    onPressed: {
+                                        console.log(`MouseArea pressed. asbPortField.activeFocus is ${asbPortField.activeFocus}`)
+                                        asbPortField.focus = false
+                                        asbAutotuneCheckbox.forceActiveFocus()
+                                        var newValue = _asbAutotune.value > 0 ? 0 : 1
 
-                                   onCheckedChanged: {
-                                       if (!_internalUpdate) {
-                                           videoSource.enabled = !checked
-                                           videoUDPPort.enabled = !checked
-                                       }
-                                   }
+                                        _asbAutotune.rawValue = newValue
+                                        mouse.accepted = true
+                                        videoSource.enabled = newValue === 0
+                                        videoUDPPort.enabled = newValue === 0
+                                    }
+                                }
 
-                                   property bool _internalUpdate: false
+                                onCheckedChanged: {
+                                    videoSource.enabled = !checked
+                                    videoUDPPort.enabled = !checked
+                                }
                             }
                             GridLayout {
                                 id:         asbGrid
