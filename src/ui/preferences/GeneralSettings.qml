@@ -456,7 +456,7 @@ Rectangle {
                                     anchors.fill: parent
                                     propagateComposedEvents: true
 
-                                    onPressed: {
+                                    onClicked: {
                                         console.log(`MouseArea pressed. asbPortField.activeFocus is ${asbPortField.activeFocus}`)
                                         asbPortField.focus = false
                                         asbEnableCheckbox.forceActiveFocus()
@@ -476,7 +476,7 @@ Rectangle {
                                     anchors.fill: parent
                                     propagateComposedEvents: true
 
-                                    onPressed: {
+                                    onClicked: {
                                         console.log(`MouseArea pressed. asbPortField.activeFocus is ${asbPortField.activeFocus}`)
                                         asbPortField.focus = false
                                         asbAutotuneCheckbox.forceActiveFocus()

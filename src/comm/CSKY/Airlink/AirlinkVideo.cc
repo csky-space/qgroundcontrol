@@ -140,7 +140,7 @@ void AirlinkVideo::_disconnect() {
 }
 
 void AirlinkVideo::webrtcCreated(QByteArray replyData, QNetworkReply::NetworkError err) {
-    if(err == QNetworkReply::NoError) {
+    if((err == QNetworkReply::NoError) || (err == QNetworkReply::TimeoutError)) {
         qCDebug(AirlinkVideoLog) << "WebRTC receiver created successfully";
         _webrtcReceiverCreated = true;
 
