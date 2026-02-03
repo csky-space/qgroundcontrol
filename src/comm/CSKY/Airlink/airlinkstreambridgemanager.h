@@ -39,6 +39,7 @@ private:
     QNetworkRequest enableVideoTransmitRequest;
     QNetworkRequest isWebrtcReceiverConnectedRequest;
     QNetworkRequest openPeerRequest;
+    QNetworkRequest setupTransportPolicy;
 
     QNetworkRequest closePeerRequest;
     QNetworkRequest sendAsbServicePortRequest;
@@ -59,6 +60,7 @@ signals:
     void openPeerCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void closePeerCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void sendAsbServicePortCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
+    void sendAsbServiceTransportPolicyCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void checkAliveCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void getCodecCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
     void videoIsRunningCompleted(QByteArray replyData, QNetworkReply::NetworkError err);
@@ -66,12 +68,13 @@ public slots:
     //requests
     void init();
     void setToInitialPort();
-    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
+    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port, QString policy);
     void enableVideoTransmit();
     void isWebrtcReceiverConnected();
     void openPeer();
     void closePeer();
     void sendAsbServicePort(quint16 port);
+    void sendAsbServiceTransportPolicy(const QString& policy);
     void checkAlive();
     void getCodec();
     void isRunning();

@@ -138,6 +138,7 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
     asbEnabled = toolbox->settingsManager()->asbSettings()->asbEnabled();
     asbAutotune = toolbox->settingsManager()->asbSettings()->asbAutotune();
     asbPort = toolbox->settingsManager()->asbSettings()->asbPort();
+    asbTransportPolicy = toolbox->settingsManager()->asbSettings()->asbTransportPolicy();
 
     videoUDPPort = toolbox->settingsManager()->videoSettings()->udpPort();
     videoSource = toolbox->settingsManager()->videoSettings()->videoSource();
@@ -171,7 +172,24 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
         unblockUI();
     });
     connect(asbAutotune, &Fact::rawValueChanged, this, &AirlinkManager::asbAutotuneChanged);
-
+    connect(asbTransportPolicy, &Fact::rawValueChanged, this, [this](QVariant value) {
+        QString policy = "all";
+        switch(value.toUInt()) {
+        case 0:
+            policy = "all";
+            break;
+        case 1:
+            policy = "relay";
+            break;
+        case 2:
+            policy = "nohost";
+            break;
+        default:
+            policy = "all";
+        }
+        qCDebug(AirlinkManagerLog) << "Transport policy changed to: " << policy;
+        emit sendAsbServiceTransportPolicy(policy);
+    });
 #ifndef __ANDROID__
     asbProcess.start();
     asbProcess.waitForStarted(4000);
@@ -259,6 +277,10 @@ Fact* AirlinkManager::getAutotuneEnabled() const {
     return asbAutotune;
 }
 
+Fact* AirlinkManager::getTransportPolicy() const {
+    return asbTransportPolicy;
+}
+
 void AirlinkManager::updateDroneList(const QString &login,
                                      const QString &pass, const QString& hostName) {
 
@@ -340,10 +362,14 @@ void AirlinkManager::_setConnects() {
 
     });
     connect(this, &AirlinkManager::sendAsbServicePort, &manager, &AirlinkStreamBridgeManager::sendAsbServicePort);
+    connect(this, &AirlinkManager::sendAsbServiceTransportPolicy, [this](const QString& value) {
+        emit blockUI();
+    });
+    connect(this, &AirlinkManager::sendAsbServiceTransportPolicy, &manager, &AirlinkStreamBridgeManager::sendAsbServiceTransportPolicy);
     connect(this, &AirlinkManager::checkAlive, &manager, &AirlinkStreamBridgeManager::checkAlive);
 
     connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, &AirlinkManager::unblockUI);
-    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
+    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
 
         //unblockUI();
         //asbAutotune->blockSignals(false);
@@ -351,6 +377,8 @@ void AirlinkManager::_setConnects() {
         //emit fullBlockChanged(_fullBlockUI.load());
         //asbAutotune->
     });
+
+    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServiceTransportPolicyCompleted, this, &AirlinkManager::unblockUI);
 
     connect(&manager, &AirlinkStreamBridgeManager::checkAliveCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err) {
         if(err != QNetworkReply::NoError) {

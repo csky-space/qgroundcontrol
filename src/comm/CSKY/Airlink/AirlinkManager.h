@@ -83,6 +83,7 @@ public:
     Fact* getAsbEnabled() const;
     Fact* getPort() const;
     Fact* getAutotuneEnabled() const;
+    Fact* getTransportPolicy() const;
 
     void setHost(AirlinkConfiguration* config);
 signals:
@@ -98,6 +99,7 @@ signals:
     void droneOnlineListChanged();
 
     void sendAsbServicePort(quint16 port);
+    void sendAsbServiceTransportPolicy(const QString& policy);
     void checkAlive();
     void onConnectedAirlinkAdded(Airlink* link = nullptr);
     void onDisconnectedAirlinkRemoved(Airlink* link = nullptr);
@@ -135,6 +137,7 @@ private:
 	Fact* asbEnabled = nullptr;
 	Fact* asbAutotune = nullptr;
 	Fact* asbPort = nullptr;
+    Fact* asbTransportPolicy = nullptr;
 	
 	Fact* videoUDPPort = nullptr;
 	Fact* videoSource = nullptr;

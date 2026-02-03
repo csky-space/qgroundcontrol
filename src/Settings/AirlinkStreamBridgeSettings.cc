@@ -20,4 +20,6 @@
  DECLARE_SETTINGSFACT(AirlinkStreamBridgeSettings, asbEnabled)
  DECLARE_SETTINGSFACT(AirlinkStreamBridgeSettings, asbAutotune)
  DECLARE_SETTINGSFACT(AirlinkStreamBridgeSettings, asbPort)
+ DECLARE_SETTINGSFACT(AirlinkStreamBridgeSettings, asbTransportPolicy)
+
 //#endif

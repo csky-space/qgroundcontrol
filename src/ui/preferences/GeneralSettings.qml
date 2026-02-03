@@ -36,9 +36,10 @@ Rectangle {
     property Fact _userBrandImageOutdoor:               QGroundControl.settingsManager.brandImageSettings.userBrandImageOutdoor
     property Fact _virtualJoystick:                     QGroundControl.settingsManager.appSettings.virtualJoystick
     property Fact _virtualJoystickAutoCenterThrottle:   QGroundControl.settingsManager.appSettings.virtualJoystickAutoCenterThrottle
-    property Fact _asbEnabled:                           QGroundControl.settingsManager.asbSettings.asbEnabled
-    property Fact _asbAutotune:                           QGroundControl.settingsManager.asbSettings.asbAutotune
-    property Fact _asbPort:                           QGroundControl.settingsManager.asbSettings.asbPort
+    property Fact _asbEnabled:                          QGroundControl.settingsManager.asbSettings.asbEnabled
+    property Fact _asbAutotune:                         QGroundControl.settingsManager.asbSettings.asbAutotune
+    property Fact _asbPort:                             QGroundControl.settingsManager.asbSettings.asbPort
+    property Fact _asbTransportPolicy:                  QGroundControl.settingsManager.asbSettings.asbTransportPolicy
 
     property real   _labelWidth:                ScreenTools.defaultFontPixelWidth * 20
     property real   _comboFieldWidth:           ScreenTools.defaultFontPixelWidth * 30
@@ -509,6 +510,16 @@ Rectangle {
                                     fact:                   _asbPort
                                     focus: true
                                     // visible:                _asbPort.visible
+                                }
+                                QGCLabel {
+                                    id:         transportPolictyTypeLabel
+                                    text:       qsTr("Transport policty type")
+                                    visible:    true
+                                }
+                                FactComboBox {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    fact:                   _asbTransportPolicy
+                                    visible:                true
                                 }
                             }
                         }

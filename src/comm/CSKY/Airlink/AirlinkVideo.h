@@ -37,7 +37,7 @@ signals:
     void qtConnectionsStateChanged(bool established);
     void connectionFailed(const QString& errorMessage);
 
-    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port);
+    void createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port, QString policy);
     void enableVideoTransmit();
     void isWebrtcReceiverConnected();
     void isVideoRunning();

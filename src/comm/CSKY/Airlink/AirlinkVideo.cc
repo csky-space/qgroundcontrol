@@ -55,7 +55,7 @@ void AirlinkVideo::setConnections() {
     connect(_asbManager, &AirlinkStreamBridgeManager::videoIsRunningCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err){
         if((err != QNetworkReply::NoError) && _airlinkManager->getAsbEnabled()->rawValue().toBool() && _modem->isConnected()) {
             AirlinkConfiguration* conf = dynamic_cast<AirlinkConfiguration*>(_modem->getConfig().get());
-            emit createWebrtcDefault(_modem->getHost(), conf->modemName(), conf->password(), _airlinkManager->getPort()->rawValue().toInt());
+            emit createWebrtcDefault(_modem->getHost(), conf->modemName(), conf->password(), _airlinkManager->getPort()->rawValue().toInt(), _airlinkManager->getTransportPolicy()->enumStringValue());
         }
     });
     connect(this, &AirlinkVideo::openPeer, _asbManager, &AirlinkStreamBridgeManager::openPeer, Qt::QueuedConnection);
@@ -115,9 +115,9 @@ void AirlinkVideo::_connect(QString modemName, QString password, quint16 port) {
     qCDebug(AirlinkVideoLog) << "asb is on";
     if(!_webrtcReceiverCreated) {
         qCDebug(AirlinkVideoLog) << "Airlink video connecting for " << modemName;
+        qCDebug(AirlinkVideoLog) << "Current transport policy to send: " << _airlinkManager->getTransportPolicy()->enumStringValue();
         emit blockUI();
-
-        emit createWebrtcDefault(_modem->getHost(), modemName, password, port);
+        emit createWebrtcDefault(_modem->getHost(), modemName, password, port, _airlinkManager->getTransportPolicy()->enumStringValue());
     }
     else {
         emit blockUI();

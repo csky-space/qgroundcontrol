@@ -26,6 +26,15 @@
     "type":                 "uint16",
     "default":         9050,
     "qgcRebootRequired":    false
+},
+{
+    "name":             "asbTransportPolicy",
+    "shortDesc": "ASB peer transport policy",
+    "longDesc":  "ASB peer transport policy",
+    "type":             "uint32",
+    "enumStrings":      "all,relay,nohost",
+    "enumValues":       "0,1,2",
+    "default":     0
 }
 ]
 }

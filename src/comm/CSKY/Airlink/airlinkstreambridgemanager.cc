@@ -44,6 +44,10 @@ AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
     closePeerRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     closePeerRequest.setSslConfiguration(sslConfig);
 
+    setupTransportPolicy.setUrl(QUrl(baseASBRequestsPath + baseWebrtcRequestsPath + "setupTransportPolicy"));
+    setupTransportPolicy.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    setupTransportPolicy.setSslConfiguration(sslConfig);
+
     sendAsbServicePortRequest.setUrl(QUrl(baseASBRequestsPath + baseWebrtcRequestsPath + "setupOutputProtocol"));
     sendAsbServicePortRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     sendAsbServicePortRequest.setSslConfiguration(sslConfig);
@@ -184,12 +188,13 @@ void AirlinkStreamBridgeManager::setToInitialPort() {
     qgcApp()->toolbox()->settingsManager()->asbSettings()->asbPort()->setRawValue(_initialPort);
 }
 
-void AirlinkStreamBridgeManager::createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port) {
+void AirlinkStreamBridgeManager::createWebrtcDefault(QString hostName, QString modemName, QString password, quint16 port, QString policy) {
     QJsonObject obj;
     obj["hostName"] = hostName;
     obj["modemName"] = modemName;
     obj["password"] = password;
-    obj["UDPPort"] = port;
+    obj["IcePolicy"] = policy;
+
     QJsonDocument d(obj);
     //qCDebug(AirlinkStreamBridgeManagerLog) << "create webrtc with: " << d.toJson();
     baseRequest(createWebrtcDefaultRequest, "POST", d,
@@ -250,6 +255,18 @@ void AirlinkStreamBridgeManager::sendAsbServicePort(quint16 port) {
                 [this](QByteArray data, QNetworkReply::NetworkError error){
                     qCDebug(AirlinkStreamBridgeManagerLog) << "emitting sendAsbServicePortCompleted";
                     emit sendAsbServicePortCompleted(data, error);
+                }, 3000);
+}
+
+void AirlinkStreamBridgeManager::sendAsbServiceTransportPolicy(const QString& policy) {
+    QJsonObject obj;
+    obj["IcePolicy"] = policy;
+    QJsonDocument d(obj);
+
+    baseRequest(setupTransportPolicy, "POST", d,
+                [this](QByteArray data, QNetworkReply::NetworkError error){
+                    qCDebug(AirlinkStreamBridgeManagerLog) << "emitting sendAsbServiceTransportPolicyCompleted";
+                    emit sendAsbServiceTransportPolicyCompleted(data, error);
                 }, 3000);
 }
 

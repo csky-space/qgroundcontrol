@@ -21,5 +21,6 @@
     DEFINE_SETTINGFACT(asbEnabled)
     DEFINE_SETTINGFACT(asbAutotune)
     DEFINE_SETTINGFACT(asbPort)
+    DEFINE_SETTINGFACT(asbTransportPolicy)
  };
 //#endif
