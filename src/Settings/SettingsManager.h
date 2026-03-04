@@ -29,6 +29,7 @@
 #include "FirmwareUpgradeSettings.h"
 #include "ADSBVehicleManagerSettings.h"
 #include "GimbalControllerSettings.h"
+#include "VibrationControllerSettings.h"
 #include <QVariantList>
 #include <qobjectdefs.h>
 #include "RemoteIDSettings.h"
@@ -58,6 +59,7 @@ public:
     Q_PROPERTY(QObject* firmwareUpgradeSettings         READ firmwareUpgradeSettings        CONSTANT)
     Q_PROPERTY(QObject* adsbVehicleManagerSettings      READ adsbVehicleManagerSettings     CONSTANT)
     Q_PROPERTY(QObject* gimbalControllerSettings        READ gimbalControllerSettings       CONSTANT)
+    Q_PROPERTY(QObject* vibrationControllerSettings     READ vibrationControllerSettings    CONSTANT)
 #if !defined(NO_ARDUPILOT_DIALECT)
     Q_PROPERTY(QObject* apmMavlinkStreamRateSettings    READ apmMavlinkStreamRateSettings   CONSTANT)
 #endif
@@ -82,6 +84,7 @@ public:
     FirmwareUpgradeSettings*        firmwareUpgradeSettings     (void) { return _firmwareUpgradeSettings; }
     ADSBVehicleManagerSettings*     adsbVehicleManagerSettings  (void) { return _adsbVehicleManagerSettings; }
     GimbalControllerSettings*       gimbalControllerSettings    (void) { return _gimbalControllerSettings; }
+    VibrationControllerSettings*    vibrationControllerSettings (void) { return _vibrationControllerSettings; }
 #if !defined(NO_ARDUPILOT_DIALECT)
     APMMavlinkStreamRateSettings*   apmMavlinkStreamRateSettings(void) { return _apmMavlinkStreamRateSettings; }
 #endif
@@ -106,6 +109,7 @@ private:
     FirmwareUpgradeSettings*        _firmwareUpgradeSettings;
     ADSBVehicleManagerSettings*     _adsbVehicleManagerSettings;
     GimbalControllerSettings*       _gimbalControllerSettings;
+    VibrationControllerSettings*    _vibrationControllerSettings;
 #if !defined(NO_ARDUPILOT_DIALECT)
     APMMavlinkStreamRateSettings*   _apmMavlinkStreamRateSettings;
 #endif

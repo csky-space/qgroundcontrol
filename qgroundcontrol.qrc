@@ -79,6 +79,7 @@
         <file alias="PreFlightCheckList.qml">src/FlightDisplay/PreFlightCheckList.qml</file>
         <file alias="PX4FlowSensor.qml">src/VehicleSetup/PX4FlowSensor.qml</file>
         <file alias="QGCInstrumentWidget.qml">src/FlightMap/Widgets/QGCInstrumentWidget.qml</file>
+        <file alias="QGroundControl/FlightMap/VibrationIndicator.qml">src/FlightMap/Widgets/VibrationIndicator.qml</file>
         <file alias="QGCInstrumentWidgetAlternate.qml">src/FlightMap/Widgets/QGCInstrumentWidgetAlternate.qml</file>
         <file alias="QGroundControl/Controls/AnalyzePage.qml">src/AnalyzeView/AnalyzePage.qml</file>
         <file alias="QGroundControl/Controls/AppMessages.qml">src/QmlControls/AppMessages.qml</file>
@@ -354,6 +355,7 @@
         <file alias="Vehicle/EFIFact.json">src/Vehicle/EFIFact.json</file>
         <file alias="Vehicle/GimbalFact.json">src/Gimbal/GimbalFact.json</file>
         <file alias="Video.SettingsGroup.json">src/Settings/Video.SettingsGroup.json</file>
+		<file alias="VibrationController.SettingsGroup.json">src/Settings/VibrationController.SettingsGroup.json</file>
         <file alias="VTOLLandingPattern.FactMetaData.json">src/MissionManager/VTOLLandingPattern.FactMetaData.json</file>
         <file alias="GimbalController.SettingsGroup.json">src/Settings/GimbalController.SettingsGroup.json</file>
     </qresource>

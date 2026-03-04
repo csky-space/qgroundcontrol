@@ -31,6 +31,7 @@ SettingsManager::SettingsManager(QGCApplication* app, QGCToolbox* toolbox)
     , _firmwareUpgradeSettings      (nullptr)
     , _adsbVehicleManagerSettings   (nullptr)
     , _gimbalControllerSettings     (nullptr)
+    , _vibrationControllerSettings  (nullptr)
 #if !defined(NO_ARDUPILOT_DIALECT)
     , _apmMavlinkStreamRateSettings (nullptr)
 #endif
@@ -60,7 +61,8 @@ void SettingsManager::setToolbox(QGCToolbox *toolbox)
     _offlineMapsSettings =          new OfflineMapsSettings         (this);
     _firmwareUpgradeSettings =      new FirmwareUpgradeSettings     (this);
     _adsbVehicleManagerSettings =   new ADSBVehicleManagerSettings  (this);
-    _gimbalControllerSettings =     new GimbalControllerSettings       (this);
+    _gimbalControllerSettings =     new GimbalControllerSettings    (this);
+    _vibrationControllerSettings =  new VibrationControllerSettings (this);
 #if !defined(NO_ARDUPILOT_DIALECT)
     _apmMavlinkStreamRateSettings = new APMMavlinkStreamRateSettings(this);
 #endif

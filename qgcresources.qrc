@@ -111,4 +111,7 @@
     <qresource prefix="/gimbal">
         <file alias="payload.svg">resources/gimbal/payload.svg</file>
     </qresource>
+    <qresource prefix="/vibration">
+        <file alias="vibration.svg">resources/vibration/vibration.svg</file>
+    </qresource>
 </RCC>

@@ -431,6 +431,7 @@ INCLUDEPATH += \
     src/comm \
     src/input \
     src/lib/qmapcontrol \
+    src/Vibration \
     src/uas \
     src/ui \
     src/ui/linechart \
@@ -670,6 +671,7 @@ HEADERS += \
     src/Geo/TransverseMercator.hpp \
     src/Geo/PolarStereographic.hpp \
     src/Gimbal/GimbalController.h \
+    src/Vibration/VibrationController.h \
     src/QGC.h \
     src/QGCApplication.h \
     src/QGCCachedFileDownload.h \
@@ -717,6 +719,7 @@ HEADERS += \
     src/Settings/UnitsSettings.h \
     src/Settings/VideoSettings.h \
     src/Settings/GimbalControllerSettings.h \
+    src/Settings/VibrationControllerSettings.h \
     src/ShapeFileHelper.h \
     src/SHPFileHelper.h \
     src/Terrain/TerrainQuery.h \
@@ -932,6 +935,7 @@ SOURCES += \
     src/Geo/TransverseMercator.cpp \
     src/Geo/PolarStereographic.cpp \
     src/Gimbal/GimbalController.cc \
+    src/Vibration/VibrationController.cc \
     src/QGC.cc \
     src/QGCApplication.cc \
     src/QGCCachedFileDownload.cc \
@@ -978,6 +982,7 @@ SOURCES += \
     src/Settings/UnitsSettings.cc \
     src/Settings/VideoSettings.cc \
     src/Settings/GimbalControllerSettings.cc \
+    src/Settings/VibrationControllerSettings.cc \
     src/ShapeFileHelper.cc \
     src/SHPFileHelper.cc \
     src/Terrain/TerrainQuery.cc \

@@ -134,6 +134,7 @@ Item {
         anchors.margins:        _toolsMargin
         anchors.right:          parent.right
         width:                  _rightPanelWidth
+        visible: !vibrationIndicator.visible
 
         property real rightEdgeCenterInset: visible ? parent.width - x : 0
 
@@ -241,6 +242,23 @@ Item {
                 return parentToolInsets.leftEdgeBottomInset + _toolsMargin
             }
         }
+    }
+
+    VibrationIndicator {
+        id: vibrationIndicator
+
+        anchors.top: instrumentPanel.bottom
+        anchors.topMargin: _toolsMargin
+        anchors.right: instrumentPanel.right
+        anchors.rightMargin: _toolsMargin
+        anchors.left: instrumentPanel.left
+        anchors.leftMargin: _toolsMargin
+        //width: _rightPanelWidth
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: _toolsMargin
+        //width:                  _rightPanelWidth
+        visible: _activeVehicle != null
+        z: QGroundControl.zOrderWidgets
     }
 
     //-- Virtual Joystick

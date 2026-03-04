@@ -32,6 +32,8 @@ add_library(Settings
 	SettingsManager.h
 	UnitsSettings.cc
 	UnitsSettings.h
+	VibrationSettings.cc
+	VibrationSettings.h
 	VideoSettings.cc
 	VideoSettings.h
 	RemoteIDSettings.h

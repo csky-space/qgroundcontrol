@@ -1,0 +1,43 @@
+{
+    "version":      1,
+    "fileType":  "FactMetaData",
+    "QGC.MetaData.Facts":
+[
+{
+    "name":              "VibrationX",
+    "shortDesc":         "X axis of vibration",
+    "type":              "float",
+    "default":           0.0
+},
+{
+    "name":              "VibrationY",
+    "shortDesc":         "Y axis of vibration",
+    "type":              "float",
+    "default":           0.0
+},
+{
+    "name":              "VibrationZ",
+    "shortDesc":         "Z axis of vibration",
+    "type":              "float",
+    "default":           0.0
+},
+{
+    "name":              "ClippingP",
+    "shortDesc":         "Vibration clipping primary",
+    "type":              "float",
+    "default":           0.0
+},
+{
+    "name":              "ClippingS",
+    "shortDesc":         "Vibration clipping secondary",
+    "type":              "float",
+    "default":           0.0
+},
+{
+    "name":              "ClippingT",
+    "shortDesc":         "Vibration clipping tertiary",
+    "type":              "float",
+    "default":           0.0
+},
+]
+}

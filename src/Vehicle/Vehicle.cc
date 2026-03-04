@@ -54,6 +54,7 @@
 #include "EventHandler.h"
 #include "Actuators/Actuators.h"
 #include "GimbalController.h"
+#include "VibrationController.h"
 #ifdef QT_DEBUG
 #include "MockLink.h"
 #endif
@@ -506,6 +507,7 @@ void Vehicle::_commonInit()
     _loadJoystickSettings();
 
     _gimbalController = new GimbalController(_mavlink, this);
+    _vibrationController = new VibrationController(_mavlink, this);
 }
 
 Vehicle::~Vehicle()
@@ -522,6 +524,10 @@ Vehicle::~Vehicle()
     _mav = nullptr;
 
     deleteGimbalController();
+    if(_vibrationController) {
+        _vibrationController->deleteLater();
+        _vibrationController = nullptr;
+    }
 }
 
 void Vehicle::prepareDelete()
