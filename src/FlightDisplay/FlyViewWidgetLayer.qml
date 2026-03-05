@@ -244,8 +244,8 @@ Item {
         }
     }
 
-    VibrationIndicator {
-        id: vibrationIndicator
+    EKFIndicator {
+        id: ekfIndicator
 
         anchors.top: instrumentPanel.bottom
         anchors.topMargin: _toolsMargin
@@ -253,10 +253,27 @@ Item {
         anchors.rightMargin: _toolsMargin
         anchors.left: instrumentPanel.left
         anchors.leftMargin: _toolsMargin
-        //width: _rightPanelWidth
-        anchors.bottom: parent.bottom
+
         anchors.bottomMargin: _toolsMargin
-        //width:                  _rightPanelWidth
+
+        height: instrumentPanel.height
+        visible: _activeVehicle != null
+        z: QGroundControl.zOrderWidgets
+    }
+
+    VibrationIndicator {
+        id: vibrationIndicator
+
+        anchors.top: ekfIndicator.bottom
+        anchors.topMargin: _toolsMargin
+        anchors.right: ekfIndicator.right
+        anchors.rightMargin: _toolsMargin
+        anchors.left: ekfIndicator.left
+        anchors.leftMargin: _toolsMargin
+        height: instrumentPanel.height
+        //anchors.bottom: parent.bottom
+        anchors.bottomMargin: _toolsMargin
+
         visible: _activeVehicle != null
         z: QGroundControl.zOrderWidgets
     }

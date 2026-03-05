@@ -80,6 +80,7 @@ class Autotune;
 class RemoteIDManager;
 class GimbalController;
 class VibrationController;
+class EKFController;
 
 namespace events {
 namespace parser {
@@ -247,6 +248,7 @@ public:
     Q_PROPERTY(float                mavlinkLossPercent          READ mavlinkLossPercent                                             NOTIFY mavlinkStatusChanged)
     Q_PROPERTY(GimbalController*    gimbalController            READ gimbalController                                               CONSTANT)
     Q_PROPERTY(VibrationController* vibrationController         READ vibrationController                                            CONSTANT)
+    Q_PROPERTY(EKFController*       ekfController               READ ekfController                                                  CONSTANT)
     Q_PROPERTY(bool                 hasGripper                  READ hasGripper                                                     CONSTANT)
     Q_PROPERTY(bool                 isROIEnabled                READ isROIEnabled                                                   NOTIFY isROIEnabledChanged)
     Q_PROPERTY(CheckList            checkListState              READ checkListState             WRITE setCheckListState             NOTIFY checkListStateChanged)
@@ -916,6 +918,7 @@ public:
 
     GimbalController* gimbalController    () { return _gimbalController; }
     VibrationController* vibrationController() {return _vibrationController;}
+    EKFController* ekfController() {return _ekfController;}
 
     CheckList   checkListState          () { return _checkListState; }
     void        setCheckListState       (CheckList cl)  { _checkListState = cl; emit checkListStateChanged(); }
@@ -1218,6 +1221,7 @@ private:
     Autotune*                       _autotune                       = nullptr;
     GimbalController*               _gimbalController               = nullptr;
     VibrationController*            _vibrationController            = nullptr;
+    EKFController*                  _ekfController            = nullptr;
 
     bool    _armed = false;         ///< true: vehicle is armed
     uint8_t _base_mode = 0;     ///< base_mode from HEARTBEAT

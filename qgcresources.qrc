@@ -114,4 +114,7 @@
     <qresource prefix="/vibration">
         <file alias="vibration.svg">resources/vibration/vibration.svg</file>
     </qresource>
+    <qresource prefix="/EKF">
+        <file alias="EKF.svg">resources/EKF/EKF.svg</file>
+    </qresource>
 </RCC>

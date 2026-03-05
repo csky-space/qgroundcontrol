@@ -7,7 +7,7 @@
 #
 ################################################################################
 
-CONFIG += installer
+#CONFIG += installer
 
 QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in makefiles
 
@@ -432,6 +432,7 @@ INCLUDEPATH += \
     src/input \
     src/lib/qmapcontrol \
     src/Vibration \
+    src/EKF \
     src/uas \
     src/ui \
     src/ui/linechart \
@@ -672,6 +673,7 @@ HEADERS += \
     src/Geo/PolarStereographic.hpp \
     src/Gimbal/GimbalController.h \
     src/Vibration/VibrationController.h \
+    src/EKF/EKFController.h \
     src/QGC.h \
     src/QGCApplication.h \
     src/QGCCachedFileDownload.h \
@@ -936,6 +938,7 @@ SOURCES += \
     src/Geo/PolarStereographic.cpp \
     src/Gimbal/GimbalController.cc \
     src/Vibration/VibrationController.cc \
+    src/EKF/EKFController.cc \
     src/QGC.cc \
     src/QGCApplication.cc \
     src/QGCCachedFileDownload.cc \

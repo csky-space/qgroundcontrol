@@ -65,6 +65,7 @@
 #include "PlanMasterController.h"
 #include "VideoManager.h"
 #include "VibrationController.h"
+#include "EKFController.h"
 #include "VideoReceiver.h"
 #include "LogDownloadController.h"
 #if !defined(QGC_DISABLE_MAVLINK_INSPECTOR)
@@ -478,6 +479,7 @@ void QGCApplication::_initCommon()
     qmlRegisterUncreatableType<MissionItem>         (kQGroundControl,                       1, 0, "MissionItem",                kRefOnly);
     qmlRegisterUncreatableType<VisualMissionItem>   (kQGroundControl,                       1, 0, "VisualMissionItem",          kRefOnly);
     qmlRegisterUncreatableType<VibrationController>    (kQGroundControl,                       1, 0, "VibrationController",           kRefOnly);
+    qmlRegisterUncreatableType<EKFController>       (kQGroundControl,                       1, 0, "EKFController",              kRefOnly);
     qmlRegisterUncreatableType<FlightPathSegment>   (kQGroundControl,                       1, 0, "FlightPathSegment",          kRefOnly);
     qmlRegisterUncreatableType<QmlObjectListModel>  (kQGroundControl,                       1, 0, "QmlObjectListModel",         kRefOnly);
     qmlRegisterUncreatableType<MissionCommandTree>  (kQGroundControl,                       1, 0, "MissionCommandTree",         kRefOnly);

@@ -55,6 +55,7 @@
 #include "Actuators/Actuators.h"
 #include "GimbalController.h"
 #include "VibrationController.h"
+#include "EKFController.h"
 #ifdef QT_DEBUG
 #include "MockLink.h"
 #endif
@@ -508,6 +509,7 @@ void Vehicle::_commonInit()
 
     _gimbalController = new GimbalController(_mavlink, this);
     _vibrationController = new VibrationController(_mavlink, this);
+    _ekfController = new EKFController(_mavlink, this);
 }
 
 Vehicle::~Vehicle()
@@ -527,6 +529,10 @@ Vehicle::~Vehicle()
     if(_vibrationController) {
         _vibrationController->deleteLater();
         _vibrationController = nullptr;
+    }
+    if(_ekfController) {
+        _ekfController->deleteLater();
+        _ekfController = nullptr;
     }
 }
 
