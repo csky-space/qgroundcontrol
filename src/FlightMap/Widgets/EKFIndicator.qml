@@ -29,20 +29,19 @@ Item {
 
     readonly property real columnBaseWidth: (width - margins * 2) / 3
 
-    Rectangle {
-        anchors.fill: parent
-        color: qgcPal.window
-        opacity: barVisible ? 0.5 : 0.0
-        z: -1
-        radius: 8
-    }
-
     RowLayout {
         id: rowLayout
         anchors.fill: parent
         clip: true
         spacing: margins
         //Layout.fillWidth: true
+        Rectangle {
+            anchors.fill: barVisible ? parent : image
+            color: qgcPal.window
+            opacity: 0.5
+            z: -1
+            radius: 8
+        }
         ColumnLayout {
             id: barColumnLayout
             visible: barVisible
@@ -69,7 +68,7 @@ Item {
 
                 Bar {
                     id: positionHorVar
-                    label: "PosHor"
+                    label: "PosH"
                     value: posHorVar
                     lowCheck: 0.5
                     highCheck: 0.8
@@ -78,7 +77,7 @@ Item {
 
                 Bar {
                     id: positionVertVar
-                    label: "PosVert"
+                    label: "PosV"
                     value: posVertVar
                     lowCheck: 0.5
                     highCheck: 0.8
@@ -87,7 +86,7 @@ Item {
 
                 Bar {
                     id: compassVar
-                    label: "Comp"
+                    label: "CMP"
                     value: compVar
                     lowCheck: 0.5
                     highCheck: 0.8
@@ -96,7 +95,7 @@ Item {
 
                 Bar {
                     id: terrVar
-                    label: "Terr"
+                    label: "TALT"
                     value: terrAltVar
                     lowCheck: 0.5
                     highCheck: 0.8
@@ -140,15 +139,16 @@ Item {
             id: image
             source: "/EKF/EKF.svg"
             fillMode: Image.PreserveAspectFit
-            sourceSize.height: _root.height * 0.3
+            sourceSize.width: _root.width
             color: added
-            Layout.fillWidth: true
+
+            //Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.maximumHeight: barVisible ? (_root.width * 0.3) / (16/9) : _root.width / (16/9)
-
-            Layout.preferredWidth: barVisible ? _root.width * 0.3 : _root.width
-
+            Layout.maximumHeight: (_root.width * 0.3) / (16/9)
+            Layout.maximumWidth: _root.width * 0.3
+            Layout.minimumWidth: _root.width * 0.3
             Layout.alignment: Qt.AlignRight
+
             MouseArea {
                 anchors.fill: parent
 

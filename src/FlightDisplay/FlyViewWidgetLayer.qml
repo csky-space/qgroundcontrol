@@ -250,10 +250,7 @@ Item {
         anchors.top: instrumentPanel.bottom
         anchors.topMargin: _toolsMargin
         anchors.right: instrumentPanel.right
-        anchors.rightMargin: _toolsMargin
         anchors.left: instrumentPanel.left
-        anchors.leftMargin: _toolsMargin
-
         anchors.bottomMargin: _toolsMargin
 
         height: instrumentPanel.height
@@ -267,13 +264,10 @@ Item {
         anchors.top: ekfIndicator.bottom
         anchors.topMargin: _toolsMargin
         anchors.right: ekfIndicator.right
-        anchors.rightMargin: _toolsMargin
         anchors.left: ekfIndicator.left
-        anchors.leftMargin: _toolsMargin
-        height: instrumentPanel.height
-        //anchors.bottom: parent.bottom
         anchors.bottomMargin: _toolsMargin
 
+        height: instrumentPanel.height
         visible: _activeVehicle != null
         z: QGroundControl.zOrderWidgets
     }

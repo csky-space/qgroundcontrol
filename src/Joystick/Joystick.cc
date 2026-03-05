@@ -710,15 +710,15 @@ void Joystick::_handleAxis()
 
             //uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
             //_activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
-            std::array<uint8_t, 14> rcOverrideButtons;
-            if(_totalButtonCount < 14) {
+            std::array<uint8_t, 12> rcOverrideButtons;
+            if(_totalButtonCount < 12) {
                 memcpy(rcOverrideButtons.data(), _rgButtonValues, _totalButtonCount);
-                memset(rcOverrideButtons.data() + _totalButtonCount, 0, 14 - _totalButtonCount);
+                memset(rcOverrideButtons.data() + _totalButtonCount, 0, 12 - _totalButtonCount);
             } else {
-                memcpy(rcOverrideButtons.data(), _rgButtonValues, 14);
+                memcpy(rcOverrideButtons.data(), _rgButtonValues, 12);
             }
 
-            _activeVehicle->sendJoystickRCOverrideDataThreadSafe(roll, pitch, yaw, throttle, rcOverrideButtons);
+            _activeVehicle->sendJoystickRCOverrideDataThreadSafe(roll, pitch, yaw, throttle, gimbalPitch, gimbalYaw, rcOverrideButtons);
         }
     }
 }

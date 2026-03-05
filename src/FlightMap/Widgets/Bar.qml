@@ -19,8 +19,10 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Rectangle {
+            id: barBackground
             anchors.fill: parent
             color: "black"
+            radius: 8
         }
 
         Rectangle {
@@ -29,7 +31,7 @@ ColumnLayout {
             width: parent.width
             height: (Math.min(value, maxValue) / maxValue) * parent.height
             color: value < lowCheck ? "#222222" : value < highCheck ? "yellow" : "red"
-            radius: 6
+            radius: 8
             border.color: "white"
             border.width: 1
             layer.enabled: true
@@ -79,12 +81,13 @@ ColumnLayout {
         }
         Text {
             id: labelText
-            anchors.top: bar.top
-            anchors.horizontalCenter: bar.horizontalCenter
+            anchors.top: barBackground.top
+            anchors.horizontalCenter: barBackground.horizontalCenter
 
             text: label
             font.pixelSize: 10
             color: "white"
+            z: 999
         }
     }
 }

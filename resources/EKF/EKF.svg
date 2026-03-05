@@ -1,4 +1,13 @@
-<svg width="200" height="100" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="100" fill="transparent"/>
-  <text x="70%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white">EKF</text>
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="100px" height="100px" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .a { fill: #ffffff; } /* белый цвет для всех элементов с классом a */
+    </style>
+  </defs>
+  <!-- Текст EKF по центру холста, жирный Arial -->
+  <text x="24" y="27" dominant-baseline="middle" text-anchor="middle" 
+        class="a" font-family="Arial, sans-serif" font-size="25" font-weight="bold">
+    EKF
+  </text>
 </svg>

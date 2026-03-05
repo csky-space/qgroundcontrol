@@ -29,74 +29,62 @@ Item {
 
     readonly property real columnBaseWidth: (width - margins * 2) / 3
 
-    Rectangle {
-        anchors.fill: parent
-        color: qgcPal.window
-        opacity: barVisible ? 0.5 : 0.0
-        z: -1
-        radius: 8
-    }
-
     RowLayout {
         id: rowLayout
         anchors.fill: parent
         clip: true
         spacing: margins
+        Rectangle {
+            anchors.fill: barVisible ? parent : image
+            color: qgcPal.window
+            opacity: 0.5
+            z: -1
+            radius: 8
+        }
         //Layout.fillWidth: true
         ColumnLayout {
-            id: barColumnLayout
-            visible: barVisible
-            spacing: margins * 2
+           id: barColumnLayout
+           visible: barVisible
+           spacing: margins * 2
+           Layout.fillWidth: true
+           Layout.fillHeight: true
+           Layout.preferredWidth: _root.width * 0.7
+           GridLayout {
+               id: barGrid
+               columns: 3
+               columnSpacing: margins
+               rowSpacing: margins * 2
+               Layout.fillWidth: true
+               Layout.fillHeight: true
+               Bar {
+                   id: barX
+                   label: "X"
+                   value: vibeX
+               }
+
+               Bar {
+                   id: barY
+                   label: "Y"
+                   value: vibeY
+               }
+
+               Bar {
+                   id: barZ
+                   label: "Z"
+                   value: vibeZ
+               }
+           }
+        }
+
+        Rectangle {
+            visible: !barVisible
+            clip: true
+            anchors.margins: margins * 2
+
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.preferredWidth: _root.width * 0.7
-            GridLayout {
-                id: barGrid
-                columns: 3
-                columnSpacing: margins
-                rowSpacing: margins * 2
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Bar {
-                    id: barX
-                    label: "X"
-                    value: vibeX
-                }
-
-                Bar {
-                    id: barY
-                    label: "Y"
-                    value: vibeY
-                }
-
-                Bar {
-                    id: barZ
-                    label: "Z"
-                    value: vibeZ
-                }
-            }
-            //RowLayout {
-            //    width: parent.width
-            //    spacing: margins
-            //    Layout.preferredWidth: _root.width * 0.7
-            //    Layout.fillWidth: true
-            //    Layout.fillHeight: true
-            //    QGCLabel {
-            //        horizontalAlignment: Text.AlignHCenter
-            //        text: vibration ? qsTr("CLP1: ") + clipping1 : ""
-            //        color: "white"
-            //    }
-            //    QGCLabel {
-            //        horizontalAlignment: Text.AlignHCenter
-            //        text: vibration ? qsTr("CLP2: ") + clipping2 : ""
-            //        color: "white"
-            //    }
-            //    QGCLabel {
-            //        horizontalAlignment: Text.AlignHCenter
-            //        text: vibration ? qsTr("CLP3: ") + clipping3 : ""
-            //        color: "white"
-            //    }
-            //}
+            color: "transparent"
         }
 
         QGCColoredImage {
@@ -111,15 +99,16 @@ Item {
             id: image
             source: "/vibration/vibration.svg"
             fillMode: Image.PreserveAspectFit
-            sourceSize.height: _root.height * 0.3
+            sourceSize.width: _root.width * 0.3
             color: added
-            Layout.fillWidth: true
+
+            //Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.maximumHeight: barVisible ? (_root.width * 0.3) / (16/9) : _root.width / (16/9)
-
-            Layout.preferredWidth: barVisible ? _root.width * 0.3 : _root.width
-
+            Layout.maximumHeight: (_root.width * 0.3) / (16/9)
+            Layout.maximumWidth: _root.width * 0.3
+            Layout.minimumWidth: _root.width * 0.3
             Layout.alignment: Qt.AlignRight
+
             MouseArea {
                 anchors.fill: parent
 
@@ -137,8 +126,8 @@ Item {
             }
 
             //Rectangle {
-            //    anchors.fill: parent
-            //    color: "green"
+            //   anchors.fill: parent
+            //   color: "green"
             //}
         }
     }
