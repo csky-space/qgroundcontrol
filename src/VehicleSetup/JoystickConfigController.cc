@@ -531,7 +531,7 @@ void JoystickConfigController::_writeCalibration()
     for (int function = 0; function < Joystick::maxFunction; function++) {
         joystick->setFunctionAxis(static_cast<Joystick::AxisFunction_t>(function), _rgFunctionAxisMapping[function]);
     }
-    
+    joystick->setFunctionAxis(Joystick::AxisFunction_t::extraFunction, 6);
     _stopCalibration();
     _setInternalCalibrationValuesFromSettings();
 

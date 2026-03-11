@@ -2,10 +2,9 @@
 <svg width="100px" height="100px" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
-      .a { fill: #ffffff; } /* белый цвет для всех элементов с классом a */
+      .a { fill: #ffffff; }
     </style>
   </defs>
-  <!-- Текст EKF по центру холста, жирный Arial -->
   <text x="24" y="27" dominant-baseline="middle" text-anchor="middle" 
         class="a" font-family="Arial, sans-serif" font-size="25" font-weight="bold">
     EKF

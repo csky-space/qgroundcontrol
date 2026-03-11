@@ -79,7 +79,6 @@ public:
         throttleFunction,
         gimbalPitchFunction,
         gimbalYawFunction,
-        extraFunction,
         maxFunction
     } AxisFunction_t;
 
@@ -114,16 +113,12 @@ public:
     Q_PROPERTY(float    exponential             READ exponential            WRITE setExponential        NOTIFY exponentialChanged)
     Q_PROPERTY(bool     accumulator             READ accumulator            WRITE setAccumulator        NOTIFY accumulatorChanged)
     Q_PROPERTY(bool     circleCorrection        READ circleCorrection       WRITE setCircleCorrection   NOTIFY circleCorrectionChanged)
-    Q_PROPERTY(bool     isSendingRC             READ isSendingRC            WRITE setIsSendingRC        NOTIFY isSendingRCChanged)
 
     Q_INVOKABLE void    setButtonRepeat     (int button, bool repeat);
     Q_INVOKABLE bool    getButtonRepeat     (int button);
     Q_INVOKABLE void    setButtonAction     (int button, const QString& action);
     Q_INVOKABLE QString getButtonAction     (int button);
     Q_INVOKABLE void    stopSendingRC       ();
-    Q_INVOKABLE void    startSendingRC      ();
-    void    setIsSendingRC      (bool enabled);
-    bool    isSendingRC      () const;
     // Property accessors
 
     QString     name                () { return _name; }
@@ -226,7 +221,7 @@ signals:
     void gripperAction              (GRIPPER_ACTIONS gripperAction);
     void landingGearDeploy          ();
     void landingGearRetract         ();
-    void isSendingRCChanged         ();
+
 protected:
     void    _setDefaultCalibration  ();
     void    _saveSettings           ();
@@ -267,7 +262,7 @@ protected:
 
     static const float  _defaultAxisFrequencyHz;
     static const float  _defaultButtonFrequencyHz;
-    bool _isSendingRC;
+    bool _isSendRCStopped;
 
     uint8_t*_rgButtonValues         = nullptr;
 

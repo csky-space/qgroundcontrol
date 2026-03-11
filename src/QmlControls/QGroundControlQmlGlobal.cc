@@ -80,6 +80,7 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
     _adsbVehicleManager     = toolbox->adsbVehicleManager();
 #ifdef QGC_AIRLINK_ENABLED
     _airlinkManager         = toolbox->airlinkManager();
+    _joystickManager        = toolbox->joystickManager();
 #endif
     _globalPalette          = new QGCPalette(this);
 #if defined(QGC_ENABLE_PAIRING)

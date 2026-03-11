@@ -4486,7 +4486,7 @@ void Vehicle::sendJoystickDataThreadSafe(float roll, float pitch, float yaw, flo
     sendMessageOnLinkThreadSafe(sharedLink.get(), message);
 }
 
-void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, float yaw, float thrust, float gimbalPitch, float gimbalYaw, const std::array<uint8_t, 12>& rcOverrideButtons) {
+void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, float yaw, float thrust, float gimbalPitch, float gimbalYaw, float maxAxis, const std::array<uint8_t, 11>& rcOverrideButtons) {
     SharedLinkInterfacePtr sharedLink = vehicleLinkManager()->primaryLink().lock();
     if (!sharedLink) {
         qCDebug(VehicleLog)<< "sendJoystickDataThreadSafe: primary link gone!";
@@ -4496,7 +4496,7 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, flo
     if (sharedLink->linkConfiguration()->isHighLatency()) {
         return;
     }
-    qCDebug(VehicleLog)
+    qCDebug(VehicleLog);
     mavlink_message_t message;
 
     // Incoming values are in the range -1:1
@@ -4515,8 +4515,9 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, flo
         static_cast<int16_t>(newPitchCommand),
         static_cast<int16_t>(newThrustCommand),
         static_cast<int16_t>(newYawCommand),
-        static_cast<int16_t>(gimbalPitch),
-        static_cast<int16_t>(gimbalYaw),
+        static_cast<int16_t>(castToNewRange(gimbalPitch, -1, 1, 1000, 2000)),
+        static_cast<int16_t>(castToNewRange(gimbalYaw, -1, 1, 1000, 2000)),
+        static_cast<int16_t>(castToNewRange(maxAxis, -1, 1, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[0]), 0, 1, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[1]), 0, 1, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[2]), 0, 1, 1000, 2000)),
@@ -4527,8 +4528,7 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, flo
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[7]), 0, 1, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[8]), 0, 1, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[9]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[10]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[11]), 0, 1, 1000, 2000))
+        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[10]), 0, 1, 1000, 2000))
     );
 
     sendMessageOnLinkThreadSafe(sharedLink.get(), message);

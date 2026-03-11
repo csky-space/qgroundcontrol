@@ -80,7 +80,8 @@ const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
     "YawAxis",
     "ThrottleAxis",
     "GimbalPitchAxis",
-    "GimbalYawAxis"
+    "GimbalYawAxis",
+    "ExtraAxis"
 };
 
 int Joystick::_transmitterMode = 2;
@@ -106,7 +107,8 @@ AssignableButtonAction::AssignableButtonAction(QObject* parent, QString action_,
 }
 
 Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager)
-    : _name(name)
+    : _isSendingRC(true)
+    , _name(name)
     , _axisCount(axisCount)
     , _buttonCount(buttonCount)
     , _hatCount(hatCount)
@@ -182,6 +184,7 @@ void Joystick::_setDefaultCalibration(void) {
 
     _rgFunctionAxis[gimbalPitchFunction]= 4;
     _rgFunctionAxis[gimbalYawFunction]  = 5;
+    _rgFunctionAxis[extraFunction]  = 6;
 
     _exponential        = 0;
     _accumulator        = false;
@@ -311,6 +314,9 @@ void Joystick::_loadSettings()
         if(functionAxis < _axisCount) {
             _rgFunctionAxis[function] = functionAxis;
         }
+        _rgFunctionAxis[4] = 4;
+        _rgFunctionAxis[5] = 5;
+        _rgFunctionAxis[6] = 6;
         qCDebug(JoystickLog) << "_loadSettings function:axis:badsettings" << function << functionAxis << badSettings;
     }
     badSettings |= workingAxis < 4;
@@ -412,11 +418,11 @@ void Joystick::_saveSettings()
 
 // Relative mappings of axis functions between different TX modes
 int Joystick::_mapFunctionMode(int mode, int function) {
-    static const int mapping[][6] = {
-        { yawFunction, pitchFunction, rollFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction },
-        { yawFunction, throttleFunction, rollFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction },
-        { rollFunction, pitchFunction, yawFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction },
-        { rollFunction, throttleFunction, yawFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction }};
+    static const int mapping[][7] = {
+        { yawFunction, pitchFunction, rollFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction, extraFunction },
+        { yawFunction, throttleFunction, rollFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction, extraFunction },
+        { rollFunction, pitchFunction, yawFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction, extraFunction },
+        { rollFunction, throttleFunction, yawFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction, extraFunction }};
     return mapping[mode-1][function];
 }
 
@@ -617,21 +623,28 @@ void Joystick::_handleButtons()
     }
 }
 
+float jcastToNewRange(float value, float oldMin, float oldMax, float newMin, float newMax) {
+    return (value - oldMin) / (oldMax - oldMin) * (newMax - newMin) + newMin;
+}
+
 void Joystick::_handleAxis()
 {
     //-- Get frequency
     int axisDelay = static_cast<int>(1000.0f / _axisFrequencyHz);
     //-- Check elapsed time since last run
     if(_axisTime.elapsed() > axisDelay) {
+        qCDebug(JoystickLog) << "axis elapsed! axis count: " << _axisCount;
         _axisTime.start();
         //-- Update axis
         for (int axisIndex = 0; axisIndex < _axisCount; axisIndex++) {
             int newAxisValue = _getAxis(axisIndex);
             // Calibration code requires signal to be emitted even if value hasn't changed
+            qCDebug(JoystickLog) << "axis " << axisIndex << ": " << newAxisValue;
             _rgAxisValues[axisIndex] = newAxisValue;
             emit rawAxisValueChanged(axisIndex, newAxisValue);
         }
         if (_activeVehicle->joystickEnabled() && !_calibrationMode && _calibrated) {
+            qCDebug(JoystickLog) << "joystick calibrated!";
             int     axis = _rgFunctionAxis[rollFunction];
             float   roll = _adjustRange(_rgAxisValues[axis],    _rgCalibration[axis], _deadband);
 
@@ -647,15 +660,33 @@ void Joystick::_handleAxis()
             // These are only used for printing JoystickValuesLog
             float   gimbalPitch = 0.0f;
             float   gimbalYaw   = 0.0f;
+            float   maxAxis = 0.0f;
+
+            //if(_axisCount > 4) {
+            //    axis = _rgFunctionAxis[gimbalPitchFunction];
+            //    gimbalPitch = _adjustRange(_rgAxisValues[axis], _rgCalibration[axis],_deadband);
+            //}
+
+            //if(_axisCount > 5) {
+            //    axis = _rgFunctionAxis[gimbalYawFunction];
+            //    gimbalYaw = _adjustRange(_rgAxisValues[axis],   _rgCalibration[axis],_deadband);
+            //}
+            //if(_axisCount > 6) {
+            //    axis = _rgFunctionAxis[extraFunction];
+            //    maxAxis = _adjustRange(_rgAxisValues[axis],   _rgCalibration[axis],_deadband);
+            //}
 
             if(_axisCount > 4) {
                 axis = _rgFunctionAxis[gimbalPitchFunction];
-                gimbalPitch = _adjustRange(_rgAxisValues[axis], _rgCalibration[axis],_deadband);
+                gimbalPitch = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
             }
-
             if(_axisCount > 5) {
                 axis = _rgFunctionAxis[gimbalYawFunction];
-                gimbalYaw = _adjustRange(_rgAxisValues[axis],   _rgCalibration[axis],_deadband);
+                gimbalYaw = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
+            }
+            if(_axisCount > 6) {
+                axis = _rgFunctionAxis[extraFunction];
+                maxAxis = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
             }
 
             if (_accumulator) {
@@ -695,7 +726,7 @@ void Joystick::_handleAxis()
             } else {
                 throttle = (throttle + 1.0f) / 2.0f;
             }
-            qCDebug(JoystickValuesLog) << "name:roll:pitch:yaw:throttle:gimbalPitch:gimbalYaw" << name() << roll << -pitch << yaw << throttle << gimbalPitch << gimbalYaw;
+
             // NOTE: The buttonPressedBits going to MANUAL_CONTROL are currently used by ArduSub (and it only handles 16 bits)
             // Set up button bitmap
             //quint64 buttonPressedBits = 0;  // Buttons pressed for manualControl signal
@@ -710,15 +741,24 @@ void Joystick::_handleAxis()
 
             //uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
             //_activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
-            std::array<uint8_t, 12> rcOverrideButtons;
-            if(_totalButtonCount < 12) {
+            std::array<uint8_t, 11> rcOverrideButtons;
+            if(_totalButtonCount < 11) {
                 memcpy(rcOverrideButtons.data(), _rgButtonValues, _totalButtonCount);
-                memset(rcOverrideButtons.data() + _totalButtonCount, 0, 12 - _totalButtonCount);
+                memset(rcOverrideButtons.data() + _totalButtonCount, 0, 11 - _totalButtonCount);
             } else {
-                memcpy(rcOverrideButtons.data(), _rgButtonValues, 12);
+                memcpy(rcOverrideButtons.data(), _rgButtonValues, 11);
             }
-
-            _activeVehicle->sendJoystickRCOverrideDataThreadSafe(roll, pitch, yaw, throttle, gimbalPitch, gimbalYaw, rcOverrideButtons);
+            qCDebug(JoystickLog) << "before send axis and buttons!";
+            if(_isSendingRC) {
+                qCDebug(JoystickLog) << "before send axis and buttons!";
+                qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalPitchFunction]:" << _rgAxisValues[gimbalPitchFunction];
+                qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalYawFunction]:" << _rgAxisValues[gimbalYawFunction];
+                qCDebug(JoystickLog) << "_rgFunctionAxis[extraFunction]:" << _rgAxisValues[extraFunction];
+                qCDebug(JoystickLog) << "name: " << name() << "roll:" << roll << "pitch:" << -pitch << "yaw:" << yaw << "throttle:" << throttle << "gimbalPitch:" << gimbalPitch << "gimbalYaw:" << gimbalYaw << "extraAxis: " << maxAxis;
+                _activeVehicle->sendJoystickRCOverrideDataThreadSafe(roll, pitch, yaw, throttle, gimbalPitch, gimbalYaw, maxAxis, rcOverrideButtons);
+            } else {
+                qCDebug(JoystickLog) << "Joystick" << name() << "has inactive state for _isSendingRC";
+            }
         }
     }
 }
@@ -901,6 +941,26 @@ QString Joystick::getButtonAction(int button)
         }
     }
     return QString(_buttonActionNone);
+}
+
+void Joystick::stopSendingRC() {
+    _isSendingRC = false;
+    emit isSendingRCChanged();
+}
+
+void Joystick::startSendingRC() {
+    _isSendingRC = true;
+    emit isSendingRCChanged();
+}
+
+void Joystick::setIsSendingRC(bool enabled) {
+    _isSendingRC = enabled;
+    emit isSendingRCChanged();
+    qCDebug(JoystickLog) << "_isSendingRC is: " << _isSendingRC;
+}
+
+bool Joystick::isSendingRC() const {
+    return _isSendingRC;
 }
 
 QStringList Joystick::buttonActions()

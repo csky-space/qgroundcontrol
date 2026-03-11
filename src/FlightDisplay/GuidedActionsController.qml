@@ -58,6 +58,7 @@ Item {
     readonly property string roiTitle:                      qsTr("ROI")
     readonly property string setHomeTitle:                  qsTr("Set Home")
     readonly property string actionListTitle:               qsTr("Action")
+    readonly property string setJoystickActiveTitle:             qsTr("Joystick")
 
     readonly property string armMessage:                        qsTr("Arm the vehicle.")
     readonly property string forceArmMessage:                   qsTr("WARNING: This will force arming of the vehicle bypassing any safety checks.")
@@ -83,6 +84,7 @@ Item {
     readonly property string vtolTransitionMRMessage:           qsTr("Transition VTOL to multi-rotor flight.")
     readonly property string roiMessage:                        qsTr("Make the specified location a Region Of Interest.")
     readonly property string setHomeMessage:                    qsTr("Set vehicle home as the specified location. This will affect Return to Home position")
+    readonly property string setJoystickActiveMessage:                 qsTr("Enable/disable joystick")
 
     readonly property int actionRTL:                        1
     readonly property int actionLand:                       2
@@ -111,6 +113,7 @@ Item {
     readonly property int actionChangeSpeed:                25
     readonly property int actionGripper:                    26
     readonly property int actionSetHome:                    27
+    readonly property int actionSetJoystickActive:          28
 
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property bool   _useChecklist:              QGroundControl.settingsManager.appSettings.useChecklist.rawValue && QGroundControl.corePlugin.options.preFlightChecklistUrl.toString().length
@@ -519,6 +522,11 @@ Item {
             confirmDialog.message = setHomeMessage
             confirmDialog.hideTrigger = Qt.binding(function() { return !showSetHome })
             break
+        case actionSetJoystickActive:
+            confirmDialog.title = setJoystickActiveTitle
+            confirmDialog.message = setJoystickActiveMessage
+            //confirmDialog.hideTrigger = true
+            break
         default:
             console.warn("Unknown actionCode", actionCode)
             return
@@ -616,6 +624,10 @@ Item {
         case actionSetHome:
             _activeVehicle.doSetHome(actionData)
             break
+        case actionSetJoystickActive:
+            if(QGroundControl.JoystickManager.activeJoystick !== undefined) {
+                QGroundControl.JoystickManager.activeJoystick.setIsSendingRC(QGroundControl.JoystickManager.activeJoystick.getIsSendingRC())
+            }
         default:
             console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
             break

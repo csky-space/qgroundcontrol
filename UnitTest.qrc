@@ -21,7 +21,5 @@
     <qresource prefix="/qml">
         <file alias="QGroundControl/Controls/MockLinkOptionsDlg.qml">src/comm/MockLinkOptionsDlg.qml</file>
     </qresource>
-    <qresource prefix="/">
-        <file>src/ui/toolbar/Images/VibrationIndicator.qml</file>
-    </qresource>
+    <qresource prefix="/"/>
 </RCC>

@@ -90,6 +90,8 @@
         <file alias="Frames/SimpleROV-5.png">src/AutoPilotPlugins/APM/Images/simple5-frame.png</file>
         <file alias="Frames/Vectored.png">src/AutoPilotPlugins/APM/Images/vectored-frame.png</file>
         <file alias="Frames/Vectored6DOF.png">src/AutoPilotPlugins/APM/Images/vectored6dof-frame.png</file>
+		<file alias="gamepadSwitcher.svg">resources/joystick/gamepadSwitcher.svg</file>
+		<file alias="gamepadSwitcherActive.svg">resources/joystick/gamepadSwitcherActive.svg</file>
         <file alias="Gears.svg">src/ui/toolbar/Images/Gears.svg</file>
         <file alias="GeoFence.svg">src/AutoPilotPlugins/PX4/Images/GeoFence.svg</file>
         <file alias="GeoFenceLight.svg">src/AutoPilotPlugins/PX4/Images/GeoFenceLight.svg</file>

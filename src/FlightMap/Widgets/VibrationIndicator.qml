@@ -89,12 +89,7 @@ Item {
 
         QGCColoredImage {
             property real factor: 0.5
-            property color added: (vibeX < 30) && (vibeY < 30) && (vibeZ < 30) ? "white" : Qt.rgba(
-                Math.min((barX.barRectangle.color.r + barY.barRectangle.color.r + barZ.barRectangle.color.r) * 1.0/3, 1.0),
-                Math.min((barX.barRectangle.color.g + barY.barRectangle.color.g + barZ.barRectangle.color.g) * 1.0/3, 1.0),
-                Math.min((barX.barRectangle.color.b + barY.barRectangle.color.b + barZ.barRectangle.color.b), 1.0),
-                1
-            )
+            property color added: (vibeX < barX.lowCheck) && (vibeY < barY.lowCheck) && (vibeZ < barZ.lowCheck) ? "white" : Math.max(Math.max(vibeX, vibeY), vibeZ) < barX.highCheck ? "yellow" : "red"
 
             id: image
             source: "/vibration/vibration.svg"

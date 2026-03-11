@@ -18,6 +18,7 @@
 #include "ADSBVehicleManager.h"
 #ifdef QGC_AIRLINK_ENABLED
 #include <CSKY/Airlink/AirlinkManager.h>
+#include <Joystick/JoystickManager.h>
 #endif
 #include "QGCPalette.h"
 #include "QmlUnitsConversion.h"
@@ -71,6 +72,7 @@ public:
     Q_PROPERTY(ADSBVehicleManager*      adsbVehicleManager      READ    adsbVehicleManager      CONSTANT)
 #ifdef QGC_AIRLINK_ENABLED
     Q_PROPERTY(CSKY::AirlinkManager*    airlinkManager          READ    airlinkManager          CONSTANT)
+    Q_PROPERTY(JoystickManager*         joystickManager          READ    joystickManager          CONSTANT)
     Q_PROPERTY(bool                     airlinkSupported        READ    airlinkSupported        CONSTANT)
 #endif
     Q_PROPERTY(QGCCorePlugin*           corePlugin              READ    corePlugin              CONSTANT)
@@ -173,6 +175,7 @@ public:
 #ifdef QGC_AIRLINK_ENABLED
     bool                    airlinkSupported    ()  { return true; }
     CSKY::AirlinkManager*   airlinkManager      ()  { return _airlinkManager; }
+    JoystickManager*        joystickManager     ()  { return _joystickManager; }
 #endif
     QmlUnitsConversion*     unitsConversion     ()  { return &_unitsConversion; }
 #if defined(QGC_ENABLE_PAIRING)
@@ -270,6 +273,7 @@ private:
     ADSBVehicleManager*     _adsbVehicleManager     = nullptr;
 #ifdef QGC_AIRLINK_ENABLED
     CSKY::AirlinkManager*   _airlinkManager         = nullptr;
+    JoystickManager*        _joystickManager        = nullptr;
 #endif
     QGCPalette*             _globalPalette          = nullptr;
     QmlUnitsConversion      _unitsConversion;

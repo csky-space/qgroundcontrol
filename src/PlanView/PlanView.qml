@@ -595,7 +595,20 @@ Item {
                         enabled:            true
                         visible:            true
                         dropPanelComponent: centerMapDropPanel
-                    }
+                    }//,
+                    //ToolStripAction {
+                    //    text:           qsTr("Joystick")
+                    //    iconSource:     "/res/rtl.svg"
+                    //    enabled:            true
+                    //    visible:            true
+                    //    onTriggered: {
+                    //        //toolStrip.allAddClickBoolsOff()
+                    //        if(QGroundControl.JoystickManager.activeJoystick !== undefined) {
+                    //            QGroundControl.JoystickManager.activeJoystick.setIsSendingRC(QGroundControl.JoystickManager.activeJoystick.getIsSendingRC())
+                    //        }
+                    //    }
+                    //}
+
                 ]
             }
 

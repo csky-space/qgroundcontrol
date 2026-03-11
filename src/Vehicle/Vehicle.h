@@ -496,7 +496,7 @@ public:
     bool joystickEnabled            () const;
     void setJoystickEnabled         (bool enabled);
     void sendJoystickDataThreadSafe (float roll, float pitch, float yaw, float thrust, quint16 buttons);
-    void sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, float yaw, float thrust, float gimbalPitch, float gimbalYaw, const std::array<uint8_t, 12>& rcOverrideButtons);
+    void sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, float yaw, float thrust, float gimbalPitch, float gimbalYaw, float maxAxis, const std::array<uint8_t, 11>& rcOverrideButtons);
 
     // Property accesors
     int id() const{ return _id; }

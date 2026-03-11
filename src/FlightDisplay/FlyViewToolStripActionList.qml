@@ -16,7 +16,9 @@ ToolStripActionList {
     id: _root
 
     signal displayPreFlightChecklist
-
+    property var joyManager: QGroundControl.joystickManager
+    property var activeJoystick: joyManager.activeJoystick
+    property bool isSendingRC: activeJoystick ? activeJoystick.isSendingRC : false
     model: [
         ToolStripAction {
             text:           qsTr("Plan")
@@ -29,6 +31,16 @@ ToolStripActionList {
         GuidedActionRTL { },
         GuidedActionPause { },
         GuidedActionActionList { },
-        GuidedActionGripper { }
+        GuidedActionGripper { },
+        ToolStripAction {
+            text:           qsTr("Joystick")
+            iconSource:     (activeJoystick !== undefined) && isSendingRC ? "/qmlimages/gamepadSwitcherActive.svg" : "/qmlimages/gamepadSwitcher.svg"
+            fullColorIcon: true
+            onTriggered:    {
+                if (activeJoystick) {
+                    activeJoystick.isSendingRC = !activeJoystick.isSendingRC;
+                }
+            }
+        }
     ]
 }

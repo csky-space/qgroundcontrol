@@ -129,12 +129,8 @@ Item {
         QGCColoredImage {
             property real factor: 0.5
             property color added: (velVar < velocityVar.lowCheck) && (posHorVar < positionHorVar.lowCheck) && (posVertVar < positionVertVar.lowCheck)
-                                  && (compVar < compassVar.lowCheck) && (terrAltVar < terrVar.lowCheck) ? "white" : Qt.rgba(
-                Math.min((velocityVar.barRectangle.color.r + positionHorVar.barRectangle.color.r + positionVertVar.barRectangle.color.r + compassVar.barRectangle.color.r + terrVar.barRectangle.color.r) * (1.0/5), 1.0),
-                Math.min((velocityVar.barRectangle.color.g + positionHorVar.barRectangle.color.g + positionVertVar.barRectangle.color.g + compassVar.barRectangle.color.g + terrVar.barRectangle.color.g) * (1.0/5), 1.0),
-                Math.min((velocityVar.barRectangle.color.b + positionHorVar.barRectangle.color.b + positionVertVar.barRectangle.color.b + compassVar.barRectangle.color.b + terrVar.barRectangle.color.b) * (1.0/5), 1.0),
-                1
-            )
+                                  && (compVar < compassVar.lowCheck) && (terrAltVar < terrVar.lowCheck) ? "white" :
+                                    Math.max(Math.max(Math.max(Math.max(velVar, posHorVar), posVertVar), compVar), terrAltVar) < velocityVar.highCheck ? "yellow" : "red"
 
             id: image
             source: "/EKF/EKF.svg"
