@@ -260,6 +260,20 @@ void VideoManager::_cleanupOldVideos()
 #endif
 }
 
+bool VideoManager::switchDayNight() {
+    qCDebug(VideoManagerLog) << "switchDayNight";
+    if(_activeVehicle) {
+        mavlink_message_t msg{};
+        mavlink_wifi_config_ap_t conf{};
+        MAVLinkProtocol* protocol = qgcApp()->toolbox()->mavlinkProtocol();
+        mavlink_msg_wifi_config_ap_encode(protocol->getSystemId(), protocol->getComponentId(), &msg, &conf);
+        _activeVehicle->sendMessageOnLinkThreadSafe(_activeVehicle->vehicleLinkManager()->primaryLink().lock().get(), msg);
+        return true;
+    }
+    qCDebug(CameraControlLog) << "active vehicle not found";
+    return false;
+}
+
 //-----------------------------------------------------------------------------
 void
 VideoManager::startVideo()

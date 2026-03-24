@@ -134,7 +134,7 @@ Item {
         anchors.margins:        _toolsMargin
         anchors.right:          parent.right
         width:                  _rightPanelWidth
-        visible: !vibrationIndicator.visible
+        visible: _activeVehicle !== undefined ? true : false
 
         property real rightEdgeCenterInset: visible ? parent.width - x : 0
 
@@ -312,6 +312,165 @@ Item {
 
         property real topEdgeLeftInset: visible ? y + height : 0
         property real leftEdgeTopInset: visible ? x + width : 0
+    }
+    function servoValueScale (number, [inMin, inMax], [outMin, outMax]) {
+        return (number - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
+    }
+    Rectangle {
+        anchors.topMargin: _toolsMargin + parentToolInsets.topEdgeLeftInset
+        anchors.rightMargin: _toolsMargin + parentToolInsets.topEdgeLeftInset
+        anchors.top: toolStrip.bottom
+        anchors.left: toolStrip.left
+        anchors.bottom: telemetryPanel.bottom
+        anchors.right: telemetryPanel.left
+
+        ListModel {
+            id: queueModel
+            ListElement { value: "A" }
+            ListElement { value: "B" }
+            ListElement { value: "C" }
+        }
+
+        ListModel {
+            id: servoButtonsModel
+            ListElement { value: "A" }
+        }
+
+        ListModel {
+            id: servoDropModeModel
+            ListElement { checked: true;    name: "All" }
+            ListElement { checked: false;   name: "Each 2" }
+            ListElement { checked: false;   name: "Each 1" }
+            ListElement { checked: false;   name: "Carpet" }
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 5
+
+                Repeater {
+                    id: servoDropModeRepeater
+                    model: (_activeVehicle && _activeVehicle.servoController)
+                           ? _activeVehicle.servoController.servoDropModes
+                           : servoDropModeModel
+
+                    delegate: CheckBox {
+                        required property var model
+                        required property int index
+
+                        text: servoDropModeModel.get(index).name
+                        checked: (_activeVehicle && _activeVehicle.servoController) ? _activeVehicle.servoController.servoDropModes[index].checked : servoDropModeModel.get(index).checked
+
+                        onClicked: {
+                            console.log("onClicked")
+                            if(_activeVehicle && _activeVehicle.servoController) {
+                                console.log("onClicked condition passed")
+                                for (let i = 0; i < _activeVehicle.servoController.servoDropModes.length; ++i) {
+                                    console.log("dropMode" + String(i) + " constraining...")
+                                    _activeVehicle.servoController.servoDropModes[i].checked = (i === index)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 5
+                Repeater {
+                    id: servoButtonsRepeater
+                    model: (_activeVehicle && _activeVehicle.servoController)
+                           ? _activeVehicle.servoController.servoModel
+                           : servoButtonsModel
+
+                    //model: servoButtonsModel
+
+                    Button {
+                        required property int index
+                        required property var modelData
+                        property string displayValue: {
+                            if (typeof modelData === 'object' && modelData !== null) {
+                                return modelData.name !== undefined ? modelData.name : ""
+                            }
+
+                            return modelData
+                        }
+
+                        width: parent ? (parent.width - (servoButtonsRepeater.count - 1) * parent.spacing) / servoButtonsRepeater.count : 0
+                        height: parent.height
+                        //color: {
+                        //    if (index === 0) return "lightgreen"
+                        //    else if (index === servoButtonsRepeater.count - 1) return "lightblue"
+                        //    else return "lightgray"
+                        //}
+                        //border.color: "black"
+                        //border.width: 1
+                        //radius: 3
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+
+                            height: (() => {
+                                            if(_activeVehicle && _activeVehicle.servoController) {
+                                                return !_activeVehicle.servoController.servoModel[index].reversed ?  servoValueScale(_activeVehicle.servoController.servoModel[index].value,
+                                                                                                                                       [_activeVehicle.servoController.servoModel[index].minValue, _activeVehicle.servoController.servoModel[index].maxValue],
+                                                                                                                                       [0, parent.height])
+                                                                                                                  : servoValueScale(_activeVehicle.servoController.servoModel[index].value,
+                                                                                                                                       [_activeVehicle.servoController.servoModel[index].maxValue, _activeVehicle.servoController.servoModel[index].minValue],
+                                                                                                                                       [0, parent.height])
+                                            }
+                                            return parent.height
+                                     })()
+                            color: "green"
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: displayValue
+                            font.pointSize: 14
+                            font.bold: true
+                        }
+
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                        opacity: 1
+
+                        Layout.fillWidth: true
+                        onClicked: {
+                            if(_activeVehicle && _activeVehicle.servoController) {
+                                //_activeVehicle.servoController.addToQueue(modelData)
+                            }
+                        }
+
+
+                    }
+                }
+            }
+
+            Button {
+                text: "Drop"
+                onClicked: {
+                    if(_activeVehicle && _activeVehicle.servoController) {
+                        Qt.callLater(()=>_activeVehicle.servoController.drop())
+
+                    }
+                }
+            }
+        }
+
+        z:                      QGroundControl.zOrderWidgets
+        opacity: 1//0.5
+        color: qgcPal.window
+        visible: _activeVehicle !== undefined ? true : false
+        radius: 8
     }
 
     GripperMenu {

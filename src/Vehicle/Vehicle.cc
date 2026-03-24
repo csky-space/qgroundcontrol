@@ -56,6 +56,7 @@
 #include "GimbalController.h"
 #include "VibrationController.h"
 #include "EKFController.h"
+#include "ServoController/ServoController.h"
 #ifdef QT_DEBUG
 #include "MockLink.h"
 #endif
@@ -510,6 +511,7 @@ void Vehicle::_commonInit()
     _gimbalController = new GimbalController(_mavlink, this);
     _vibrationController = new VibrationController(_mavlink, this);
     _ekfController = new EKFController(_mavlink, this);
+    _servoController = new ServoController(_mavlink, this);
 }
 
 Vehicle::~Vehicle()

@@ -65,10 +65,12 @@ namespace CSKY {
 
 AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)
     : QGCTool(app, toolbox)
+
 #ifdef __ANDROID__
     , serverController("com/csky/airlinkstreambridge/mobile/ServerController")
 #endif
     , connectTelemetryManager(this)
+    , manager(new AirlinkStreamBridgeManager(this))
     , asbProcess(this)
 {
 
@@ -88,7 +90,7 @@ AirlinkManager::AirlinkManager(QGCApplication *app, QGCToolbox *toolbox)
 #endif
 
     requestsThread = new QThread();
-    manager.moveToThread(requestsThread);
+    manager->moveToThread(requestsThread);
     requestsThread->start(QThread::LowPriority);
 }
 
@@ -157,13 +159,13 @@ void AirlinkManager::setToolbox(QGCToolbox *toolbox) {
         airlinkIt->second->setAsbEnabled(asbEnabled);
         airlinkIt->second->setAsbPort(asbPort);
     }
-    connect(this, &AirlinkManager::initManager, &manager, &AirlinkStreamBridgeManager::init);
+    connect(this, &AirlinkManager::initManager, manager, &AirlinkStreamBridgeManager::init);
     emit initManager();
     connect(asbEnabled, &Fact::rawValueChanged, this, &AirlinkManager::asbEnabledChanged);
     connect(videoUDPPort, &Fact::rawValueChanged, this, &AirlinkManager::portConstraint);
     connect(videoSource, &Fact::rawValueChanged, this, [this](QVariant value){
         if(asbAutotune->rawValue().toBool()) {
-            manager.startConstrainVideoCodec();
+            manager->startConstrainVideoCodec();
         }
     });
 
@@ -257,7 +259,7 @@ QList<bool> AirlinkManager::droneOnlineList() const {
     return _vehiclesFromServer.values();
 }
 
-AirlinkStreamBridgeManager& AirlinkManager::getASBManager() {
+AirlinkStreamBridgeManager* AirlinkManager::getASBManager() {
     return manager;
 }
 
@@ -299,7 +301,7 @@ bool AirlinkManager::isOnline(const QString &drone) {
 
 void AirlinkManager::connectToAirLinkServer(const QString &login, const QString &pass, const QString& hostName) {
     qCDebug(AirlinkManagerLog) << "airlinkHost: " << hostName;
-    const QUrl url(QString("https://") + hostName + "/api/gs/getModems");
+    const QUrl url(QString("http://") + hostName + "/api/gs/getModems");
     QNetworkRequest request(url);
     QSslConfiguration conf;
     conf.setPeerVerifyMode(QSslSocket::PeerVerifyMode::VerifyNone);
@@ -334,7 +336,7 @@ void AirlinkManager::setFullBlock(bool block) {_fullBlockUI.store(block, std::me
 
 void signalHandler(int signal) {
     qDebug() << "signal handle";
-    qgcApp()->toolbox()->airlinkManager()->getASBManager().setToInitialPort();
+    qgcApp()->toolbox()->airlinkManager()->getASBManager()->setToInitialPort();
     std::signal(signal, SIG_DFL);
     qgcApp()->mainRootWindow()->close();
     QEvent event{QEvent::Quit};
@@ -361,15 +363,15 @@ void AirlinkManager::_setConnects() {
         }
 
     });
-    connect(this, &AirlinkManager::sendAsbServicePort, &manager, &AirlinkStreamBridgeManager::sendAsbServicePort);
+    connect(this, &AirlinkManager::sendAsbServicePort, manager, &AirlinkStreamBridgeManager::sendAsbServicePort);
     connect(this, &AirlinkManager::sendAsbServiceTransportPolicy, [this](const QString& value) {
         emit blockUI();
     });
-    connect(this, &AirlinkManager::sendAsbServiceTransportPolicy, &manager, &AirlinkStreamBridgeManager::sendAsbServiceTransportPolicy);
-    connect(this, &AirlinkManager::checkAlive, &manager, &AirlinkStreamBridgeManager::checkAlive);
+    connect(this, &AirlinkManager::sendAsbServiceTransportPolicy, manager, &AirlinkStreamBridgeManager::sendAsbServiceTransportPolicy);
+    connect(this, &AirlinkManager::checkAlive, manager, &AirlinkStreamBridgeManager::checkAlive);
 
-    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, &AirlinkManager::unblockUI);
-    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
+    connect(manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, &AirlinkManager::unblockUI);
+    connect(manager, &AirlinkStreamBridgeManager::sendAsbServicePortCompleted, this, [](QByteArray replyData, QNetworkReply::NetworkError err){
 
         //unblockUI();
         //asbAutotune->blockSignals(false);
@@ -378,9 +380,9 @@ void AirlinkManager::_setConnects() {
         //asbAutotune->
     });
 
-    connect(&manager, &AirlinkStreamBridgeManager::sendAsbServiceTransportPolicyCompleted, this, &AirlinkManager::unblockUI);
+    connect(manager, &AirlinkStreamBridgeManager::sendAsbServiceTransportPolicyCompleted, this, &AirlinkManager::unblockUI);
 
-    connect(&manager, &AirlinkStreamBridgeManager::checkAliveCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err) {
+    connect(manager, &AirlinkStreamBridgeManager::checkAliveCompleted, this, [this](QByteArray replyData, QNetworkReply::NetworkError err) {
         if(err != QNetworkReply::NoError) {
             QMutexLocker locker(&processMutex);
 
@@ -460,7 +462,7 @@ void AirlinkManager::portConstraint(QVariant value) {
 }
 
 void AirlinkManager::setPortToInitial() {
-    manager.setToInitialPort();
+    manager->setToInitialPort();
 }
 
 void AirlinkManager::startWatchdog() {
@@ -524,11 +526,11 @@ void AirlinkManager::asbAutotuneChanged(QVariant value) {
     if(value.toBool()) {
         videoUDPPort->setRawValue(asbPort->rawValue());
         qCDebug(AirlinkManagerLog) << "start constrain video codec";
-        manager.startConstrainVideoCodec();
+        manager->startConstrainVideoCodec();
     }
     else {
         qCDebug(AirlinkManagerLog) << "stop constrain video codec";
-        manager.stopConstrainVideoCodec();
+        manager->stopConstrainVideoCodec();
     }
 }
 

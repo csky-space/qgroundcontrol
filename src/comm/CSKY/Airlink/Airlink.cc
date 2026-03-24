@@ -31,7 +31,7 @@ Airlink::Airlink(SharedLinkConfigurationPtr &config)
     _configureUdpSettings();
 #ifdef QGC_AIRLINK_ENABLED
     airlinkManager = qgcApp()->toolbox()->airlinkManager();
-    asbManager = &airlinkManager->getASBManager();
+    asbManager = airlinkManager->getASBManager();
     _video = new AirlinkVideo(asbManager, airlinkManager, this);
     _video->moveToThread(_videoThread);
 #endif

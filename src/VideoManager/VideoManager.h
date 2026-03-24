@@ -105,6 +105,7 @@ public:
     // Override from QGCTool
     virtual void        setToolbox          (QGCToolbox *toolbox);
 
+    Q_INVOKABLE bool switchDayNight();
     Q_INVOKABLE void startVideo     ();
     Q_INVOKABLE void stopVideo      ();
 

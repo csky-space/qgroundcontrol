@@ -13,8 +13,9 @@
 QGC_LOGGING_CATEGORY(AirlinkStreamBridgeManagerLog, "AirlinkStreamBridgeManagerLog")
 
 namespace CSKY {
-AirlinkStreamBridgeManager::AirlinkStreamBridgeManager()
-    : sslConfig(QSslConfiguration::defaultConfiguration())
+AirlinkStreamBridgeManager::AirlinkStreamBridgeManager(QObject* parent)
+    : QObject(parent)
+    , sslConfig(QSslConfiguration::defaultConfiguration())
     , manager(this)
     , codecWatchdogTimer(new QTimer())
     , currentCodec(VideoSettings::videoDisabled)

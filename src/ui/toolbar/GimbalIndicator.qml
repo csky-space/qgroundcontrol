@@ -75,7 +75,8 @@ Item {
                         {id: "tilt90",    text: qsTr("Tilt 90")                                                         , visible: true                    },
                         {id: "pointHome", text: qsTr("Point <br> Home")                                                 , visible: true                    },
                         {id: "retract",   text: qsTr("Retract")                                                         , visible: true                    },
-                        {id: "acqControl",text: hasControl ? qsTr("Release <br> Control") : qsTr("Acquire <br> Control"), visible: acqControlButtonEnabled }
+                        {id: "acqControl",text: hasControl ? qsTr("Release <br> Control") : qsTr("Acquire <br> Control"), visible: acqControlButtonEnabled },
+                        {id: "switchDayNight",text: qsTr("Day/Night"), visible: true}
                     ]
 
                     QGCButton {
@@ -88,7 +89,8 @@ Item {
                            // This button changes its action depending on gimbal being under control or not
                            {"acqControl":   function(){ simpleGimbalButtonsRepeater.hasControl ? 
                                                             gimbalController.releaseGimbalControl() : 
-                                                                gimbalController.acquireGimbalControl() }               }
+                                                                gimbalController.acquireGimbalControl() }               },
+                            {"switchDayNight": function(){QGroundControl.videoManager.switchDayNight()}}
                         ]
 
                         Layout.preferredWidth: Layout.preferredHeight

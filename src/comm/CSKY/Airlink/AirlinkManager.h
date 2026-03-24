@@ -78,7 +78,7 @@ public:
     static QString airlinkHost;
 	static constexpr int airlinkPort = 10000;
 
-    AirlinkStreamBridgeManager& getASBManager();
+    AirlinkStreamBridgeManager* getASBManager();
     QProcess& getAsbProcess();
     Fact* getAsbEnabled() const;
     Fact* getPort() const;
@@ -118,7 +118,7 @@ private:
     QNetworkAccessManager connectTelemetryManager;
     std::atomic<bool> _fullBlockUI;
     QString asbPath;
-    AirlinkStreamBridgeManager manager;
+    AirlinkStreamBridgeManager* manager;
     QTimer* watchdogTimer = nullptr;
     QMutex processMutex;
     bool isRestarting = false;

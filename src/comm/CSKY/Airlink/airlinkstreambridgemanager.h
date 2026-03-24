@@ -15,7 +15,7 @@ namespace CSKY {
 class AirlinkStreamBridgeManager : public QObject {
     Q_OBJECT
 public:
-    AirlinkStreamBridgeManager();
+    explicit AirlinkStreamBridgeManager(QObject* parent = nullptr);
     ~AirlinkStreamBridgeManager();
 
     void startConstrainVideoCodec();

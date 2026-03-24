@@ -673,6 +673,7 @@ HEADERS += \
     src/Geo/PolarStereographic.hpp \
     src/Gimbal/GimbalController.h \
     src/Vibration/VibrationController.h \
+    src/ServoController/ServoController.h \
     src/EKF/EKFController.h \
     src/QGC.h \
     src/QGCApplication.h \
@@ -938,6 +939,7 @@ SOURCES += \
     src/Geo/PolarStereographic.cpp \
     src/Gimbal/GimbalController.cc \
     src/Vibration/VibrationController.cc \
+    src/ServoController/ServoController.cc \
     src/EKF/EKFController.cc \
     src/QGC.cc \
     src/QGCApplication.cc \
