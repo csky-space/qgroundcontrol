@@ -274,9 +274,9 @@ void ServoController::_handleServoOutputRaw(const mavlink_message_t& msg) {
 
     const uint8_t* base = reinterpret_cast<const uint8_t*>(&_sor);
     size_t offset1 = offsetof(mavlink_servo_output_raw_t, servo1_raw);
-    std::memcpy(_servoOutputsRaw.data(), base + offset1, 8 * sizeof(uint16_t));
+    memcpy(_servoOutputsRaw.data(), base + offset1, 8 * sizeof(uint16_t));
     size_t offset2 = offsetof(mavlink_servo_output_raw_t, servo9_raw);
-    std::memcpy(_servoOutputsRaw.data() + 8, base + offset2, 8 * sizeof(uint16_t));
+    memcpy(_servoOutputsRaw.data() + 8, base + offset2, 8 * sizeof(uint16_t));
 
     for(size_t i = 0; i < _servoOutputsRaw.size(); ++i) {
         QString parameterName = QString("SERVO%1_FUNCTION").arg(i+1);
