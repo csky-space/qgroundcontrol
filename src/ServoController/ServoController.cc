@@ -82,6 +82,11 @@ void Servo::setMaxValue(quint16 maxValue) {
     emit maxValueChanged();
 }
 
+void Servo::setReversed(bool reversed) {
+    _reversed = reversed;
+    emit reversedChanged();
+}
+
 Servo::Servo(const QString& name, quint16 index, quint16 displayIndex, quint16 startValue, quint16 minValue, quint16 maxValue, bool reversed)
     : _name(name)
     , _index(index)
@@ -93,11 +98,11 @@ Servo::Servo(const QString& name, quint16 index, quint16 displayIndex, quint16 s
 {}
 
 ServoController::ServoController(MAVLinkProtocol* mavlink, Vehicle* vehicle)
-    : _cavetationTimer(new QTimer(this))
+    : _carpetationTimer(new QTimer(this))
     , _allMode(new ServoMode("All", false))
     , _2Mode(new ServoMode("2", false))
     , _1Mode(new ServoMode("1", true))
-    , _cavetMode(new ServoMode("Cavet", false))
+    , _carpetMode(new ServoMode("Carpet", false))
     , _mavlink(mavlink)
     , _vehicle(vehicle)
     , _dropIndex(0)
@@ -110,14 +115,23 @@ ServoController::ServoController(MAVLinkProtocol* mavlink, Vehicle* vehicle)
         if(_allMode->checked()) {
             qCDebug(ServoControllerLog) << "All mode using";
             _sendCommandLongCallback = [this](){
-                for(size_t i = 0; i < _servoModel.size(); ++i) {
-                    Servo* servo = _servoModel[i].value<Servo*>();
-                    if(servo) {
-                        float pwm = static_cast<float>(servo->reversed() ? servo->minValue() : servo->maxValue());
-                        _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, static_cast<float>(servo->index()+1), pwm, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-                    }
+                if(_servoModel.empty()) return;
+                Servo* servo = _servoModel[0].value<Servo*>();
+                if(servo) {
+                    float pwm = static_cast<float>(servo->reversed() ? servo->minValue() : servo->maxValue());
+                    _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo->index()+1), pwm, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                    _increaseDropIndex(1);
                 }
-                _increaseDropIndex(_servoModel.size());
+                for(size_t i = 1; i < _servoModel.size(); ++i) {
+                    _commandQueue.enqueue([i,this](){
+                        Servo* servo = _servoModel[i].value<Servo*>();
+                        if(servo) {
+                            float pwm = static_cast<float>(servo->reversed() ? servo->minValue() : servo->maxValue());
+                            _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo->index()+1), pwm, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                            _increaseDropIndex(1);
+                        }
+                    });
+                }
             };
         }
     });
@@ -125,18 +139,21 @@ ServoController::ServoController(MAVLinkProtocol* mavlink, Vehicle* vehicle)
         if(_2Mode->checked()) {
             qCDebug(ServoControllerLog) << "2 mode using";
             _sendCommandLongCallback = [this](){
+                if(_dropIndex+1 >= _servoModel.size()) return;
                 Servo* servo1 = _servoModel[_dropIndex].value<Servo*>();
-                Servo* servo2 = _servoModel[_dropIndex+1].value<Servo*>();
                 if(servo1) {
                     float pwm1 = static_cast<float>(servo1->reversed() ? servo1->minValue() : servo1->maxValue());
-                    _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, static_cast<float>(servo1->index()+1), static_cast<float>(pwm1), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                    _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo1->index()+1), static_cast<float>(pwm1), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                    _increaseDropIndex(1);
                 }
-                if(servo2) {
-                    float pwm2 = static_cast<float>(servo2->reversed() ? servo2->minValue() : servo2->maxValue());
-                    _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, static_cast<float>(servo2->index()+1), static_cast<float>(pwm2), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-                }
-
-                _increaseDropIndex(2);
+                _commandQueue.enqueue([this](){
+                    Servo* servo = _servoModel[_dropIndex].value<Servo*>();
+                    if(servo) {
+                        float pwm = static_cast<float>(servo->reversed() ? servo->minValue() : servo->maxValue());
+                        _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo->index()+1), pwm, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                        _increaseDropIndex(1);
+                    }
+                });
             };
         }
 
@@ -150,7 +167,8 @@ ServoController::ServoController(MAVLinkProtocol* mavlink, Vehicle* vehicle)
                     if(servo1) {
                         float pwm1 = static_cast<float>(servo1->reversed() ? servo1->minValue() : servo1->maxValue());
                         qCDebug(ServoControllerLog) << "servo index: " << servo1->index() + 1 << ". drop pwm: " << pwm1 << ". min: " << servo1->minValue() << ". max: " << servo1->maxValue();
-                        _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, static_cast<float>(servo1->index()+1), static_cast<float>(pwm1), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                        qCDebug(ServoControllerLog) << "target sys: " << _vehicle->id() << ". target comp: " << _vehicle->compId();
+                        _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo1->index()+1), static_cast<float>(pwm1), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
                     }
                     _increaseDropIndex(1);
                 }
@@ -158,29 +176,35 @@ ServoController::ServoController(MAVLinkProtocol* mavlink, Vehicle* vehicle)
         }
 
     });
-    connect(_cavetMode, &ServoMode::checkedChanged, this, [this](){
-        if(_cavetMode->checked()) {
-            qCDebug(ServoControllerLog) << "Cavet mode using";
+    connect(_carpetMode, &ServoMode::checkedChanged, this, [this](){
+        if(_carpetMode->checked()) {
+            qCDebug(ServoControllerLog) << "Carpet mode using";
             _sendCommandLongCallback = [this](){
-                _cavetationTimer->setInterval(500);
-                _cavetationTimerConnection = connect(_cavetationTimer, &QTimer::timeout, this, [this](){
-                    Servo* servo1 = _servoModel[_dropIndex].value<Servo*>();
-                    if(servo1) {
-                        float pwm1 = static_cast<float>(servo1->reversed() ? servo1->minValue() : servo1->maxValue());
-                        _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, static_cast<float>(servo1->index()+1), static_cast<float>(pwm1), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-                    }
-                    _increaseDropIndex(1);
-                });
-                _cavetationTimer->start();
+                _carpetationTimer->setInterval(2000);
+                _carpetationTimer->start();
             };
         }
+    });
 
+
+    connect(_vehicle, &Vehicle::mavCommandResult, this, &ServoController::_sendQueuedComand);
+
+    _carpetationTimerConnection = connect(_carpetationTimer, &QTimer::timeout, this, [this](){
+        Servo* servo1 = _servoModel[_dropIndex].value<Servo*>();
+        if(servo1) {
+            float pwm1 = static_cast<float>(servo1->reversed() ? servo1->minValue() : servo1->maxValue());
+            _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo1->index()+1), static_cast<float>(pwm1), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        }
+        _increaseDropIndex(1);
+        if(_dropIndex == 0) {
+            _carpetationTimer->stop();
+        }
     });
 
     _servoDropModes.append(QVariant::fromValue(_allMode));
     _servoDropModes.append(QVariant::fromValue(_2Mode));
     _servoDropModes.append(QVariant::fromValue(_1Mode));
-    _servoDropModes.append(QVariant::fromValue(_cavetMode));
+    _servoDropModes.append(QVariant::fromValue(_carpetMode));
     _1Mode->setChecked(true);
 }
 
@@ -188,8 +212,40 @@ ServoController::~ServoController() {
 
 }
 
+void ServoController::_sendQueuedComand(int vehicleId, int targetComponent, int command, int ackResult, int failureCode) {
+    if(!_commandQueue.empty() && (vehicleId == _vehicle->id()) && (targetComponent == _vehicle->compId()) && (command == MAV_CMD_DO_SET_SERVO)) {
+        _commandQueue.dequeue()();
+    }
+}
+
+void ServoController::_enqueueLongCommand(const std::function<void()>& command) {
+    if(command) {
+        _commandQueue.enqueue(command);
+    }
+}
+
 void ServoController::drop() {
     _sendCommandLongCallback();
+}
+
+void ServoController::close() {
+    if(_servoModel.empty()) return;
+    Servo* servo = _servoModel[0].value<Servo*>();
+    if(servo) {
+        float pwm = static_cast<float>(!servo->reversed() ? servo->minValue() : servo->maxValue());
+        _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo->index()+1), pwm, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        _increaseDropIndex(1);
+    }
+    for(size_t i = 1; i < _servoModel.size(); ++i) {
+        _commandQueue.enqueue([i,this](){
+            Servo* servo = _servoModel[i].value<Servo*>();
+            if(servo) {
+                float pwm = static_cast<float>(!servo->reversed() ? servo->minValue() : servo->maxValue());
+                _vehicle->sendMavCommand(_vehicle->compId(), MAV_CMD_DO_SET_SERVO, true, static_cast<float>(servo->index()+1), pwm, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                _increaseDropIndex(1);
+            }
+        });
+    }
 }
 
 QVariantList ServoController::servoModel() const {
@@ -222,7 +278,6 @@ void ServoController::_handleServoOutputRaw(const mavlink_message_t& msg) {
     size_t offset2 = offsetof(mavlink_servo_output_raw_t, servo9_raw);
     std::memcpy(_servoOutputsRaw.data() + 8, base + offset2, 8 * sizeof(uint16_t));
 
-    _servoModel.clear();
     for(size_t i = 0; i < _servoOutputsRaw.size(); ++i) {
         QString parameterName = QString("SERVO%1_FUNCTION").arg(i+1);
         QString minValueParameterName = QString("SERVO%1_MIN").arg(i+1);
@@ -254,12 +309,19 @@ void ServoController::_handleServoOutputRaw(const mavlink_message_t& msg) {
 
         if(parameter && ((i+1 == 7) || (i+1 == 8))) {
             //qCDebug(ServoControllerLog) << "Servo min: " << minValue << ". servo value: " << _servoOutputsRaw[i] << ". servo max: " << maxValue << ". index: " << i;
-            Servo* serv = new Servo(QString("S%1").arg(i+1), i, i+1, _servoOutputsRaw[i], minValue, maxValue, reversed);
-            _servoModel.append(QVariant::fromValue(serv));
+            Servo* serv = findServo(i);
+            if(serv) {
+                serv->setMinValue(minValue);
+                serv->setMaxValue(maxValue);
+                serv->setReversed(reversed);
+                serv->setValue(_servoOutputsRaw[i]);
+            } else {
+                serv = new Servo(QString("S%1").arg(i+1), i, i+1, _servoOutputsRaw[i], minValue, maxValue, reversed);
+                _servoModel.append(QVariant::fromValue(serv));
+                emit servoModelChanged();
+            }
         }
     }
-
-    emit servoModelChanged();
 }
 
 void ServoController::_increaseDropIndex(uint16_t incSize) {
@@ -268,4 +330,22 @@ void ServoController::_increaseDropIndex(uint16_t incSize) {
         _dropIndex = 0;
     }
     emit dropIndexChanged();
+}
+
+bool ServoController::hasServo(uint16_t index) {
+    for(uint16_t i = 0; i < _servoModel.size(); ++i) {
+        if(_servoModel[i].value<Servo*>()->index() == index) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Servo* ServoController::findServo(uint16_t index) {
+    for(uint16_t i = 0; i < _servoModel.size(); ++i) {
+        if(_servoModel[i].value<Servo*>()->index() == index) {
+            return _servoModel[i].value<Servo*>();
+        }
+    }
+    return nullptr;
 }

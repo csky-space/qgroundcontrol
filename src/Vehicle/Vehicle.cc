@@ -3295,6 +3295,8 @@ void Vehicle::_sendMavCommandFromList(int index)
                                             &msg,
                                             &cmd);
     } else {
+        if(commandEntry.command == MAV_CMD_DO_SET_SERVO)
+            qDebug() << "Send command long: sysId: " << _id << ". compId: " << commandEntry.targetCompId << ". param1: " << commandEntry.rgParam1 << ". param2: " << commandEntry.rgParam2;
         mavlink_command_long_t  cmd;
 
         memset(&cmd, 0, sizeof(cmd));

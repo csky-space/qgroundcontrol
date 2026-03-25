@@ -313,16 +313,33 @@ Item {
         property real topEdgeLeftInset: visible ? y + height : 0
         property real leftEdgeTopInset: visible ? x + width : 0
     }
-    function servoValueScale (number, [inMin, inMax], [outMin, outMax]) {
-        return (number - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
+    function servoValueScale(number, inMin, inMax, outMin, outMax, reversed) {
+        console.log("number before cast: " + number + ". reversed: " + reversed + ". min: " + inMin + ". max: " + inMax)
+        number = Math.min(Math.max(number, inMin), inMax);
+
+        let t = (number - inMin) / (inMax - inMin);
+        if (isNaN(t)) t = 0;
+        if (reversed) {
+            let val = outMax - t * (outMax - outMin);
+            console.log("number after cast: " + val + ". reversed: " + reversed)
+            return val
+        } else {
+            let val = outMin + t * (outMax - outMin);
+            console.log("number after cast: " + val + ". reversed: " + reversed)
+            return val
+        }
     }
     Rectangle {
         anchors.topMargin: _toolsMargin + parentToolInsets.topEdgeLeftInset
         anchors.rightMargin: _toolsMargin + parentToolInsets.topEdgeLeftInset
+
         anchors.top: toolStrip.bottom
         anchors.left: toolStrip.left
-        anchors.bottom: telemetryPanel.bottom
-        anchors.right: telemetryPanel.left
+        //anchors.bottom: telemetryPanel.bottom
+        //anchors.right: telemetryPanel.left
+
+        height: instrumentPanel.height * 2
+        width: instrumentPanel.width * 2
 
         ListModel {
             id: queueModel
@@ -348,10 +365,13 @@ Item {
             anchors.fill: parent
             anchors.margins: 10
 
-            RowLayout {
+            GridLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 5
+                rows: 2
+                columns: servoDropModeRepeater.count
+                columnSpacing: 5
+                rowSpacing: 5
 
                 Repeater {
                     id: servoDropModeRepeater
@@ -360,11 +380,16 @@ Item {
                            : servoDropModeModel
 
                     delegate: CheckBox {
+                        id: modeCheckbox
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignHCenter
+
                         required property var model
                         required property int index
 
-                        text: servoDropModeModel.get(index).name
                         checked: (_activeVehicle && _activeVehicle.servoController) ? _activeVehicle.servoController.servoDropModes[index].checked : servoDropModeModel.get(index).checked
+
+                        text: ""
 
                         onClicked: {
                             console.log("onClicked")
@@ -376,6 +401,21 @@ Item {
                                 }
                             }
                         }
+                    }
+                }
+                Repeater {
+                    model: (_activeVehicle && _activeVehicle.servoController)
+                           ? _activeVehicle.servoController.servoDropModes
+                           : servoDropModeModel
+                    delegate: Text {
+                        required property var model
+                        required property int index
+
+                        text: (_activeVehicle && _activeVehicle.servoController) ? _activeVehicle.servoController.servoDropModes[index].name : servoDropModeModel.get(index).name
+                        font.pointSize: 12
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        Layout.fillWidth: true
                     }
                 }
             }
@@ -392,7 +432,7 @@ Item {
 
                     //model: servoButtonsModel
 
-                    Button {
+                    Rectangle {
                         required property int index
                         required property var modelData
                         property string displayValue: {
@@ -402,9 +442,11 @@ Item {
 
                             return modelData
                         }
-
-                        width: parent ? (parent.width - (servoButtonsRepeater.count - 1) * parent.spacing) / servoButtonsRepeater.count : 0
-                        height: parent.height
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: 0
+                        //width: parent ? (parent.width - (servoButtonsRepeater.count - 1) * parent.spacing) / servoButtonsRepeater.count : 0
+                        //height: parent.height
                         //color: {
                         //    if (index === 0) return "lightgreen"
                         //    else if (index === servoButtonsRepeater.count - 1) return "lightblue"
@@ -419,18 +461,21 @@ Item {
                             anchors.right: parent.right
                             anchors.bottom: parent.bottom
 
-                            height: (() => {
-                                            if(_activeVehicle && _activeVehicle.servoController) {
-                                                return !_activeVehicle.servoController.servoModel[index].reversed ?  servoValueScale(_activeVehicle.servoController.servoModel[index].value,
-                                                                                                                                       [_activeVehicle.servoController.servoModel[index].minValue, _activeVehicle.servoController.servoModel[index].maxValue],
-                                                                                                                                       [0, parent.height])
-                                                                                                                  : servoValueScale(_activeVehicle.servoController.servoModel[index].value,
-                                                                                                                                       [_activeVehicle.servoController.servoModel[index].maxValue, _activeVehicle.servoController.servoModel[index].minValue],
-                                                                                                                                       [0, parent.height])
-                                            }
-                                            return parent.height
-                                     })()
+                            height: {
+                                if(_activeVehicle && _activeVehicle.servoController) {
+                                    var servo = _activeVehicle.servoController.servoModel[index];
+                                    var val = servo.value;
+                                    var minV = servo.minValue;
+                                    var maxV = servo.maxValue;
+                                    var rev = servo.reversed;
+                                    console.log("index", index, "minV", minV, "maxV", maxV, "val", val);
+                                    console.log("typeof minV: " + typeof(minV))
+                                    return servoValueScale(val, minV, maxV, 0, parent.height, rev);
+                                }
+                                return 0
+                            }
                             color: "green"
+                            radius: 8
                         }
 
                         Text {
@@ -443,27 +488,39 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 200 } }
                         opacity: 1
 
-                        Layout.fillWidth: true
-                        onClicked: {
-                            if(_activeVehicle && _activeVehicle.servoController) {
-                                //_activeVehicle.servoController.addToQueue(modelData)
-                            }
+                        radius: 8
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 5
+                Button {
+                    text: "Drop"
+                    onClicked: {
+                        if(_activeVehicle && _activeVehicle.servoController) {
+                            Qt.callLater(()=>_activeVehicle.servoController.drop())
+
                         }
-
-
                     }
+                    Layout.alignment: horizontalCenter
+                }
+
+                Button {
+                    text: "Close"
+                    onClicked: {
+                        if(_activeVehicle && _activeVehicle.servoController) {
+                            Qt.callLater(()=>_activeVehicle.servoController.close())
+
+                        }
+                    }
+                    Layout.alignment: horizontalCenter
                 }
             }
 
-            Button {
-                text: "Drop"
-                onClicked: {
-                    if(_activeVehicle && _activeVehicle.servoController) {
-                        Qt.callLater(()=>_activeVehicle.servoController.drop())
 
-                    }
-                }
-            }
         }
 
         z:                      QGroundControl.zOrderWidgets

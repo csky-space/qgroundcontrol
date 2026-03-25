@@ -67,6 +67,7 @@ public:
     void setValue               (quint16 value);
     void setMinValue            (quint16 minValue);
     void setMaxValue            (quint16 maxValue);
+    void setReversed            (bool reversed);
 signals:
     void nameChanged        ();
     void indexChanged       ();
@@ -86,9 +87,9 @@ public:
     ServoController (MAVLinkProtocol* mavlink, Vehicle* vehicle);
     ~ServoController();
 
-    Q_PROPERTY(QVariantList servoModel      READ servoModel         NOTIFY servoModelChanged        CONSTANT)
-    Q_PROPERTY(QVariantList servoDropModes  READ servoDropModes     NOTIFY servoDropModesChanged    CONSTANT)
-    Q_PROPERTY(quint16      dropIndex       READ dropIndex          NOTIFY dropIndexChanged         CONSTANT)
+    Q_PROPERTY(QVariantList servoModel      READ servoModel         NOTIFY servoModelChanged    )
+    Q_PROPERTY(QVariantList servoDropModes  READ servoDropModes     NOTIFY servoDropModesChanged)
+    Q_PROPERTY(quint16      dropIndex       READ dropIndex          NOTIFY dropIndexChanged     )
 
     QVariantList        servoModel      ()  const;
     QVariantList        servoDropModes  ()  const;
@@ -97,8 +98,11 @@ public:
     static constexpr uint16_t servoDropFunction = 254;
 private slots:
     void _mavlinkMessageReceived(const mavlink_message_t& message);
+    void _sendQueuedComand(int vehicleId, int targetComponent, int command, int ackResult, int failureCode);
+    void _enqueueLongCommand(const std::function<void()>& command);
 public slots:
     void drop();
+    void close();
 signals:
     void servoModelChanged      ();
     void servoDropModesChanged  ();
@@ -108,13 +112,16 @@ private:
 
     void _increaseDropIndex     (uint16_t incSize);
 
-    QMetaObject::Connection     _cavetationTimerConnection;
-    QTimer*                     _cavetationTimer;
+    bool hasServo(uint16_t index);
+    Servo* findServo(uint16_t index);
+
+    QMetaObject::Connection     _carpetationTimerConnection;
+    QTimer*                     _carpetationTimer;
     std::function<void()>       _sendCommandLongCallback;
     ServoMode*                  _allMode;
     ServoMode*                  _2Mode;
     ServoMode*                  _1Mode;
-    ServoMode*                  _cavetMode;
+    ServoMode*                  _carpetMode;
     std::array<uint16_t, 16>    _servoOutputsRaw;
     QVariantList                _servoDropModes;
     QVariantList                _servoModel;
@@ -123,4 +130,6 @@ private:
     MAVLinkProtocol*            _mavlink            = nullptr;
     Vehicle*                    _vehicle            = nullptr;
     uint16_t                    _dropIndex;
+
+    QQueue<std::function<void()>> _commandQueue;
 };
