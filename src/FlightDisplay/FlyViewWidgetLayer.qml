@@ -253,7 +253,7 @@ Item {
         anchors.left: instrumentPanel.left
         anchors.bottomMargin: _toolsMargin
 
-        height: instrumentPanel.height
+        height: instrumentPanel ? instrumentPanel._heightAttComp : 0
         visible: _activeVehicle != null
         z: QGroundControl.zOrderWidgets
     }
@@ -267,7 +267,7 @@ Item {
         anchors.left: ekfIndicator.left
         anchors.bottomMargin: _toolsMargin
 
-        height: instrumentPanel.height
+        height: instrumentPanel ? instrumentPanel._heightAttComp : 0
         visible: _activeVehicle != null
         z: QGroundControl.zOrderWidgets
     }
@@ -314,18 +314,18 @@ Item {
         property real leftEdgeTopInset: visible ? x + width : 0
     }
     function servoValueScale(number, inMin, inMax, outMin, outMax, reversed) {
-        console.log("number before cast: " + number + ". reversed: " + reversed + ". min: " + inMin + ". max: " + inMax)
+        console.log("number: " + number + ". inMin: " + inMin + ". inMax: " + inMax)
         number = Math.min(Math.max(number, inMin), inMax);
 
         let t = (number - inMin) / (inMax - inMin);
         if (isNaN(t)) t = 0;
         if (reversed) {
             let val = outMax - t * (outMax - outMin);
-            console.log("number after cast: " + val + ". reversed: " + reversed)
+            console.log("result: " + val)
             return val
         } else {
             let val = outMin + t * (outMax - outMin);
-            console.log("number after cast: " + val + ". reversed: " + reversed)
+            console.log("result: " + val)
             return val
         }
     }
@@ -338,8 +338,8 @@ Item {
         //anchors.bottom: telemetryPanel.bottom
         //anchors.right: telemetryPanel.left
 
-        height: instrumentPanel.height * 2
-        width: instrumentPanel.width * 2
+        height: instrumentPanel ? instrumentPanel._heightAttComp * 2 : 0
+        width: instrumentPanel ? instrumentPanel._heightAttComp * 4 : 0
 
         ListModel {
             id: queueModel
@@ -360,18 +360,22 @@ Item {
             ListElement { checked: false;   name: "Each 1" }
             ListElement { checked: false;   name: "Carpet" }
         }
-
+        ButtonGroup {
+            id: servoGroup
+            exclusive: true
+        }
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 10
+            spacing: 10
 
             GridLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                rows: 2
+                Layout.preferredHeight: implicitHeight
                 columns: servoDropModeRepeater.count
                 columnSpacing: 5
                 rowSpacing: 5
+                Layout.alignment: Qt.AlignHCenter
 
                 Repeater {
                     id: servoDropModeRepeater
@@ -379,51 +383,105 @@ Item {
                            ? _activeVehicle.servoController.servoDropModes
                            : servoDropModeModel
 
-                    delegate: CheckBox {
-                        id: modeCheckbox
+                    delegate: Item {
                         Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignHCenter
+                        //Layout.fillHeight: true
+                        implicitHeight: content.implicitHeight
+                        opacity: 1
 
-                        required property var model
-                        required property int index
+                        //property var model
+                        //property int index
 
-                        checked: (_activeVehicle && _activeVehicle.servoController) ? _activeVehicle.servoController.servoDropModes[index].checked : servoDropModeModel.get(index).checked
+                        ColumnLayout {
+                            id: content
+                            anchors.fill: parent
+                            spacing: 5
+                            implicitHeight: childrenRect.height
 
-                        text: ""
+                            RadioButton {
+                                id: modeRadio
+                                Layout.preferredWidth: 24
+                                Layout.alignment: Qt.AlignHCenter
 
-                        onClicked: {
-                            console.log("onClicked")
-                            if(_activeVehicle && _activeVehicle.servoController) {
-                                console.log("onClicked condition passed")
-                                for (let i = 0; i < _activeVehicle.servoController.servoDropModes.length; ++i) {
-                                    console.log("dropMode" + String(i) + " constraining...")
-                                    _activeVehicle.servoController.servoDropModes[i].checked = (i === index)
+                                //property var model
+                                //property int index
+
+                                checked: (_activeVehicle && _activeVehicle.servoController)
+                                         ? _activeVehicle.servoController.servoDropModes[index].checked
+                                         : servoDropModeModel.get(index).checked
+
+                                ButtonGroup.group: servoGroup
+
+                                text: ""
+
+                                indicator: Rectangle {
+                                    implicitWidth: 24
+                                    implicitHeight: 24
+                                    radius: 14
+                                    border.color: modeRadio.down ? "darkgray" : "gray"
+                                    Rectangle {
+                                        width: 12
+                                        height: 12
+                                        radius: 14
+                                        color: modeRadio.checked ? "#000000" : "transparent"
+                                        anchors.centerIn: parent
+                                    }
                                 }
+
+
+                                Component.onCompleted: {
+                                    if (_activeVehicle && _activeVehicle.servoController) {
+                                        checked = _activeVehicle.servoController.servoDropModes[index].checked
+                                    } else {
+                                        checked = servoDropModeModel.get(index).checked
+                                    }
+                                }
+
+                                onClicked: {
+                                    if (_activeVehicle && _activeVehicle.servoController) {
+                                        for (let i = 0; i < _activeVehicle.servoController.servoDropModes.length; ++i) {
+                                            _activeVehicle.servoController.servoDropModes[i].checked = (i === index)
+                                        }
+                                    } else {
+                                        for (let i = 0; i < servoDropModeModel.count; ++i) {
+                                            servoDropModeModel.get(i).checked = (i === index)
+                                        }
+                                    }
+                                }
+                                //onCheckedChanged: {
+                                //    if (checked) {
+                                //        if (_activeVehicle && _activeVehicle.servoController) {
+                                //            for (let i = 0; i < _activeVehicle.servoController.servoDropModes.length; ++i) {
+                                //                _activeVehicle.servoController.servoDropModes[i].checked = (i === index);
+                                //            }
+                                //        } else {
+                                //            for (let i = 0; i < servoDropModeModel.count; ++i) {
+                                //                servoDropModeModel.get(i).checked = (i === index);
+                                //            }
+                                //        }
+                                //    }
+                                //}
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: (_activeVehicle && _activeVehicle.servoController)
+                                      ? _activeVehicle.servoController.servoDropModes[index].name
+                                      : servoDropModeModel.get(index).name
+                                font.pointSize: 12
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
                             }
                         }
                     }
                 }
-                Repeater {
-                    model: (_activeVehicle && _activeVehicle.servoController)
-                           ? _activeVehicle.servoController.servoDropModes
-                           : servoDropModeModel
-                    delegate: Text {
-                        required property var model
-                        required property int index
-
-                        text: (_activeVehicle && _activeVehicle.servoController) ? _activeVehicle.servoController.servoDropModes[index].name : servoDropModeModel.get(index).name
-                        font.pointSize: 12
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.fillWidth: true
-                    }
-                }
             }
 
-            RowLayout {
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 5
+                clip: true
                 Repeater {
                     id: servoButtonsRepeater
                     model: (_activeVehicle && _activeVehicle.servoController)
@@ -445,35 +503,24 @@ Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.preferredWidth: 0
-                        //width: parent ? (parent.width - (servoButtonsRepeater.count - 1) * parent.spacing) / servoButtonsRepeater.count : 0
-                        //height: parent.height
-                        //color: {
-                        //    if (index === 0) return "lightgreen"
-                        //    else if (index === servoButtonsRepeater.count - 1) return "lightblue"
-                        //    else return "lightgray"
-                        //}
-                        //border.color: "black"
-                        //border.width: 1
-                        //radius: 3
 
                         Rectangle {
                             anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
+                            anchors.top: parent.top
 
-                            height: {
+                            height: parent.height
+                            width: {
                                 if(_activeVehicle && _activeVehicle.servoController) {
                                     var servo = _activeVehicle.servoController.servoModel[index];
                                     var val = servo.value;
                                     var minV = servo.minValue;
                                     var maxV = servo.maxValue;
                                     var rev = servo.reversed;
-                                    console.log("index", index, "minV", minV, "maxV", maxV, "val", val);
-                                    console.log("typeof minV: " + typeof(minV))
-                                    return servoValueScale(val, minV, maxV, 0, parent.height, rev);
+                                    return servoValueScale(val, minV, maxV, 0, parent.width, rev);
                                 }
                                 return 0
                             }
+
                             color: "green"
                             radius: 8
                         }
@@ -485,9 +532,6 @@ Item {
                             font.bold: true
                         }
 
-                        Behavior on opacity { NumberAnimation { duration: 200 } }
-                        opacity: 1
-
                         radius: 8
                     }
                 }
@@ -495,37 +539,93 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: implicitHeight
                 spacing: 5
                 Button {
+                    opacity: 1
+                    id: dropBtn
                     text: "Drop"
+
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 120
+                    Layout.preferredHeight: 40
+
+                    background: Rectangle {
+                        anchors.fill: parent
+                        radius: 12
+
+                        color: dropBtn.down
+                               ? "#2c2c2c"
+                               : dropBtn.hovered
+                                 ? "#3a3a3a"
+                                 : "#444444"
+
+                        border.color: "#555"
+                        border.width: 1
+                    }
+
+                    contentItem: Image {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+
+                        source: "qrc:/qmlimages/drop.svg"
+                        fillMode: Image.PreserveAspectFit
+                    }
+
                     onClicked: {
                         if(_activeVehicle && _activeVehicle.servoController) {
-                            Qt.callLater(()=>_activeVehicle.servoController.drop())
-
+                            _activeVehicle.servoController.drop()
                         }
                     }
-                    Layout.alignment: horizontalCenter
                 }
 
                 Button {
+                    opacity: 1
+                    id: closeBtn
                     text: "Close"
+
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 120
+                    Layout.preferredHeight: 40
+
+                    background: Rectangle {
+                        anchors.fill: parent
+                        radius: 12
+
+                        color: closeBtn.down
+                               ? "#2c2c2c"
+                               : closeBtn.hovered
+                                 ? "#3a3a3a"
+                                 : "#444444"
+
+                        border.color: "#555"
+                        border.width: 1
+                    }
+
+                    contentItem: Image {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+
+                        source: "qrc:/qmlimages/close.svg"
+                        fillMode: Image.PreserveAspectFit
+                    }
                     onClicked: {
                         if(_activeVehicle && _activeVehicle.servoController) {
-                            Qt.callLater(()=>_activeVehicle.servoController.close())
-
+                            _activeVehicle.servoController.close()
                         }
                     }
-                    Layout.alignment: horizontalCenter
                 }
             }
-
-
         }
 
         z:                      QGroundControl.zOrderWidgets
-        opacity: 1//0.5
-        color: qgcPal.window
+
+        color: Qt.rgba(qgcPal.window.r,
+                       qgcPal.window.g,
+                       qgcPal.window.b,
+                       0.6)
         visible: _activeVehicle !== undefined ? true : false
         radius: 8
     }

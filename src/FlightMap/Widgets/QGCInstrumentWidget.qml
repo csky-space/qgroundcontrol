@@ -26,6 +26,7 @@ ColumnLayout {
     property real   _outerRadius:           _innerRadius + _topBottomMargin
     property real   _spacing:               ScreenTools.defaultFontPixelHeight * 0.33
     property real   _topBottomMargin:       (width * 0.05) / 2
+    property real   _heightAttComp:         _innerRadius * 2
 
     QGCPalette { id: qgcPal }
 

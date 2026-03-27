@@ -26,4 +26,5 @@ Column {
         width:              parent.width
         missionController:  _missionController
     }
+    property real  _heightAttComp: flightDisplayViewWidgets.heightAttComp
 }
