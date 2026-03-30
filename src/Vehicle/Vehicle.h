@@ -855,7 +855,7 @@ public:
     bool soloFirmware() const { return _soloFirmware; }
     void setSoloFirmware(bool soloFirmware);
 
-    int defaultComponentId() const{ return _defaultComponentId; }
+    Q_INVOKABLE int defaultComponentId() const{ return _defaultComponentId; }
 
     /// Sets the default component id for an offline editing vehicle
     void setOfflineEditingDefaultComponentId(int defaultComponentId);
