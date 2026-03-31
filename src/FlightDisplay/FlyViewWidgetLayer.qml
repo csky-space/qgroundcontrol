@@ -898,11 +898,21 @@ Item {
                 property real dragStartRaw: 0
 
                 Timer {
-                    id: debounceTimer
-                    interval: 150
+                    id: dragDebounceTimer
+                    interval: 200
                     repeat: false
                     onTriggered: {
-                        if (!returnYaw.isDragging) return
+                        if (returnYaw.isDragging) {
+                            sendCourseToDrone(returnYaw.targetCourseNormalized)
+                        }
+                    }
+                }
+
+                Timer {
+                    id: wheelDebounceTimer
+                    interval: 500
+                    repeat: false
+                    onTriggered: {
                         sendCourseToDrone(returnYaw.targetCourseNormalized)
                     }
                 }
@@ -911,30 +921,32 @@ Item {
                     returnYaw.isDragging = true
                     dragArea.dragStartX = mouseX
                     dragArea.dragStartRaw = returnYaw.rawTargetCourse
-                    debounceTimer.stop()
+                    dragDebounceTimer.stop()
                 }
+
                 onPositionChanged: {
                     if (!returnYaw.isDragging) return
                     var fullRange = compassStrip.width - compassContainer.width
                     if (fullRange <= 0) return
                     var deltaX = mouseX - dragArea.dragStartX
                     var deltaCourse = (deltaX / fullRange) * 360
-
                     returnYaw.rawTargetCourse = dragArea.dragStartRaw + deltaCourse
-                    debounceTimer.restart()
+                    dragDebounceTimer.restart()
                 }
+
                 onReleased: {
                     returnYaw.isDragging = false
-                    debounceTimer.stop()
+                    dragDebounceTimer.stop()
                     sendCourseToDrone(returnYaw.targetCourseNormalized)
                 }
+
                 focus: true
                 Keys.onReleased: { }
                 onWheel: function(wheel) {
                     var delta = wheel.angleDelta.y / 120
                     var courseStep = 5
                     returnYaw.rawTargetCourse = normalizeTo360(returnYaw.rawTargetCourse + delta * courseStep)
-                    sendCourseToDrone(returnYaw.targetCourseNormalized)
+                    wheelDebounceTimer.restart()
                     wheel.accepted = true
                 }
             }

@@ -49,7 +49,7 @@ APMCopterMode::APMCopterMode(uint32_t mode, bool settable) :
         { AUTOROTATE,   "AutoRotate" },
         { AUTO_RTL,     "AutoRTL" },
         { TURTLE,       "Turtle" },
-                            { RETURN, "Return"}
+                            { RETURN, "COMPASS RETURN"}
     });
 }
 
