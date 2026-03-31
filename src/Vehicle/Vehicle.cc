@@ -628,6 +628,18 @@ QString Vehicle::vehicleTypeString() const
     }
 }
 
+QString Vehicle::failsafeReason() const {
+    return _failsafeReason;
+}
+
+QString Vehicle::failsafeType() const {
+    return _failsafeType;
+}
+
+QString Vehicle::failsafeAction() const {
+    return _failsafeAction;
+}
+
 void Vehicle::resetCounters()
 {
     _messagesReceived   = 0;
@@ -1048,6 +1060,7 @@ void Vehicle::_handleStatusText(mavlink_message_t& message)
             chunkedInfo.rgMessageChunks.append(messageText);
             _chunkedStatusTextInfoMap[compId] = chunkedInfo;
         }
+
         _chunkedStatusTextTimer.start();
     }
 

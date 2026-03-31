@@ -347,6 +347,13 @@ public:
     Q_PROPERTY(QString  gitHash                     READ gitHash                    NOTIFY gitHashChanged)
     Q_PROPERTY(quint64  vehicleUID                  READ vehicleUID                 NOTIFY vehicleUIDChanged)
     Q_PROPERTY(QString  vehicleUIDStr               READ vehicleUIDStr              NOTIFY vehicleUIDChanged)
+    Q_PROPERTY(QString  failsafeReason              READ failsafeReason             NOTIFY failsafeReasonChanged)
+    Q_PROPERTY(QString  failsafeType                READ failsafeType               NOTIFY failsafeTypeChanged)
+    Q_PROPERTY(QString  failsafeAction              READ failsafeAction             NOTIFY failsafeActionChanged)
+
+    QString failsafeReason() const;
+    QString failsafeType() const;
+    QString failsafeAction() const;
 
     /// Resets link status counters
     Q_INVOKABLE void resetCounters  ();
@@ -1042,6 +1049,10 @@ signals:
 
     void sensorsParametersResetAck      (bool success);
 
+    void failsafeReasonChanged();
+    void failsafeTypeChanged();
+    void failsafeActionChanged();
+
 private slots:
     void _mavlinkMessageReceived            (LinkInterface* link, mavlink_message_t message);
     void _sendMessageMultipleNext           ();
@@ -1522,6 +1533,9 @@ private:
     // We use this to limit above terrain altitude queries based on distance and altitude change
     QGeoCoordinate              _altitudeAboveTerrLastCoord;
     float                       _altitudeAboveTerrLastRelAlt = qQNaN();
+    QString                     _failsafeReason;
+    QString                     _failsafeType;
+    QString                     _failsafeAction;
 };
 
 Q_DECLARE_METATYPE(Vehicle::MavCmdResultFailureCode_t)
