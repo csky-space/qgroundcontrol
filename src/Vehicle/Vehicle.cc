@@ -4463,7 +4463,8 @@ void Vehicle::clearAllParamMapRC(void)
 }
 
 float castToNewRange(int16_t value, int16_t oldMin, int16_t oldMax, int16_t newMin, int16_t newMax) {
-    return (value - oldMin) / (oldMax - oldMin) * (newMax - newMin) + newMin;
+    float normalized = (float)(value - oldMin) / (float)(oldMax - oldMin);
+    return normalized * (newMax - newMin) + newMin;
 }
 
 void Vehicle::sendJoystickDataThreadSafe(float roll, float pitch, float yaw, float thrust, quint16 buttons)
@@ -4503,7 +4504,7 @@ void Vehicle::sendJoystickDataThreadSafe(float roll, float pitch, float yaw, flo
     sendMessageOnLinkThreadSafe(sharedLink.get(), message);
 }
 
-void Vehicle::sendJoystickRCOverrideDataThreadSafe (int16_t roll, int16_t pitch, int16_t yaw, int16_t thrust, int16_t gimbalPitch, int16_t gimbalYaw, int16_t maxAxis, const std::array<uint8_t, 11>& rcOverrideButtons) {
+void Vehicle::sendJoystickRCOverrideDataThreadSafe (const std::array<int16_t,8>& axes, const std::array<uint8_t, 10>& rcOverrideButtons) {
     SharedLinkInterfacePtr sharedLink = vehicleLinkManager()->primaryLink().lock();
     if (!sharedLink) {
         qCDebug(VehicleLog)<< "sendJoystickDataThreadSafe: primary link gone!";
@@ -4517,10 +4518,14 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (int16_t roll, int16_t pitch,
     mavlink_message_t message;
 
     // Incoming values are in the range -1:1
-    float newRollCommand =      castToNewRange(roll, -32768, 32767, 1000, 2000);
-    float newPitchCommand  =    castToNewRange(pitch, -32768, 32767, 1000, 2000);    // Joystick data is reverse of mavlink values
-    float newYawCommand    =    castToNewRange(yaw, -32768, 32767, 1000, 2000);
-    float newThrustCommand =    castToNewRange(thrust, -32768, 32767, 1000, 2000);
+    uint16_t axis0 =      static_cast<uint16_t>(castToNewRange(axes[0], -32768, 32767, 1000, 2000));
+    uint16_t axis1 =      static_cast<uint16_t>(castToNewRange(axes[1], -32768, 32767, 1000, 2000));
+    uint16_t axis2 =      static_cast<uint16_t>(castToNewRange(axes[2], -32768, 32767, 1000, 2000));
+    uint16_t axis3 =      static_cast<uint16_t>(castToNewRange(axes[3], -32768, 32767, 1000, 2000));
+    uint16_t axis4 =      static_cast<uint16_t>(castToNewRange(axes[4], -32768, 32767, 1000, 2000));
+    uint16_t axis5 =      static_cast<uint16_t>(castToNewRange(axes[5], -32768, 32767, 1000, 2000));
+    uint16_t axis6 =      static_cast<uint16_t>(castToNewRange(axes[6], -32768, 32767, 1000, 2000));
+    uint16_t axis7 =      static_cast<uint16_t>(castToNewRange(axes[7], -32768, 32767, 1000, 2000));
     mavlink_msg_rc_channels_override_pack_chan(
         static_cast<uint8_t>(_mavlink->getSystemId()),
         static_cast<uint8_t>(_mavlink->getComponentId()),
@@ -4528,24 +4533,24 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (int16_t roll, int16_t pitch,
         &message,
         static_cast<uint8_t>(_id),
         static_cast<uint8_t>(_compID),
-         static_cast<int16_t>(newRollCommand),
-        static_cast<int16_t>(newPitchCommand),
-        static_cast<int16_t>(newThrustCommand),
-        static_cast<int16_t>(newYawCommand),
-        static_cast<int16_t>(castToNewRange(gimbalPitch, 0, 32767, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(gimbalYaw, 0, 32767, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(maxAxis, 0, 32767, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[0]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[1]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[2]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[3]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[4]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[5]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[6]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[7]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[8]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[9]), 0, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[10]), 0, 1, 1000, 2000))
+        axis0,
+        axis1,
+        axis2,
+        axis3,
+        axis4,
+        axis5,
+        axis6,
+        axis7,
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[0]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[1]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[2]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[3]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[4]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[5]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[6]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[7]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[8]), 0, 1, 1000, 2000)),
+        static_cast<uint16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[9]), 0, 1, 1000, 2000))
     );
 
     sendMessageOnLinkThreadSafe(sharedLink.get(), message);

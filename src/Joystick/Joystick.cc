@@ -107,8 +107,9 @@ AssignableButtonAction::AssignableButtonAction(QObject* parent, QString action_,
 }
 
 Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager)
-    : _isSendingRC(true)
+    : _isSendingRC(false)
     , _name(name)
+    , _calibrated(true)
     , _axisCount(axisCount)
     , _buttonCount(buttonCount)
     , _hatCount(hatCount)
@@ -135,6 +136,7 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     connect(qgcApp()->toolbox()->multiVehicleManager()->vehicles(), &QmlObjectListModel::countChanged, this, &Joystick::_vehicleCountChanged);
 
     _customMavCommands = JoystickMavCommand::load("JoystickMavCommands.json");
+    _calibrated = true;
 }
 
 void Joystick::stop()
@@ -741,12 +743,12 @@ void Joystick::_handleAxis()
 
             //uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
             //_activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
-            std::array<uint8_t, 11> rcOverrideButtons;
-            if(_totalButtonCount < 11) {
+            std::array<uint8_t, 10> rcOverrideButtons;
+            if(_totalButtonCount < rcOverrideButtons.size()) {
                 memcpy(rcOverrideButtons.data(), _rgButtonValues, _totalButtonCount);
-                memset(rcOverrideButtons.data() + _totalButtonCount, 0, 11 - _totalButtonCount);
+                memset(rcOverrideButtons.data() + _totalButtonCount, 0, rcOverrideButtons.size() - _totalButtonCount);
             } else {
-                memcpy(rcOverrideButtons.data(), _rgButtonValues, 11);
+                memcpy(rcOverrideButtons.data(), _rgButtonValues, rcOverrideButtons.size());
             }
             //qCDebug(JoystickLog) << "before send axis and buttons!";
             if(_isSendingRC) {
@@ -755,7 +757,11 @@ void Joystick::_handleAxis()
                 //qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalYawFunction]:" << _rgAxisValues[gimbalYawFunction];
                 //qCDebug(JoystickLog) << "_rgFunctionAxis[extraFunction]:" << _rgAxisValues[extraFunction];
                 //qCDebug(JoystickLog) << "name: " << name() << "roll:" << roll << "pitch:" << -pitch << "yaw:" << yaw << "throttle:" << throttle << "gimbalPitch:" << gimbalPitch << "gimbalYaw:" << gimbalYaw << "extraAxis: " << maxAxis;
-                _activeVehicle->sendJoystickRCOverrideDataThreadSafe(_rgAxisValues[0], _rgAxisValues[1], _rgAxisValues[2], _rgAxisValues[3], _rgAxisValues[4], _rgAxisValues[5], _rgAxisValues[6], rcOverrideButtons);
+                std::array<int16_t,8> axes;
+                for (size_t i = 0; i < _axisCount; ++i) {
+                    axes[i] = static_cast<int16_t>(_rgAxisValues[i]);
+                }
+                _activeVehicle->sendJoystickRCOverrideDataThreadSafe(axes, rcOverrideButtons);
             } else {
                 //qCDebug(JoystickLog) << "Joystick" << name() << "has inactive state for _isSendingRC";
             }

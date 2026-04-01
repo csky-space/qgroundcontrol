@@ -21,6 +21,7 @@ import QGroundControl.FactSystem    1.0
 import QGroundControl.FactControls  1.0
 
 Item {
+    visible: false
     width:  mainCol.width  + (ScreenTools.defaultFontPixelWidth  * 2)
     height: mainCol.height + (ScreenTools.defaultFontPixelHeight * 2)
 
@@ -46,7 +47,7 @@ Item {
             }
             QGCCheckBox {
                 id:             enabledSwitch
-                enabled:        !_requiresCalibration
+                enabled:        true
                 onClicked:      {
                     globals.activeVehicle.joystickEnabled = checked
                     globals.activeVehicle.saveJoystickSettings()
