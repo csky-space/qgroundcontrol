@@ -4462,7 +4462,7 @@ void Vehicle::clearAllParamMapRC(void)
     }
 }
 
-float castToNewRange(float value, float oldMin, float oldMax, float newMin, float newMax) {
+float castToNewRange(int16_t value, int16_t oldMin, int16_t oldMax, int16_t newMin, int16_t newMax) {
     return (value - oldMin) / (oldMax - oldMin) * (newMax - newMin) + newMin;
 }
 
@@ -4503,7 +4503,7 @@ void Vehicle::sendJoystickDataThreadSafe(float roll, float pitch, float yaw, flo
     sendMessageOnLinkThreadSafe(sharedLink.get(), message);
 }
 
-void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, float yaw, float thrust, float gimbalPitch, float gimbalYaw, float maxAxis, const std::array<uint8_t, 11>& rcOverrideButtons) {
+void Vehicle::sendJoystickRCOverrideDataThreadSafe (int16_t roll, int16_t pitch, int16_t yaw, int16_t thrust, int16_t gimbalPitch, int16_t gimbalYaw, int16_t maxAxis, const std::array<uint8_t, 11>& rcOverrideButtons) {
     SharedLinkInterfacePtr sharedLink = vehicleLinkManager()->primaryLink().lock();
     if (!sharedLink) {
         qCDebug(VehicleLog)<< "sendJoystickDataThreadSafe: primary link gone!";
@@ -4517,10 +4517,10 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, flo
     mavlink_message_t message;
 
     // Incoming values are in the range -1:1
-    float newRollCommand =      castToNewRange(roll, -1, 1, 1000, 2000);
-    float newPitchCommand  =    castToNewRange(pitch, -1, 1, 1000, 2000);    // Joystick data is reverse of mavlink values
-    float newYawCommand    =    castToNewRange(yaw, -1, 1, 1000, 2000);
-    float newThrustCommand =    castToNewRange(thrust, 0, 1, 1000, 2000);
+    float newRollCommand =      castToNewRange(roll, -32768, 32767, 1000, 2000);
+    float newPitchCommand  =    castToNewRange(pitch, -32768, 32767, 1000, 2000);    // Joystick data is reverse of mavlink values
+    float newYawCommand    =    castToNewRange(yaw, -32768, 32767, 1000, 2000);
+    float newThrustCommand =    castToNewRange(thrust, -32768, 32767, 1000, 2000);
     mavlink_msg_rc_channels_override_pack_chan(
         static_cast<uint8_t>(_mavlink->getSystemId()),
         static_cast<uint8_t>(_mavlink->getComponentId()),
@@ -4532,9 +4532,9 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (float roll, float pitch, flo
         static_cast<int16_t>(newPitchCommand),
         static_cast<int16_t>(newThrustCommand),
         static_cast<int16_t>(newYawCommand),
-        static_cast<int16_t>(castToNewRange(gimbalPitch, -1, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(gimbalYaw, -1, 1, 1000, 2000)),
-        static_cast<int16_t>(castToNewRange(maxAxis, -1, 1, 1000, 2000)),
+        static_cast<int16_t>(castToNewRange(gimbalPitch, 0, 32767, 1000, 2000)),
+        static_cast<int16_t>(castToNewRange(gimbalYaw, 0, 32767, 1000, 2000)),
+        static_cast<int16_t>(castToNewRange(maxAxis, 0, 32767, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[0]), 0, 1, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[1]), 0, 1, 1000, 2000)),
         static_cast<int16_t>(castToNewRange(static_cast<bool>(rcOverrideButtons[2]), 0, 1, 1000, 2000)),

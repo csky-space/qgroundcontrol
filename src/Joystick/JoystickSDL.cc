@@ -165,7 +165,9 @@ int JoystickSDL::_getAxis(int i) {
     if (_isGameController) {
         return SDL_GameControllerGetAxis(sdlController, SDL_GameControllerAxis(i));
     } else {
-        return SDL_JoystickGetAxis(sdlJoystick, i);
+        int16_t axisValue = SDL_JoystickGetAxis(sdlJoystick, i);
+        qCDebug(JoystickLog) << "axis " << i << ": " << axisValue;
+        return axisValue;
     }
 }
 

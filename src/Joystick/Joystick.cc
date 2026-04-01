@@ -428,13 +428,13 @@ int Joystick::_mapFunctionMode(int mode, int function) {
 
 // Remap current axis functions from current TX mode to new TX mode
 void Joystick::_remapAxes(int currentMode, int newMode, int (&newMapping)[maxFunction]) {
-    int temp[maxFunction];
-    for(int function = 0; function < maxFunction; function++) {
-        temp[_mapFunctionMode(newMode, function)] = _rgFunctionAxis[_mapFunctionMode(currentMode, function)];
-    }
-    for(int function = 0; function < maxFunction; function++) {
-        newMapping[function] = temp[function];
-    }
+    //int temp[maxFunction];
+    //for(int function = 0; function < maxFunction; function++) {
+    //    temp[_mapFunctionMode(newMode, function)] = _rgFunctionAxis[_mapFunctionMode(currentMode, function)];
+    //}
+    //for(int function = 0; function < maxFunction; function++) {
+    //    newMapping[function] = temp[function];
+    //}
 }
 
 void Joystick::setTXMode(int mode) {
@@ -748,16 +748,16 @@ void Joystick::_handleAxis()
             } else {
                 memcpy(rcOverrideButtons.data(), _rgButtonValues, 11);
             }
-            qCDebug(JoystickLog) << "before send axis and buttons!";
+            //qCDebug(JoystickLog) << "before send axis and buttons!";
             if(_isSendingRC) {
-                qCDebug(JoystickLog) << "before send axis and buttons!";
-                qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalPitchFunction]:" << _rgAxisValues[gimbalPitchFunction];
-                qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalYawFunction]:" << _rgAxisValues[gimbalYawFunction];
-                qCDebug(JoystickLog) << "_rgFunctionAxis[extraFunction]:" << _rgAxisValues[extraFunction];
-                qCDebug(JoystickLog) << "name: " << name() << "roll:" << roll << "pitch:" << -pitch << "yaw:" << yaw << "throttle:" << throttle << "gimbalPitch:" << gimbalPitch << "gimbalYaw:" << gimbalYaw << "extraAxis: " << maxAxis;
-                _activeVehicle->sendJoystickRCOverrideDataThreadSafe(roll, pitch, yaw, throttle, gimbalPitch, gimbalYaw, maxAxis, rcOverrideButtons);
+                //qCDebug(JoystickLog) << "before send axis and buttons!";
+                //qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalPitchFunction]:" << _rgAxisValues[gimbalPitchFunction];
+                //qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalYawFunction]:" << _rgAxisValues[gimbalYawFunction];
+                //qCDebug(JoystickLog) << "_rgFunctionAxis[extraFunction]:" << _rgAxisValues[extraFunction];
+                //qCDebug(JoystickLog) << "name: " << name() << "roll:" << roll << "pitch:" << -pitch << "yaw:" << yaw << "throttle:" << throttle << "gimbalPitch:" << gimbalPitch << "gimbalYaw:" << gimbalYaw << "extraAxis: " << maxAxis;
+                _activeVehicle->sendJoystickRCOverrideDataThreadSafe(_rgAxisValues[0], _rgAxisValues[1], _rgAxisValues[2], _rgAxisValues[3], _rgAxisValues[4], _rgAxisValues[5], _rgAxisValues[6], rcOverrideButtons);
             } else {
-                qCDebug(JoystickLog) << "Joystick" << name() << "has inactive state for _isSendingRC";
+                //qCDebug(JoystickLog) << "Joystick" << name() << "has inactive state for _isSendingRC";
             }
         }
     }
