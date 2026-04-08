@@ -135,6 +135,8 @@ void MultiVehicleManager::_vehicleHeartbeatInfo(LinkInterface* link, int vehicle
     connect(vehicle->vehicleLinkManager(),  &VehicleLinkManager::allLinksRemoved,       this, &MultiVehicleManager::_deleteVehiclePhase1);
     connect(vehicle->parameterManager(),    &ParameterManager::parametersReadyChanged,  this, &MultiVehicleManager::_vehicleParametersReadyChanged);
 
+    connect(_joystickManager, &JoystickManager::activeJoystickChanged, this, &MultiVehicleManager::_activeJoystickChanged);
+
     _vehicles.append(vehicle);
 
     // Send QGC heartbeat ASAP, this allows PX4 to start accepting commands
@@ -313,6 +315,18 @@ void MultiVehicleManager::_coordinateChanged(QGeoCoordinate coordinate)
 {
     _lastKnownLocation = coordinate;
     emit lastKnownLocationChanged();
+}
+
+void MultiVehicleManager::_activeJoystickChanged(Joystick* activeJoystick)
+{
+    if (_activeVehicle) {
+        if (activeJoystick) {
+            _activeVehicle->setJoystickEnabled(true);
+        }
+        else {
+            _activeVehicle->setJoystickEnabled(false);
+        }
+    }
 }
 
 void MultiVehicleManager::_vehicleParametersReadyChanged(bool parametersReady)

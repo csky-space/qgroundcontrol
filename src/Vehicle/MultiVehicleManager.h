@@ -25,6 +25,7 @@ class FollowMe;
 class JoystickManager;
 class QGCApplication;
 class MAVLinkProtocol;
+class Joystick;
 
 Q_DECLARE_LOGGING_CATEGORY(MultiVehicleManagerLog)
 
@@ -94,6 +95,7 @@ private slots:
     void _vehicleHeartbeatInfo          (LinkInterface* link, int vehicleId, int componentId, int vehicleFirmwareType, int vehicleType);
     void _requestProtocolVersion        (unsigned version);
     void _coordinateChanged             (QGeoCoordinate coordinate);
+    void _activeJoystickChanged         (Joystick* activeJoystick);
 
 private:
     bool _vehicleExists(int vehicleId);

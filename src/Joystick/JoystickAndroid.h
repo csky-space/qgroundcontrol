@@ -37,6 +37,8 @@ private:
     virtual int  _getAxis       (int i);
     virtual bool _getHat        (int hat,int i);
 
+    bool _isUnexpectedlyRemoved () final;
+
     int *btnCode;
     int *axisCode;
     bool *btnValue;

@@ -250,6 +250,8 @@ private:
     virtual int  _getAxis   (int i)      = 0;
     virtual bool _getHat    (int hat,int i) = 0;
 
+    virtual bool _isUnexpectedlyRemoved() = 0;
+
     void _updateTXModeSettingsKey(Vehicle* activeVehicle);
     int _mapFunctionMode(int mode, int function);
     void _remapAxes(int currentMode, int newMode, int (&newMapping)[maxFunction]);

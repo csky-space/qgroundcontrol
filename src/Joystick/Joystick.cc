@@ -641,7 +641,7 @@ void Joystick::_handleAxis()
         for (int axisIndex = 0; axisIndex < _axisCount; axisIndex++) {
             int newAxisValue = _getAxis(axisIndex);
             // Calibration code requires signal to be emitted even if value hasn't changed
-            qCDebug(JoystickLog) << "axis " << axisIndex << ": " << newAxisValue;
+            // qCDebug(JoystickLog) << "axis " << axisIndex << ": " << newAxisValue;
             _rgAxisValues[axisIndex] = newAxisValue;
             emit rawAxisValueChanged(axisIndex, newAxisValue);
         }
@@ -751,7 +751,9 @@ void Joystick::_handleAxis()
                 memcpy(rcOverrideButtons.data(), _rgButtonValues, rcOverrideButtons.size());
             }
             //qCDebug(JoystickLog) << "before send axis and buttons!";
-            if(_isSendingRC) {
+            
+            
+            if(!_isUnexpectedlyRemoved() && _isSendingRC) {
                 //qCDebug(JoystickLog) << "before send axis and buttons!";
                 //qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalPitchFunction]:" << _rgAxisValues[gimbalPitchFunction];
                 //qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalYawFunction]:" << _rgAxisValues[gimbalYawFunction];
@@ -759,6 +761,7 @@ void Joystick::_handleAxis()
                 //qCDebug(JoystickLog) << "name: " << name() << "roll:" << roll << "pitch:" << -pitch << "yaw:" << yaw << "throttle:" << throttle << "gimbalPitch:" << gimbalPitch << "gimbalYaw:" << gimbalYaw << "extraAxis: " << maxAxis;
                 std::array<int16_t,8> axes;
                 for (size_t i = 0; i < _axisCount; ++i) {
+                    qCDebug(JoystickLog) << "sent axis" << i << ":" << _rgAxisValues[i];
                     axes[i] = static_cast<int16_t>(_rgAxisValues[i]);
                 }
                 _activeVehicle->sendJoystickRCOverrideDataThreadSafe(axes, rcOverrideButtons);

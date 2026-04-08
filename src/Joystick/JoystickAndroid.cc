@@ -206,6 +206,10 @@ bool JoystickAndroid::_getHat(int hat,int i) {
     return false;
 }
 
+bool JoystickAndroid::_isUnexpectedlyRemoved() {
+    return false;
+}
+
 static JoystickManager *_manager = nullptr;
 
 //helper method

@@ -165,9 +165,7 @@ int JoystickSDL::_getAxis(int i) {
     if (_isGameController) {
         return SDL_GameControllerGetAxis(sdlController, SDL_GameControllerAxis(i));
     } else {
-        int16_t axisValue = SDL_JoystickGetAxis(sdlJoystick, i);
-        qCDebug(JoystickLog) << "axis " << i << ": " << axisValue;
-        return axisValue;
+        return SDL_JoystickGetAxis(sdlJoystick, i);
     }
 }
 
@@ -177,4 +175,12 @@ bool JoystickSDL::_getHat(int hat, int i) {
         return (SDL_JoystickGetHat(sdlJoystick, hat) & hatButtons[i]) != 0;
     }
     return false;
+}
+
+bool JoystickSDL::_isUnexpectedlyRemoved() {
+    if (_isGameController) {
+        return SDL_GameControllerGetAttached(sdlController) == SDL_FALSE;
+    } else {
+        return SDL_JoystickGetAttached(sdlJoystick) == SDL_FALSE;
+    }
 }

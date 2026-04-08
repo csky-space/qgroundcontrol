@@ -2236,7 +2236,8 @@ void Vehicle::_activeVehicleChanged(Vehicle *newActiveVehicle)
     // capturing the joystick will stop the joystick data going to the inactive vehicle
     if (newActiveVehicle == this){
         qCDebug(JoystickLog) << "Vehicle " << this->id() << " is the new active vehicle";
-        _captureJoystick();
+        //_captureJoystick();
+        setJoystickEnabled(true);
     }
 }
 

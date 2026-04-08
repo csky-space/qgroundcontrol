@@ -44,6 +44,8 @@ private:
     int  _getAxis   (int i) final;
     bool _getHat    (int hat,int i) final;
 
+    bool _isUnexpectedlyRemoved () final;
+
     SDL_Joystick*       sdlJoystick;
     SDL_GameController* sdlController;
 

@@ -206,6 +206,12 @@ void JoystickManager::_updateAvailableJoysticks()
             qCDebug(JoystickManagerLog) << "Joystick removed:" << event.jdevice.which;
             _setActiveJoystickFromSettings();
             break;
+        case SDL_CONTROLLERDEVICEADDED:
+            qCDebug(JoystickManagerLog) << "Controller added (unhandled):" << event.cdevice.which;
+            break;
+        case SDL_CONTROLLERDEVICEREMOVED:
+            qCDebug(JoystickManagerLog) << "Controller removed (unhandled):" << event.cdevice.which;
+            break;
         default:
             break;
         }

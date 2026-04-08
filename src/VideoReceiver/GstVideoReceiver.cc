@@ -918,8 +918,8 @@ GstVideoReceiver::_makeDecoder(GstCaps* caps, GstElement* videoSink)
     GstElement* decoder = nullptr;
 
     do {
-        if ((decoder = gst_element_factory_make("decodebin3", nullptr)) == nullptr) {
-            qCCritical(VideoReceiverLog) << "gst_element_factory_make('decodebin3') failed";
+        if ((decoder = gst_element_factory_make("decodebin", nullptr)) == nullptr) {
+            qCCritical(VideoReceiverLog) << "gst_element_factory_make('decodebin') failed";
             break;
         }
     } while(0);
