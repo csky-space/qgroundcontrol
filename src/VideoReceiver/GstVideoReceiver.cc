@@ -837,6 +837,7 @@ GstVideoReceiver::_makeSource(const QString& uri)
             }
 
             gst_bin_add(GST_BIN(bin), tsdemux);
+            g_object_set(tsdemux, "ignore-pcr", TRUE, NULL);
 
             if (!gst_element_link(source, tsdemux)) {
                 qCCritical(VideoReceiverLog) << "gst_element_link() failed";
@@ -1155,7 +1156,7 @@ GstVideoReceiver::_addVideoSink(GstPad* pad)
 
     gst_element_sync_state_with_parent(_videoSink);
 
-    g_object_set(_videoSink, "sync", _buffer >= 0, NULL);
+    g_object_set(_videoSink, "sync", FALSE, NULL);
 
     GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(_pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline-with-videosink");
 
