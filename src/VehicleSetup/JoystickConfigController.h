@@ -102,6 +102,7 @@ public:
 signals:
     void axisValueChanged                   (int axis, int value);
     void axisDeadbandChanged                (int axis, int value);
+    void rcMappingValueChanged              (int index, int value);
     void rollAxisMappedChanged              (bool mapped);
     void pitchAxisMappedChanged             (bool mapped);
     void yawAxisMappedChanged               (bool mapped);
@@ -125,6 +126,7 @@ private slots:
     void _activeJoystickChanged(Joystick* joystick);
     void _axisValueChanged(int axis, int value);
     void _axisDeadbandChanged(int axis, int value);
+    void _rcMappingValueChanged(int index, int value);
 
 private:
     /// @brief The states of the calibration state machine.

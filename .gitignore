@@ -60,6 +60,8 @@ libs/thirdParty/libxbee/lib/
 GeneratedFiles/
 gstreamer-1.0-android*
 localization/qgroundcontrol/
+msvc_make.bat
+
 
 *.autosave
 .settings/

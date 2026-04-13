@@ -4557,6 +4557,51 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (const std::array<int16_t,8>&
     sendMessageOnLinkThreadSafe(sharedLink.get(), message);
 }
 
+void Vehicle::sendJoystickMappedRCOverrideDataThreadSafe (const std::array<int16_t, 18>& channels)
+{
+    SharedLinkInterfacePtr sharedLink = vehicleLinkManager()->primaryLink().lock();
+    if (!sharedLink) {
+        qCDebug(VehicleLog)<< "sendJoystickDataThreadSafe: primary link gone!";
+        return;
+    }
+
+    if (sharedLink->linkConfiguration()->isHighLatency()) {
+        return;
+    }
+    qCDebug(VehicleLog);
+
+    mavlink_message_t message;
+
+    mavlink_msg_rc_channels_override_pack_chan(
+        static_cast<uint8_t>(_mavlink->getSystemId()),
+        static_cast<uint8_t>(_mavlink->getComponentId()),
+        sharedLink->mavlinkChannel(),
+        &message,
+        static_cast<uint8_t>(_id),
+        static_cast<uint8_t>(_compID),
+        channels[0],
+        channels[1],
+        channels[2],
+        channels[3],
+        channels[4],
+        channels[5],
+        channels[6],
+        channels[7],
+        channels[8],
+        channels[9],
+        channels[10],
+        channels[11],
+        channels[12],
+        channels[13],
+        channels[14],
+        channels[15],
+        channels[16],
+        channels[17]
+    );
+
+    sendMessageOnLinkThreadSafe(sharedLink.get(), message);
+}
+
 void Vehicle::triggerSimpleCamera()
 {
     sendMavCommand(_defaultComponentId,
