@@ -115,6 +115,8 @@ public:
     // Pass these into the offline constructor to create an offline vehicle which tracks the offline vehicle settings
     static const MAV_AUTOPILOT    MAV_AUTOPILOT_TRACK = static_cast<MAV_AUTOPILOT>(-1);
     static const MAV_TYPE         MAV_TYPE_TRACK = static_cast<MAV_TYPE>(-1);
+    
+    static const int              cMaxRcChannels = 18;
 
     // The following is used to create a disconnected Vehicle for use while offline editing.
     Vehicle(MAV_AUTOPILOT           firmwareType,
@@ -506,7 +508,7 @@ public:
     void setJoystickEnabled         (bool enabled);
     void sendJoystickDataThreadSafe (float roll, float pitch, float yaw, float thrust, quint16 buttons);
     void sendJoystickRCOverrideDataThreadSafe (const std::array<int16_t, 8>& axes, const std::array<uint8_t, 10>& rcOverrideButtons);
-    void sendJoystickMappedRCOverrideDataThreadSafe (const std::array<int16_t, 18>& channels);
+    void sendJoystickMappedRCOverrideDataThreadSafe (const std::array<int16_t, cMaxRcChannels>& channels);
 
     // Property accesors
     int id() const{ return _id; }
@@ -751,8 +753,6 @@ public:
     VehicleObjectAvoidance*         objectAvoidance     () { return _objectAvoidance; }
     Autotune*                       autotune            () const { return _autotune; }
     RemoteIDManager*                remoteIDManager     () { return _remoteIDManager; }
-
-    static const int cMaxRcChannels = 18;
 
     /// Sends the specified MAV_CMD to the vehicle. If no Ack is received command will be retried. If a sendMavCommand is already in progress
     /// the command will be queued and sent when the previous command completes.

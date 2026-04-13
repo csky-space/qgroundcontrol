@@ -191,7 +191,7 @@ void JoystickConfigController::_axisValueChanged(int axis, int value)
 
 void JoystickConfigController::_rcMappingValueChanged(int index, int value) 
 {
-    if (index < 0 || index >= 18) {
+    if (index < 0 || index >= Joystick::cMaxRcChannels) {
         return;
     }
     emit rcMappingValueChanged(index, value);

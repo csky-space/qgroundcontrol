@@ -4557,7 +4557,7 @@ void Vehicle::sendJoystickRCOverrideDataThreadSafe (const std::array<int16_t,8>&
     sendMessageOnLinkThreadSafe(sharedLink.get(), message);
 }
 
-void Vehicle::sendJoystickMappedRCOverrideDataThreadSafe (const std::array<int16_t, 18>& channels)
+void Vehicle::sendJoystickMappedRCOverrideDataThreadSafe (const std::array<int16_t, cMaxRcChannels>& channels)
 {
     SharedLinkInterfacePtr sharedLink = vehicleLinkManager()->primaryLink().lock();
     if (!sharedLink) {

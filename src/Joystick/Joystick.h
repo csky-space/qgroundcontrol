@@ -25,8 +25,6 @@
 Q_DECLARE_LOGGING_CATEGORY(JoystickValuesLog)
 Q_DECLARE_METATYPE(GRIPPER_ACTIONS)
 
-Q_DECLARE_METATYPE(QList<uint8_t>)
-
 /// Action assigned to button
 class AssignedButtonAction : public QObject {
     Q_OBJECT
@@ -56,8 +54,9 @@ class Joystick : public QThread
 {
     Q_OBJECT
 public:
-    static const uint32_t RC_MAPPINGS_COUNT = 18;
-    static const uint32_t RC_MAPPINGS_NUM_AXES = 8;
+    static const int cMaxRcChannels = Vehicle::cMaxRcChannels;
+    static const int cMappingsNumAxes = 8;
+    static const int cMappingsNumButtons = 10;
 
     Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager);
 
@@ -109,7 +108,7 @@ public:
     Q_PROPERTY(QStringList assignableActionTitles       READ assignableActionTitles     NOTIFY      assignableActionsChanged)
     Q_PROPERTY(QString  disabledActionName              READ disabledActionName         CONSTANT)
     Q_PROPERTY(QStringList rcMappingOptions             READ rcMappingOptions           NOTIFY      rcMappingOptionsChanged)
-    Q_PROPERTY(QList<uint8_t> rcMappingIndexes          READ rcMappingIndexes           WRITE       setRCMappingIndexes     NOTIFY      rcMappingIndexesChanged)
+    Q_PROPERTY(QList<int> rcMappingIndexes              READ rcMappingIndexes           WRITE       setRCMappingIndexes     NOTIFY      rcMappingIndexesChanged)
     Q_PROPERTY(QList<bool> rcMappingInverses            READ rcMappingInverses          WRITE       setRCMappingInverses    NOTIFY      rcMappingInversesChanged)
 
     Q_PROPERTY(int      throttleMode            READ throttleMode           WRITE setThrottleMode       NOTIFY throttleModeChanged)
@@ -131,8 +130,9 @@ public:
     Q_INVOKABLE QString getButtonAction     (int button);
     Q_INVOKABLE void    stopSendingRC       ();
     Q_INVOKABLE void    startSendingRC      ();
-    Q_INVOKABLE void setRCMappingIndexes(QList<uint8_t> values);
-    Q_INVOKABLE void setRCMappingInverses(QList<bool> values);
+    Q_INVOKABLE void    setRCMappingIndexes (QList<int> values);
+    Q_INVOKABLE void    setRCMappingInverses(QList<bool> values);
+
     void    setIsSendingRC      (bool enabled);
     bool    isSendingRC      () const;
     // Property accessors
@@ -141,13 +141,13 @@ public:
     int         totalButtonCount    () const{ return _totalButtonCount; }
     int         axisCount           () const{ return _axisCount; }
     QStringList buttonActions       ();
-    int         rcMappingsCount     () const{ return RC_MAPPINGS_COUNT; }
+    int         rcMappingsCount     () const{ return cMaxRcChannels; }
 
     QmlObjectListModel* assignableActions   () { return &_assignableButtonActions; }
     QStringList assignableActionTitles      () { return _availableActionTitles; }
     QString     disabledActionName          () { return _buttonActionNone; }
     QStringList rcMappingOptions            () { return _rcMappingOptions; }
-    QList<uint8_t> rcMappingIndexes         () { return _rcMappingIndexes; }
+    QList<int>  rcMappingIndexes            () { return _rcMappingIndexes; }
     QList<bool> rcMappingInverses           () { return _rcMappingInverses; }
 
     /// Start the polling thread which will in turn emit joystick signals
@@ -260,7 +260,7 @@ protected:
     void    _handleAxis             ();
     void    _handleButtons          ();
     void    _buildActionList        (Vehicle* activeVehicle);
-    void    _remapAndSendRC         (const std::array<int16_t,8>& axes, const std::array<uint8_t, 10>& rcOverrideButtons);
+    void    _remapAndSendRC         (const std::array<int16_t, cMappingsNumAxes>& axes, const std::array<uint8_t, cMappingsNumButtons>& rcOverrideButtons);
 
 private:
     virtual bool _open      ()          = 0;
@@ -336,7 +336,7 @@ protected:
 
 private:
     QStringList           _rcMappingOptions;
-    QList<uint8_t>        _rcMappingIndexes;
+    QList<int>            _rcMappingIndexes;
     QList<bool>           _rcMappingInverses;
 
 private:
