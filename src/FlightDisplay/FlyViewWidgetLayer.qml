@@ -634,25 +634,24 @@ Item {
 
     function updatePositions() {
         var containerWidth = compassContainer.width
-            var segmentWidth = compassStrip.segmentWidth
-            var stepWidth = compassStrip.stepWidth
-            if (segmentWidth <= 0) return
+        var segmentWidth = compassStrip.segmentWidth
+        var stepWidth = compassStrip.stepWidth
+        if (segmentWidth <= 0) return
 
-            var centerX = containerWidth / 2
-            var pxPerDegree = segmentWidth / 360
-            var middleOffset = segmentWidth
+        var centerX = containerWidth / 2
+        var pxPerDegree = segmentWidth / 360
+        var middleOffset = segmentWidth
 
+        // var targetPx = returnYaw.targetCourseNormalized * pxPerDegree + stepWidth / 2
+        // var realPx = returnYaw.realCourse * pxPerDegree + stepWidth / 2
 
+        var offsetPx = normalizeCourse180(returnYaw.realCourse - returnYaw.currentCourse) * pxPerDegree
+        var currentPx = returnYaw.currentCourse * pxPerDegree + stepWidth / 2
+        currentMarker.x = centerX + offsetPx;
+        compassStrip.x = centerX - (middleOffset + currentPx)
 
-            var targetPx = returnYaw.targetCourseNormalized * pxPerDegree + stepWidth / 2
-            var currentPx = returnYaw.currentCourse * pxPerDegree + stepWidth / 2
-            var realPx = returnYaw.realCourse * pxPerDegree + stepWidth / 2
-            currentMarker.x = centerX + (realPx - currentPx)
-            compassStrip.x = centerX - (middleOffset + currentPx)
-
-            //currentText.text = isNaN(returnYaw.realCourse) ? "" : returnYaw.realCourse.toFixed(1) + "°"
-            currentText.x = currentMarker.x + currentMarker.width/2 - currentText.width/2
-
+        //currentText.text = isNaN(returnYaw.realCourse) ? "" : returnYaw.realCourse.toFixed(1) + "°"
+        currentText.x = currentMarker.x + currentMarker.width/2 - currentText.width/2
     }
 
     Timer {

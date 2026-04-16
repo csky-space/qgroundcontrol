@@ -270,6 +270,10 @@ void ServoController::_mavlinkMessageReceived(const mavlink_message_t& message) 
 }
 
 void ServoController::_handleServoOutputRaw(const mavlink_message_t& msg) {
+    if (!_vehicle->parameterManager()->parametersReady()) {
+        return;
+    }
+
     mavlink_msg_servo_output_raw_decode(&msg, &_sor);
 
     const uint8_t* base = reinterpret_cast<const uint8_t*>(&_sor);

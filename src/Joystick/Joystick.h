@@ -55,8 +55,6 @@ class Joystick : public QThread
     Q_OBJECT
 public:
     static const int cMaxRcChannels = Vehicle::cMaxRcChannels;
-    static const int cMappingsNumAxes = 8;
-    static const int cMappingsNumButtons = 10;
 
     Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager);
 
@@ -260,7 +258,7 @@ protected:
     void    _handleAxis             ();
     void    _handleButtons          ();
     void    _buildActionList        (Vehicle* activeVehicle);
-    void    _remapAndSendRC         (const std::array<int16_t, cMappingsNumAxes>& axes, const std::array<uint8_t, cMappingsNumButtons>& rcOverrideButtons);
+    void    _remapAndSendRC         ();
 
 private:
     virtual bool _open      ()          = 0;

@@ -140,12 +140,12 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     _customMavCommands = JoystickMavCommand::load("JoystickMavCommands.json");
     _calibrated = true;
 
-    for (int32_t mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
-        if (mappingIndex < cMappingsNumAxes) {
-            _rcMappingOptions.push_back(QString("Axis") + QString::number(mappingIndex));
-        } else {
-            _rcMappingOptions.push_back(QString("Button") + QString::number(mappingIndex - cMappingsNumAxes));
-        }
+
+    for (int32_t axisIndex = 0; axisIndex < _axisCount; axisIndex++) {
+        _rcMappingOptions.push_back(QString("Axis") + QString::number(axisIndex));
+    }
+    for (int32_t buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
+        _rcMappingOptions.push_back(QString("Button") + QString::number(buttonIndex));
     }
     _rcMappingOptions.push_back(QString("None"));
 
@@ -608,8 +608,8 @@ void Joystick::_handleButtons()
         }
     }
     for (int mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
-        if (_rcMappingIndexes[mappingIndex] < cMappingsNumAxes) continue;
-        int buttonIndex = _rcMappingIndexes[mappingIndex] - cMappingsNumAxes;
+        if (_rcMappingIndexes[mappingIndex] < _axisCount) continue;
+        int buttonIndex = _rcMappingIndexes[mappingIndex] - _axisCount;
         if (buttonIndex >= _totalButtonCount) continue;
         int16_t btnValue = (static_cast<bool>(_rgButtonValues[buttonIndex]) != _rcMappingInverses[mappingIndex]) ? INT16_MAX : INT16_MIN;
         emit rawRCMappingValueChanged(mappingIndex, btnValue);
@@ -805,13 +805,13 @@ void Joystick::_handleAxis()
 
             //uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
             //_activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
-            std::array<uint8_t, cMappingsNumButtons> rcOverrideButtons;
-            if(_totalButtonCount < rcOverrideButtons.size()) {
-                memcpy(rcOverrideButtons.data(), _rgButtonValues, _totalButtonCount);
-                memset(rcOverrideButtons.data() + _totalButtonCount, 0, rcOverrideButtons.size() - _totalButtonCount);
-            } else {
-                memcpy(rcOverrideButtons.data(), _rgButtonValues, rcOverrideButtons.size());
-            }
+            // std::array<uint8_t, cMappingsNumButtons> rcOverrideButtons;
+            // if(_totalButtonCount < rcOverrideButtons.size()) {
+            //     memcpy(rcOverrideButtons.data(), _rgButtonValues, _totalButtonCount);
+            //     memset(rcOverrideButtons.data() + _totalButtonCount, 0, rcOverrideButtons.size() - _totalButtonCount);
+            // } else {
+            //     memcpy(rcOverrideButtons.data(), _rgButtonValues, rcOverrideButtons.size());
+            // }
             //qCDebug(JoystickLog) << "before send axis and buttons!";
             
             
@@ -821,13 +821,13 @@ void Joystick::_handleAxis()
                 //qCDebug(JoystickLog) << "_rgFunctionAxis[gimbalYawFunction]:" << _rgAxisValues[gimbalYawFunction];
                 //qCDebug(JoystickLog) << "_rgFunctionAxis[extraFunction]:" << _rgAxisValues[extraFunction];
                 //qCDebug(JoystickLog) << "name: " << name() << "roll:" << roll << "pitch:" << -pitch << "yaw:" << yaw << "throttle:" << throttle << "gimbalPitch:" << gimbalPitch << "gimbalYaw:" << gimbalYaw << "extraAxis: " << maxAxis;
-                std::array<int16_t, cMappingsNumAxes> axes;
-                for (size_t i = 0; i < _axisCount && i < cMappingsNumAxes; ++i) {
-                    // qCDebug(JoystickLog) << "sent axis" << i << ":" << _rgAxisValues[i];
-                    axes[i] = static_cast<int16_t>(_rgAxisValues[i]);
-                }
+                // std::array<int16_t, cMappingsNumAxes> axes;
+                // for (size_t i = 0; i < _axisCount && i < cMappingsNumAxes; ++i) {
+                //     qCDebug(JoystickLog) << "sent axis" << i << ":" << _rgAxisValues[i];
+                //     axes[i] = static_cast<int16_t>(_rgAxisValues[i]);
+                // }
                 // _activeVehicle->sendJoystickRCOverrideDataThreadSafe(axes, rcOverrideButtons);
-                _remapAndSendRC(axes, rcOverrideButtons);
+                _remapAndSendRC();
             } else {
                 //qCDebug(JoystickLog) << "Joystick" << name() << "has inactive state for _isSendingRC";
             }
@@ -835,12 +835,12 @@ void Joystick::_handleAxis()
     }
 }
 
-void Joystick::_remapAndSendRC(const std::array<int16_t, cMappingsNumAxes>& axes, const std::array<uint8_t, cMappingsNumButtons>& rcOverrideButtons) {
+void Joystick::_remapAndSendRC() {
     std::array<int16_t, cMaxRcChannels> mappedChannels;
     for (int mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
         int mappedIndex = _rcMappingIndexes[mappingIndex];
-        if (mappedIndex < cMappingsNumAxes) {
-            int16_t axisValue = axes[mappedIndex];
+        if (mappedIndex < _axisCount) {
+            int16_t axisValue = static_cast<int16_t>(_rgAxisValues[mappedIndex]);
             if (_rcMappingInverses[mappingIndex]) {
                 if (axisValue == INT16_MIN) axisValue = INT16_MAX;
                 else axisValue = -axisValue;
@@ -848,8 +848,8 @@ void Joystick::_remapAndSendRC(const std::array<int16_t, cMappingsNumAxes>& axes
             mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(axisValue, INT16_MIN, INT16_MAX, 1000, 2000));
         }
         else if (mappedIndex < cMaxRcChannels) {
-            int buttonIndex = mappedIndex - cMappingsNumAxes;
-            bool buttonState = static_cast<bool>(rcOverrideButtons[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];
+            int buttonIndex = mappedIndex - _axisCount;
+            bool buttonState = static_cast<bool>(_rgButtonValues[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];
             mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(buttonState, 0, 1, 1000, 2000));
         } else {
             mappedChannels[mappingIndex] = 1000;
