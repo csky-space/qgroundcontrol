@@ -9,16 +9,19 @@
 
 import QtQml.Models 2.12
 
-import QGroundControl           1.0
-import QGroundControl.Controls  1.0
+import QGroundControl                1.0
+import QGroundControl.Controls       1.0
 
 ToolStripActionList {
     id: _root
 
     signal displayPreFlightChecklist
-    property var joyManager: QGroundControl.joystickManager
-    property var activeJoystick: joyManager.activeJoystick
-    property bool isSendingRC: activeJoystick ? activeJoystick.isSendingRC : false
+    
+    property var  joyManager:         QGroundControl.joystickManager
+    property var  activeJoystick:     joyManager.activeJoystick
+    property bool isSendingRC:        activeJoystick ? activeJoystick.isSendingRC : false
+    property bool isCrosshairEnabled: QGroundControl.videoManager.crosshairEnabled
+
     model: [
         ToolStripAction {
             text:           qsTr("Plan")
@@ -26,6 +29,16 @@ ToolStripActionList {
             onTriggered:    mainWindow.showPlanView()
         },
         PreFlightCheckListShowAction { onTriggered: displayPreFlightChecklist() },
+        DropControl { },
+        ToolStripAction {
+            text:          qsTr("Crosshair")
+            iconSource:    isCrosshairEnabled ? "/qmlimages/crosshairIconActive.svg" : "/qmlimages/crosshairIcon.svg"
+            fullColorIcon: true
+            onTriggered:   {
+                QGroundControl.videoManager.crosshairEnabled = !QGroundControl.videoManager.crosshairEnabled;
+            }
+        },
+        ReturnCourse { },
         GuidedActionTakeoff { },
         GuidedActionLand { },
         GuidedActionRTL { },
@@ -34,8 +47,8 @@ ToolStripActionList {
         GuidedActionGripper { },
         ToolStripAction {
             text:           qsTr("Joystick")
-            iconSource:     (activeJoystick !== undefined) && isSendingRC ? "/qmlimages/gamepadSwitcherActive.svg" : "/qmlimages/gamepadSwitcher.svg"
-            fullColorIcon: true
+            iconSource:     isSendingRC ? "/qmlimages/gamepadSwitcherActive.svg" : "/qmlimages/gamepadSwitcher.svg"
+            fullColorIcon:  true
             onTriggered:    {
                 if (activeJoystick) {
                     activeJoystick.isSendingRC = !activeJoystick.isSendingRC;

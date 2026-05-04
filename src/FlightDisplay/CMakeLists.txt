@@ -34,6 +34,8 @@ add_custom_target(FligthDisplayQml
 		PreFlightBatteryCheck.qml
 		PreFlightCheckList.qml
 		PreFlightCheckListShowAction.qml
+		DropControl.qml
+		ReturnCourse.qml
 		PreFlightGPSCheck.qml
 		PreFlightRCCheck.qml
 		PreFlightSensorsHealthCheck.qml

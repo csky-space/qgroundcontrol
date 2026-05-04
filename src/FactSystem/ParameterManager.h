@@ -73,7 +73,7 @@ public:
     /// Returns true if the specifed parameter exists
     ///     @param componentId: Component id or FactSystem::defaultComponentId
     ///     @param name: Parameter name
-    bool parameterExists(int componentId, const QString& paramName);
+    Q_INVOKABLE bool parameterExists(int componentId, const QString& paramName);
 
     /// Returns all parameter names
     QStringList parameterNames(int componentId);

@@ -292,13 +292,15 @@ Item {
                         Row {
                             spacing:    5
                             anchors.horizontalCenter: parent.horizontalCenter
+                            visible:    index < 12 || index > 15
+
                             // Need this to get to loader from Connections above
                             property Item axis: theAxis
                             required property int index
 
                             QGCLabel {
                                 id:                     mappingLabel
-                                text:                   index
+                                text:                   index + 1
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             QGCComboBox {

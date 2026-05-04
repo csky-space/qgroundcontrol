@@ -21,6 +21,8 @@
 #include "VideoReceiver.h"
 #include "QGCToolbox.h"
 #include "SubtitleWriter.h"
+#include "common/mavlink.h"
+#include "qvector3d.h"
 
 Q_DECLARE_LOGGING_CATEGORY(VideoManagerLog)
 
@@ -36,26 +38,28 @@ public:
     VideoManager    (QGCApplication* app, QGCToolbox* toolbox);
     virtual ~VideoManager   ();
 
-    Q_PROPERTY(bool             hasVideo                READ    hasVideo                                    NOTIFY hasVideoChanged)
-    Q_PROPERTY(bool             isGStreamer             READ    isGStreamer                                 NOTIFY isGStreamerChanged)
-    Q_PROPERTY(bool             isUvc                   READ    isUvc                                       NOTIFY isUvcChanged)
-    Q_PROPERTY(bool             isTaisync               READ    isTaisync       WRITE   setIsTaisync        NOTIFY isTaisyncChanged)
-    Q_PROPERTY(QString          uvcVideoSourceID        READ    uvcVideoSourceID                            NOTIFY uvcVideoSourceIDChanged)
-    Q_PROPERTY(bool             uvcEnabled              READ    uvcEnabled                                  CONSTANT)
-    Q_PROPERTY(bool             fullScreen              READ    fullScreen      WRITE   setfullScreen       NOTIFY fullScreenChanged)
-    Q_PROPERTY(VideoReceiver*   videoReceiver           READ    videoReceiver                               CONSTANT)
-    Q_PROPERTY(VideoReceiver*   thermalVideoReceiver    READ    thermalVideoReceiver                        CONSTANT)
-    Q_PROPERTY(double           aspectRatio             READ    aspectRatio                                 NOTIFY aspectRatioChanged)
-    Q_PROPERTY(double           thermalAspectRatio      READ    thermalAspectRatio                          NOTIFY aspectRatioChanged)
-    Q_PROPERTY(double           hfov                    READ    hfov                                        NOTIFY aspectRatioChanged)
-    Q_PROPERTY(double           thermalHfov             READ    thermalHfov                                 NOTIFY aspectRatioChanged)
-    Q_PROPERTY(bool             autoStreamConfigured    READ    autoStreamConfigured                        NOTIFY autoStreamConfiguredChanged)
-    Q_PROPERTY(bool             hasThermal              READ    hasThermal                                  NOTIFY decodingChanged)
-    Q_PROPERTY(QString          imageFile               READ    imageFile                                   NOTIFY imageFileChanged)
-    Q_PROPERTY(bool             streaming               READ    streaming                                   NOTIFY streamingChanged)
-    Q_PROPERTY(bool             decoding                READ    decoding                                    NOTIFY decodingChanged)
-    Q_PROPERTY(bool             recording               READ    recording                                   NOTIFY recordingChanged)
-    Q_PROPERTY(QSize            videoSize               READ    videoSize                                   NOTIFY videoSizeChanged)
+    Q_PROPERTY(bool             hasVideo                READ    hasVideo                                         NOTIFY hasVideoChanged)
+    Q_PROPERTY(bool             isGStreamer             READ    isGStreamer                                      NOTIFY isGStreamerChanged)
+    Q_PROPERTY(bool             isUvc                   READ    isUvc                                            NOTIFY isUvcChanged)
+    Q_PROPERTY(bool             isTaisync               READ    isTaisync           WRITE setIsTaisync           NOTIFY isTaisyncChanged)
+    Q_PROPERTY(QString          uvcVideoSourceID        READ    uvcVideoSourceID                                 NOTIFY uvcVideoSourceIDChanged)
+    Q_PROPERTY(bool             uvcEnabled              READ    uvcEnabled                                       CONSTANT)
+    Q_PROPERTY(bool             fullScreen              READ    fullScreen          WRITE setfullScreen          NOTIFY fullScreenChanged)
+    Q_PROPERTY(VideoReceiver*   videoReceiver           READ    videoReceiver                                    CONSTANT)
+    Q_PROPERTY(VideoReceiver*   thermalVideoReceiver    READ    thermalVideoReceiver                             CONSTANT)
+    Q_PROPERTY(double           aspectRatio             READ    aspectRatio                                      NOTIFY aspectRatioChanged)
+    Q_PROPERTY(double           thermalAspectRatio      READ    thermalAspectRatio                               NOTIFY aspectRatioChanged)
+    Q_PROPERTY(double           hfov                    READ    hfov                                             NOTIFY aspectRatioChanged)
+    Q_PROPERTY(double           thermalHfov             READ    thermalHfov                                      NOTIFY aspectRatioChanged)
+    Q_PROPERTY(bool             autoStreamConfigured    READ    autoStreamConfigured                             NOTIFY autoStreamConfiguredChanged)
+    Q_PROPERTY(bool             hasThermal              READ    hasThermal                                       NOTIFY decodingChanged)
+    Q_PROPERTY(QString          imageFile               READ    imageFile                                        NOTIFY imageFileChanged)
+    Q_PROPERTY(bool             streaming               READ    streaming                                        NOTIFY streamingChanged)
+    Q_PROPERTY(bool             decoding                READ    decoding                                         NOTIFY decodingChanged)
+    Q_PROPERTY(bool             recording               READ    recording                                        NOTIFY recordingChanged)
+    Q_PROPERTY(QSize            videoSize               READ    videoSize                                        NOTIFY videoSizeChanged)
+    Q_PROPERTY(bool             crosshairEnabled        READ    crosshairEnabled    WRITE setCrosshairEnabled    NOTIFY crosshairEnabledChanged)
+    Q_PROPERTY(QVector3D        cameraOrientation       READ    cameraOrientation                                NOTIFY cameraOrientationChanged)
 
     virtual bool        hasVideo            ();
     virtual bool        isGStreamer         ();
@@ -70,6 +74,7 @@ public:
     virtual bool        autoStreamConfigured();
     virtual bool        hasThermal          ();
     virtual QString     imageFile           ();
+
 
     bool streaming(void) {
         return _streaming;
@@ -86,6 +91,14 @@ public:
     QSize videoSize(void) {
         const quint32 size = _videoSize;
         return QSize((size >> 16) & 0xFFFF, size & 0xFFFF);
+    }
+
+    bool crosshairEnabled(void) {
+        return _crosshairEnabled;
+    }
+
+    QVector3D cameraOrientation(void) {
+        return _cameraOrientation;
     }
 
 // FIXME: AV: they should be removed after finishing multiple video stream support
@@ -105,7 +118,7 @@ public:
     // Override from QGCTool
     virtual void        setToolbox          (QGCToolbox *toolbox);
 
-    Q_INVOKABLE bool switchDayNight();
+    Q_INVOKABLE bool switchDayNight ();
     Q_INVOKABLE void startVideo     ();
     Q_INVOKABLE void stopVideo      ();
 
@@ -113,6 +126,8 @@ public:
     Q_INVOKABLE void stopRecording  ();
 
     Q_INVOKABLE void grabImage(const QString& imageFile = QString());
+
+    Q_INVOKABLE void setCrosshairEnabled(bool state);
 
 signals:
     void hasVideoChanged            ();
@@ -130,6 +145,8 @@ signals:
     void recordingChanged           ();
     void recordingStarted           ();
     void videoSizeChanged           ();
+    void crosshairEnabledChanged    ();
+    void cameraOrientationChanged   ();
 
 protected slots:
     void _videoSourceChanged        ();
@@ -141,6 +158,8 @@ protected slots:
     void _setActiveVehicle          (Vehicle* vehicle);
     void _aspectRatioChanged        ();
     void _communicationLostChanged  (bool communicationLost);
+    void _handleMavlinkMessage      (const mavlink_message_t& message);
+    void _handleGimbalStatus        (const mavlink_gimbal_device_attitude_status_t& message);
 
 protected:
     friend class FinishVideoInitialization;
@@ -173,6 +192,8 @@ protected:
     QAtomicInteger<bool>    _decoding               = false;
     QAtomicInteger<bool>    _recording              = false;
     QAtomicInteger<quint32> _videoSize              = 0;
+    QAtomicInteger<bool>    _crosshairEnabled       = false;
+    QVector3D               _cameraOrientation      = { 0, 0, 0 };
     VideoSettings*          _videoSettings          = nullptr;
     QString                 _uvcVideoSourceID;
     bool                    _fullScreen             = false;

@@ -8,6 +8,8 @@
  ****************************************************************************/
 
 
+#include <QQuaternion>
+#include <QVector3D>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QSettings>
@@ -391,6 +393,11 @@ VideoManager::grabImage(const QString& imageFile)
 #else
     Q_UNUSED(imageFile)
 #endif
+}
+
+void VideoManager::setCrosshairEnabled(bool state) { 
+    _crosshairEnabled = state;
+    emit crosshairEnabledChanged();
 }
 
 //-----------------------------------------------------------------------------
@@ -897,6 +904,7 @@ VideoManager::_setActiveVehicle(Vehicle* vehicle)
             }
             disconnect(_activeVehicle->cameraManager(), &QGCCameraManager::streamChanged, this, &VideoManager::_restartAllVideos);
         }
+        disconnect(_activeVehicle, &Vehicle::mavlinkMessageReceived, this, &VideoManager::_handleMavlinkMessage);
     }
     _activeVehicle = vehicle;
     if(_activeVehicle) {
@@ -908,6 +916,7 @@ VideoManager::_setActiveVehicle(Vehicle* vehicle)
                 pCamera->resumeStream();
             }
         }
+        connect(_activeVehicle, &Vehicle::mavlinkMessageReceived, this, &VideoManager::_handleMavlinkMessage);
     } else {
         //-- Disable full screen video if vehicle is gone
         setfullScreen(false);
@@ -931,4 +940,21 @@ void
 VideoManager::_aspectRatioChanged()
 {
     emit aspectRatioChanged();
+}
+
+void VideoManager::_handleMavlinkMessage(const mavlink_message_t& message) {
+    switch(message.msgid) {
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS: {
+        mavlink_gimbal_device_attitude_status_t gimbalStatusMessage;
+        mavlink_msg_gimbal_device_attitude_status_decode(&message, &gimbalStatusMessage);
+        _handleGimbalStatus(gimbalStatusMessage);
+        break;
+    }
+    }
+}
+
+void VideoManager::_handleGimbalStatus(const mavlink_gimbal_device_attitude_status_t& message) {
+    QQuaternion quat(message.q[0], message.q[1], message.q[2], message.q[3]);
+    _cameraOrientation = quat.toEulerAngles();
+    emit cameraOrientationChanged();
 }

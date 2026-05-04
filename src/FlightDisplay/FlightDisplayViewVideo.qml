@@ -19,6 +19,8 @@ import QGroundControl.Controls          1.0
 import QGroundControl.Palette           1.0
 import QGroundControl.Vehicle           1.0
 import QGroundControl.Controllers       1.0
+import QGroundControl.FactSystem        1.0
+import QGroundControl.FactControls      1.0
 
 Item {
     id:     root
@@ -45,31 +47,31 @@ Item {
 
     property double _thermalHeightFactor: 0.85 //-- TODO
 
-        Image {
-            id:             noVideo
-            anchors.fill:   parent
-            source:         "/res/NoVideoBackground.jpg"
-            fillMode:       Image.PreserveAspectCrop
-            visible:        !(QGroundControl.videoManager.decoding)
+    Image {
+        id:             noVideo
+        anchors.fill:   parent
+        source:         "/res/NoVideoBackground.jpg"
+        fillMode:       Image.PreserveAspectCrop
+        visible:        !(QGroundControl.videoManager.decoding)
 
-            Rectangle {
-                anchors.centerIn:   parent
-                width:              noVideoLabel.contentWidth + ScreenTools.defaultFontPixelHeight
-                height:             noVideoLabel.contentHeight + ScreenTools.defaultFontPixelHeight
-                radius:             ScreenTools.defaultFontPixelWidth / 2
-                color:              "black"
-                opacity:            0.5
-            }
-
-            QGCLabel {
-                id:                 noVideoLabel
-                text:               QGroundControl.settingsManager.videoSettings.streamEnabled.rawValue ? qsTr("WAITING FOR VIDEO") : qsTr("VIDEO DISABLED")
-                font.family:        ScreenTools.demiboldFontFamily
-                color:              "white"
-                font.pointSize:     useSmallFont ? ScreenTools.smallFontPointSize : ScreenTools.largeFontPointSize
-                anchors.centerIn:   parent
-            }
+        Rectangle {
+            anchors.centerIn:   parent
+            width:              noVideoLabel.contentWidth + ScreenTools.defaultFontPixelHeight
+            height:             noVideoLabel.contentHeight + ScreenTools.defaultFontPixelHeight
+            radius:             ScreenTools.defaultFontPixelWidth / 2
+            color:              "black"
+            opacity:            0.5
         }
+
+        QGCLabel {
+            id:                 noVideoLabel
+            text:               QGroundControl.settingsManager.videoSettings.streamEnabled.rawValue ? qsTr("WAITING FOR VIDEO") : qsTr("VIDEO DISABLED")
+            font.family:        ScreenTools.demiboldFontFamily
+            color:              "white"
+            font.pointSize:     useSmallFont ? ScreenTools.smallFontPointSize : ScreenTools.largeFontPointSize
+            anchors.centerIn:   parent
+        }
+    }
 
     Rectangle {
         id:             videoBackground
@@ -211,6 +213,105 @@ Item {
                 }
             }
             property int zoom: 0
+        }
+        // Crosshair
+        Item {
+            id:                 cameraCross
+            anchors.fill:       parent
+            visible:            QGroundControl.videoManager.crosshairEnabled
+
+            // configuration
+            property real size:          parent.height * 0.4
+            property real markSize:      size / 12
+            property real segmentsCount: 12
+            property real lineWidth:     2
+            property string color:       "#188060"
+
+            Canvas {
+                id:             cameraCrossCanvas
+                anchors.fill:   parent
+        
+                property Fact _vFov:             QGroundControl.settingsManager.gimbalControllerSettings.CameraVFov
+                property var _cameraOrientation: QGroundControl.videoManager.cameraOrientation
+
+                function _requestRedraw() { 
+                    if (QGroundControl.videoManager.crosshairEnabled) {
+                        cameraCrossCanvas.requestPaint();
+                    }
+                }
+
+                Connections {
+                    target: cameraCrossCanvas._vFov
+                    function onValueChanged() { cameraCrossCanvas._requestRedraw() }
+                }
+
+                Connections {
+                    target: QGroundControl.videoManager
+                    function onCameraOrientationChanged() { cameraCrossCanvas._requestRedraw() }
+                }
+
+                onPaint: {
+                    var vOffset = 0;
+                    if (cameraCrossCanvas._vFov) {
+                        var scaledOffset = (90 - cameraCrossCanvas._cameraOrientation.y) / cameraCrossCanvas._vFov.value;
+                        vOffset = scaledOffset * parent.height;
+                        console.log("Crosshair vOffset: " + vOffset + "(" + _cameraOrientation.y + "deg)");
+                    }
+                    
+                    var ctx = getContext("2d");
+                    ctx.reset();
+                    ctx.translate((parent.width - cameraCross.size) / 2, (parent.height - cameraCross.size) / 2 + vOffset);
+                    ctx.strokeStyle = cameraCross.color;
+                    ctx.lineWidth = cameraCross.lineWidth;
+
+                    var markStep = (cameraCross.size - cameraCross.lineWidth) / cameraCross.segmentsCount;
+
+                    ctx.beginPath();
+                    // vertical axis
+                    ctx.moveTo(0, cameraCross.size / 2);
+                    ctx.lineTo(cameraCross.size, cameraCross.size / 2);
+                    // horizontal axis
+                    ctx.moveTo(cameraCross.size / 2, 0);
+                    ctx.lineTo(cameraCross.size / 2, cameraCross.size);
+                    // vertical axis marks
+                    for (let i = 0; i <= cameraCross.segmentsCount; i++) {
+                        if (i == 0 || i == cameraCross.segmentsCount) {
+                            ctx.moveTo((cameraCross.size - cameraCross.markSize * 2) / 2, cameraCross.lineWidth / 2 + markStep * i);
+                            ctx.lineTo((cameraCross.size + cameraCross.markSize * 2) / 2, cameraCross.lineWidth / 2 + markStep * i);
+                        }
+                        else {
+                            ctx.moveTo((cameraCross.size - cameraCross.markSize) / 2, cameraCross.lineWidth / 2 + markStep * i);
+                            ctx.lineTo((cameraCross.size + cameraCross.markSize) / 2, cameraCross.lineWidth / 2 + markStep * i);
+                        }
+                    }
+                    // horizontal axis marks
+                    for (let i = 0; i <= cameraCross.segmentsCount; i++) {
+                        if (i == 0 || i == cameraCross.segmentsCount) {
+                            ctx.moveTo(cameraCross.lineWidth / 2 + markStep * i, (cameraCross.size - cameraCross.markSize * 2) / 2);
+                            ctx.lineTo(cameraCross.lineWidth / 2 + markStep * i, (cameraCross.size + cameraCross.markSize * 2) / 2);
+                        }
+                        else {
+                            ctx.moveTo(cameraCross.lineWidth / 2 + markStep * i, (cameraCross.size - cameraCross.markSize) / 2);
+                            ctx.lineTo(cameraCross.lineWidth / 2 + markStep * i, (cameraCross.size + cameraCross.markSize) / 2);
+                        }
+                    }
+                    // off axis segments
+                    for (let i = 2; i < cameraCross.segmentsCount / 2; i++) {
+                        ctx.moveTo(cameraCross.size / 2 + markStep * i, (cameraCross.size + cameraCross.lineWidth) / 2 + markStep * i);
+                        ctx.lineTo(cameraCross.size / 2 + markStep * (i + 1), (cameraCross.size + cameraCross.lineWidth) / 2 + markStep * i);
+
+                        ctx.moveTo(cameraCross.size / 2 + markStep * i, (cameraCross.size + cameraCross.lineWidth) / 2 - markStep * i);
+                        ctx.lineTo(cameraCross.size / 2 + markStep * (i + 1), (cameraCross.size + cameraCross.lineWidth) / 2 - markStep * i);
+
+                        ctx.moveTo(cameraCross.size / 2 - markStep * i, (cameraCross.size + cameraCross.lineWidth) / 2 + markStep * i);
+                        ctx.lineTo(cameraCross.size / 2 - markStep * (i + 1), (cameraCross.size + cameraCross.lineWidth) / 2 + markStep * i);
+
+                        ctx.moveTo(cameraCross.size / 2 - markStep * i, (cameraCross.size + cameraCross.lineWidth) / 2 - markStep * i);
+                        ctx.lineTo(cameraCross.size / 2 - markStep * (i + 1), (cameraCross.size + cameraCross.lineWidth) / 2 - markStep * i);
+                    }
+                    ctx.stroke();
+                }
+            }
         }
     }
 }

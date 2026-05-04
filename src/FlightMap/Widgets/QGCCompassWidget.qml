@@ -22,6 +22,8 @@ import QGroundControl.Controls     1.0
 import QGroundControl.ScreenTools  1.0
 import QGroundControl.Vehicle      1.0
 import QGroundControl.Palette      1.0
+import QGroundControl.FactSystem    1.0
+import QGroundControl.FactControls  1.0
 
 Item {
     id:     root
@@ -127,8 +129,64 @@ Item {
 
             transform: Translate {
                 property double _angle: isNoseUpLocked()?-_heading+_headingToHome:_headingToHome
-                x: size/2.3 * Math.sin((_angle)*(3.14/180))
-                y: - size/2.3 * Math.cos((_angle)*(3.14/180))
+                x: size/2.3 * Math.sin((_angle)*(Math.PI/180))
+                y: - size/2.3 * Math.cos((_angle)*(Math.PI/180))
+            }
+        }
+
+        Item {
+            id: returnMarker
+
+            property var    _paramaterManager:   _activeVehicle ? _activeVehicle.parameterManager : undefined
+            property Fact   returnCourseFact:    null
+            property double angle:               0.0
+
+            function normalizeTo360(angle) {
+                return (angle + 360) % 360
+            }
+
+            function courseParameterChangedCallback() {
+                angle = normalizeTo360(returnCourseFact.value);
+            }
+
+            function fetchCourseFromParameters(readyState = true) {
+                if (readyState) {
+                    if (_paramaterManager.parameterExists(_activeVehicle.defaultComponentId(), "COMP_RET_YAW")) {
+                        returnCourseFact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
+                        angle = normalizeTo360(returnCourseFact.value);
+                        returnCourseFact.vehicleUpdated.connect(courseParameterChangedCallback);
+                    }
+                }
+            }
+
+            function handleVehicleChanged(vehicle) {
+                if (vehicle) {
+                    _paramaterManager.parametersReadyChanged.connect(fetchCourseFromParameters);
+                    fetchCourseFromParameters();
+                } else {
+                    courseInitialized = false;
+                }
+            }
+
+            Component.onCompleted: {
+                var multiVehicleManager = QGroundControl.multiVehicleManager;
+                multiVehicleManager.activeVehicleChanged.connect(handleVehicleChanged);
+                if (multiVehicleManager.activeVehicle) {
+                    handleVehicleChanged(activeVehicle);
+                }
+            }
+
+
+            Rectangle {
+                width:   size * 0.1
+                height:  size * 0.1
+                radius:  size * 0.05
+                color:   returnMarker.returnCourseFact ? "#ff00ff00" : "#0000ff00";
+
+                transform: Translate {
+                    x: size/2.3 * Math.sin((returnMarker.angle)*(Math.PI/180))
+                    y: - size/2.3 * Math.cos((returnMarker.angle)*(Math.PI/180))
+                }            
             }
         }
 

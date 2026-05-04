@@ -926,10 +926,10 @@ public:
 
     bool        isROIEnabled            () const{ return _isROIEnabled; }
 
-    GimbalController* gimbalController    () { return _gimbalController; }
-    VibrationController* vibrationController() {return _vibrationController;}
-    EKFController* ekfController() {return _ekfController;}
-    ServoController* servoController() {return _servoController;}
+    GimbalController*    gimbalController    () { return _gimbalController; }
+    VibrationController* vibrationController () { return _vibrationController; }
+    EKFController*       ekfController       () { return _ekfController; }
+    ServoController*     servoController     () { return _servoController; }
 
     CheckList   checkListState          () { return _checkListState; }
     void        setCheckListState       (CheckList cl)  { _checkListState = cl; emit checkListStateChanged(); }

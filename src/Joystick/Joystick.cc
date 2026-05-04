@@ -21,6 +21,8 @@
 
 #include <QSettings>
 
+#include "ServoController/ServoController.h"
+
 // JoystickLog Category declaration moved to QGCLoggingCategory.cc to allow access in Vehicle
 QGC_LOGGING_CATEGORY(JoystickValuesLog, "JoystickValuesLog")
 
@@ -847,6 +849,18 @@ void Joystick::_remapAndSendRC() {
             }
             mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(axisValue, INT16_MIN, INT16_MAX, 1000, 2000));
         }
+        else if (mappedIndex < 12) {
+            int buttonIndex = mappedIndex - _axisCount;
+            bool buttonState = static_cast<bool>(_rgButtonValues[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];
+            mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(buttonState, 0, 1, 1000, 2000));
+        }
+        else if (mappedIndex < 16) {
+            if (_activeVehicle) {
+                mappedChannels[mappingIndex] = _activeVehicle->servoController()->getDesiredOutput(mappedIndex - 12);
+            } else {
+                mappedChannels[mappingIndex] = 1000;
+            }
+        }
         else if (mappedIndex < cMaxRcChannels) {
             int buttonIndex = mappedIndex - _axisCount;
             bool buttonState = static_cast<bool>(_rgButtonValues[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];
@@ -858,12 +872,12 @@ void Joystick::_remapAndSendRC() {
 
     qCDebug(JoystickLog) << "sent RC";
     for (int i = 0; i < 3; i++) {
-        qCDebug(JoystickLog) <<   "rc" << i * 6     << ":" << mappedChannels[i * 6]
-                             << ", rc" << i * 6 + 1 << ":" << mappedChannels[i * 6 + 1]
-                             << ", rc" << i * 6 + 2 << ":" << mappedChannels[i * 6 + 2]
-                             << ", rc" << i * 6 + 3 << ":" << mappedChannels[i * 6 + 3]
-                             << ", rc" << i * 6 + 4 << ":" << mappedChannels[i * 6 + 4]
-                             << ", rc" << i * 6 + 5 << ":" << mappedChannels[i * 6 + 5];
+        qCDebug(JoystickLog) <<   "rc" << i * 6 + 1 << ":" << mappedChannels[i * 6 + 0]
+                             << ", rc" << i * 6 + 2 << ":" << mappedChannels[i * 6 + 1]
+                             << ", rc" << i * 6 + 3 << ":" << mappedChannels[i * 6 + 2]
+                             << ", rc" << i * 6 + 4 << ":" << mappedChannels[i * 6 + 3]
+                             << ", rc" << i * 6 + 5 << ":" << mappedChannels[i * 6 + 4]
+                             << ", rc" << i * 6 + 6 << ":" << mappedChannels[i * 6 + 5];
     }
 
     _activeVehicle->sendJoystickMappedRCOverrideDataThreadSafe(mappedChannels);

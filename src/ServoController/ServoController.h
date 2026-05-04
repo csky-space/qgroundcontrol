@@ -14,26 +14,6 @@ Q_DECLARE_LOGGING_CATEGORY(ServoControllerLog)
 
 class MavlinkProtocol;
 
-class ServoMode : public QObject {
-    Q_OBJECT
-
-    QString _name;
-    bool    _checked;
-public:
-    Q_PROPERTY(QString  name    READ name                       NOTIFY nameChanged)
-    Q_PROPERTY(bool     checked READ checked WRITE setChecked   NOTIFY checkedChanged)
-
-    const QString& name() const;
-    bool checked() const;
-
-    void setChecked(bool checked);
-signals:
-    void nameChanged();
-    void checkedChanged();
-public:
-    ServoMode(const QString& name, bool checked);
-};
-
 class Servo : public QObject {
     Q_OBJECT
 
@@ -44,6 +24,7 @@ class Servo : public QObject {
     quint16 _minValue;
     quint16 _maxValue;
     bool    _reversed;
+
 public:
     Q_PROPERTY(QString  name            READ name           NOTIFY nameChanged          FINAL)
     Q_PROPERTY(quint16  index           READ index          NOTIFY indexChanged         FINAL)
@@ -68,6 +49,7 @@ public:
     void setMinValue            (quint16 minValue);
     void setMaxValue            (quint16 maxValue);
     void setReversed            (bool reversed);
+
 signals:
     void nameChanged        ();
     void indexChanged       ();
@@ -76,6 +58,7 @@ signals:
     void minValueChanged    ();
     void maxValueChanged    ();
     void reversedChanged    ();
+
 public:
     Servo(const QString& name, quint16 index, quint16 displayIndex, quint16 startValue, quint16 minValue, quint16 maxValue, bool reversed);
 };
@@ -83,53 +66,63 @@ public:
 class ServoController : public QObject
 {
     Q_OBJECT
+
+    bool               _initialized        = false;
+    const int          _servoCount         = 4;
+    bool               _dropControlEnabled = false;
+    const QVector<int> _servoIndexes       = { 7, 8, 9, 10 };
+    QVector<bool>      _desiredOpenStates  = { false, false, false, false };
+    QVector<int>       _rcAssignments      = { 0, 0, 0, 0 };
+
 public:
     ServoController (MAVLinkProtocol* mavlink, Vehicle* vehicle);
     ~ServoController();
 
-    Q_PROPERTY(QVariantList servoModel      READ servoModel         NOTIFY servoModelChanged    )
-    Q_PROPERTY(QVariantList servoDropModes  READ servoDropModes     NOTIFY servoDropModesChanged)
-    Q_PROPERTY(quint16      dropIndex       READ dropIndex          NOTIFY dropIndexChanged     )
+    int32_t getDesiredValue(int32_t servoIndex);
 
-    QVariantList        servoModel      ()  const;
-    QVariantList        servoDropModes  ()  const;
-    quint16             dropIndex       ()  const;
+    Q_PROPERTY(QVariantList     servoModel           READ servoModel           NOTIFY servoModelChanged)
+    Q_PROPERTY(QVector<bool>    desiredOpenStates    READ desiredOpenStates    WRITE  setDesiredOpenStates      NOTIFY desiredOpenStatesChanged)
+    Q_PROPERTY(int              servoCount           READ servoCount           CONSTANT)
+    Q_PROPERTY(QVector<int>     rcAssignments        READ rcAssignments        NOTIFY rcAssignmentsChanged)
+    Q_PROPERTY(bool             dropControlEnabled   READ dropControlEnabled   NOTIFY dropControlEnabledChanged)
 
-    static constexpr uint16_t servoDropFunction = 254;
+    QVariantList        servoModel         () const;
+    QVector<bool>       desiredOpenStates  () const;
+    int                 servoCount         () const;
+    QVector<int>        rcAssignments      () const;
+    bool                dropControlEnabled () const;
+
+    int getDesiredOutput(int outputIndex);
+
+    Q_INVOKABLE void toggleDesiredDropState(int index);
+
 private slots:
     void _mavlinkMessageReceived(const mavlink_message_t& message);
-    void _sendQueuedComand(int vehicleId, int targetComponent, int command, int ackResult, int failureCode);
-    void _enqueueLongCommand(const std::function<void()>& command);
+    void _onParametersReadyChanged(bool parametersReady);
+    void _onVehicleParameterUpdated(QVariant value);
+
 public slots:
-    void drop();
     void close();
+    void setDesiredOpenStates(QVector<bool> states);
+
 signals:
-    void servoModelChanged      ();
-    void servoDropModesChanged  ();
-    void dropIndexChanged       ();
+    void servoModelChanged         ();
+    void desiredOpenStatesChanged  ();
+    void rcAssignmentsChanged      ();
+    void dropControlEnabledChanged ();
+    void desiredValueSet           (int servoIndex, int value);
+
 private:
-    void _handleServoOutputRaw  (const mavlink_message_t& msg);
+    void   _handleServoOutputRaw (const mavlink_message_t& msg);
+    void   _updateServo          (int index);
+    void   _updateRCAssignments  ();
+    bool   hasServo              (uint16_t index);
+    Servo* findServo             (uint16_t index);
 
-    void _increaseDropIndex     (uint16_t incSize);
-
-    bool hasServo(uint16_t index);
-    Servo* findServo(uint16_t index);
-
-    QMetaObject::Connection     _carpetationTimerConnection;
-    QTimer*                     _carpetationTimer;
-    std::function<void()>       _sendCommandLongCallback;
-    ServoMode*                  _allMode;
-    ServoMode*                  _2Mode;
-    ServoMode*                  _1Mode;
-    ServoMode*                  _carpetMode;
     std::array<uint16_t, 16>    _servoOutputsRaw;
-    QVariantList                _servoDropModes;
     QVariantList                _servoModel;
     mavlink_servo_output_raw_t  _sor;
 
     MAVLinkProtocol*            _mavlink            = nullptr;
     Vehicle*                    _vehicle            = nullptr;
-    uint16_t                    _dropIndex;
-
-    QQueue<std::function<void()>> _commandQueue;
 };
