@@ -67,6 +67,13 @@ class ServoController : public QObject
 {
     Q_OBJECT
 
+    enum class AllowedServoFunctions {
+        RCIN13Scaled = 152,
+        RCIN14Scaled,
+        RCIN15Scaled,
+        RCIN16Scaled
+    };
+
     bool               _initialized        = false;
     const int          _servoCount         = 4;
     bool               _dropControlEnabled = false;

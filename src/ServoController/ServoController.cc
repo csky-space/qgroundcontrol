@@ -132,7 +132,7 @@ int ServoController::getDesiredOutput(int outputIndex) {
     }
     int rcIndex = outputIndex + 13;
     for (int i = 0; i < _servoCount; i++) {
-        if (_rcAssignments[i] != rcIndex) continue;
+         if (_rcAssignments[i] != rcIndex) continue;
         Servo* servo = findServo(_servoIndexes[i] - 1);
         if (!servo) continue;
         // Reversed isn't needed for RCIN_SCALED
@@ -172,29 +172,22 @@ void ServoController::_mavlinkMessageReceived(const mavlink_message_t& message) 
 
 void ServoController::_onParametersReadyChanged(bool parametersReady) {
     if (_initialized || !parametersReady) {
-        // _dropControlEnabled = false;
-        // emit dropControlEnabledChanged();
         return;
     }
 
-    QString parameter1Name = QString("SERVO%1_FUNCTION").arg(_servoIndexes[0]);
-    Fact* parameter1 = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), parameter1Name);
-    QString parameter2Name = QString("SERVO%1_FUNCTION").arg(_servoIndexes[1]);
-    Fact* parameter2 = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), parameter2Name);
-    QString parameter3Name = QString("SERVO%1_FUNCTION").arg(_servoIndexes[2]);
-    Fact* parameter3 = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), parameter3Name);
-    QString parameter4Name = QString("SERVO%1_FUNCTION").arg(_servoIndexes[3]);
-    Fact* parameter4 = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), parameter4Name);
-
-    if (!parameter1 || !parameter2 || !parameter3 || ! parameter4) {
-        qCDebug(ServoControllerLog) << "Servo Controller failed to initialize because of missing parameters";
-        return;
+    for (int32_t i = 0; i < _servoIndexes.size(); i++) {
+        QString parameterName = QString("SERVO%1_FUNCTION").arg(_servoIndexes[i]);
+        if (!_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), parameterName)) {
+            qCDebug(ServoControllerLog) << "Servo Controller failed to initialize because of missing parameters for servo:" << _servoIndexes[i];
+            return;
+        }
     }
 
-    connect(parameter1, &Fact::vehicleUpdated, this, &ServoController::_onVehicleParameterUpdated);
-    connect(parameter2, &Fact::vehicleUpdated, this, &ServoController::_onVehicleParameterUpdated);
-    connect(parameter3, &Fact::vehicleUpdated, this, &ServoController::_onVehicleParameterUpdated);
-    connect(parameter4, &Fact::vehicleUpdated, this, &ServoController::_onVehicleParameterUpdated);
+    for (int32_t i = 0; i < _servoIndexes.size(); i++) {
+        QString parameterName = QString("SERVO%1_FUNCTION").arg(_servoIndexes[i]);
+        Fact* parameter = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), parameterName);
+        connect(parameter, &Fact::vehicleUpdated, this, &ServoController::_onVehicleParameterUpdated);
+    }
 
     _updateRCAssignments();
     _dropControlEnabled = true;
@@ -277,17 +270,17 @@ void ServoController::_updateRCAssignments() {
             continue;
         }
         int function = parameter->rawValue().toUInt();
-        switch(function) {
-        case 152:
+        switch(static_cast<AllowedServoFunctions>(function)) {
+        case AllowedServoFunctions::RCIN13Scaled:
             _rcAssignments[i] = 13;
             break;
-        case 153:
+        case AllowedServoFunctions::RCIN14Scaled:
             _rcAssignments[i] = 14;
             break;
-        case 154:
+        case AllowedServoFunctions::RCIN15Scaled:
             _rcAssignments[i] = 15;
             break;
-        case 155:
+        case AllowedServoFunctions::RCIN16Scaled:
             _rcAssignments[i] = 16;
             break;
         default:
