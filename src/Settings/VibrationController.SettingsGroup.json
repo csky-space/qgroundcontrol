@@ -38,6 +38,6 @@
     "shortDesc":         "Vibration clipping tertiary",
     "type":              "float",
     "default":           0.0
-},
+}
 ]
 }
