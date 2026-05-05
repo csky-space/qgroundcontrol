@@ -253,9 +253,8 @@ Item {
                 onPaint: {
                     var vOffset = 0;
                     if (cameraCrossCanvas._vFov) {
-                        var scaledOffset = (90 - cameraCrossCanvas._cameraOrientation.y) / cameraCrossCanvas._vFov.value;
+                        var scaledOffset = (cameraCrossCanvas._cameraOrientation.y + 90) / cameraCrossCanvas._vFov.value;
                         vOffset = scaledOffset * parent.height;
-                        console.log("Crosshair vOffset: " + vOffset + "(" + _cameraOrientation.y + "deg)");
                     }
                     
                     var ctx = getContext("2d");

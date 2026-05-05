@@ -29,18 +29,21 @@ Item {
 
     readonly property real columnBaseWidth: (width - margins * 2) / 3
 
+    Rectangle {
+        id: areaBackground
+        anchors.fill: parent
+        color: qgcPal.window
+        opacity: 0.5
+        z: -1
+        radius: 8
+        visible: barVisible
+    }
+
     RowLayout {
         id: rowLayout
         anchors.fill: parent
         clip: true
         spacing: margins
-        Rectangle {
-            anchors.fill: barVisible ? parent : image
-            color: qgcPal.window
-            opacity: 0.5
-            z: -1
-            radius: 8
-        }
         //Layout.fillWidth: true
         ColumnLayout {
            id: barColumnLayout

@@ -160,11 +160,9 @@ Item {
             }
 
             function handleVehicleChanged(vehicle) {
-                if (vehicle) {
+                if (vehicle && _paramaterManager) {
                     _paramaterManager.parametersReadyChanged.connect(fetchCourseFromParameters);
                     fetchCourseFromParameters();
-                } else {
-                    courseInitialized = false;
                 }
             }
 
@@ -172,7 +170,7 @@ Item {
                 var multiVehicleManager = QGroundControl.multiVehicleManager;
                 multiVehicleManager.activeVehicleChanged.connect(handleVehicleChanged);
                 if (multiVehicleManager.activeVehicle) {
-                    handleVehicleChanged(activeVehicle);
+                    handleVehicleChanged(multiVehicleManager.activeVehicle);
                 }
             }
 
