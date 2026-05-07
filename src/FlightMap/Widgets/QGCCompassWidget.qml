@@ -136,6 +136,7 @@ Item {
 
         Item {
             id: returnMarker
+            anchors.centerIn: parent
 
             property var    _paramaterManager:   _activeVehicle ? _activeVehicle.parameterManager : undefined
             property Fact   returnCourseFact:    null
@@ -176,14 +177,16 @@ Item {
 
 
             Rectangle {
-                width:   size * 0.1
-                height:  size * 0.1
-                radius:  size * 0.05
-                color:   returnMarker.returnCourseFact ? "#ff00ff00" : "#0000ff00";
+                width:            size * 0.1
+                height:           size * 0.1
+                radius:           size * 0.05
+                anchors.centerIn: parent
+                color:            returnMarker.returnCourseFact ? "#ff00ff00" : "#0000ff00";
 
                 transform: Translate {
-                    x: size/2.3 * Math.sin((returnMarker.angle)*(Math.PI/180))
-                    y: - size/2.3 * Math.cos((returnMarker.angle)*(Math.PI/180))
+                    property double _angle: isNoseUpLocked() ? returnMarker.angle - _heading : returnMarker.angle
+                    x: size/2.3 * Math.sin((_angle)*(Math.PI/180))
+                    y: - size/2.3 * Math.cos((_angle)*(Math.PI/180))
                 }            
             }
         }
@@ -212,11 +215,7 @@ Item {
             anchors.fill:       parent
             sourceSize.height:  parent.height
             color:              qgcPal.text
-            transform: Rotation {
-                origin.x:       compassDial.width  / 2
-                origin.y:       compassDial.height / 2
-                angle:          isNoseUpLocked()?-_heading:0
-            }
+            rotation:           isNoseUpLocked()?-_heading:0
         }
 
 

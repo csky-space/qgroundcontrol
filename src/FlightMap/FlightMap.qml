@@ -135,11 +135,7 @@ Map {
             fillMode:       Image.PreserveAspectFit
             height:         ScreenTools.defaultFontPixelHeight * (isNaN(gcsHeading) ? 1.75 : 2.5 )
             sourceSize.height: height
-            transform: Rotation {
-                origin.x:       mapItemImage.width  / 2
-                origin.y:       mapItemImage.height / 2
-                angle:          isNaN(gcsHeading) ? 0 : gcsHeading
-            }
+            rotation:          isNaN(gcsHeading) ? 0 : gcsHeading
         }
     }
 } // Map
