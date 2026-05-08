@@ -18,11 +18,11 @@ public:
     ~EKFController();
 
     //Q_PROPERTY(QmlObjectListModel*  vibrations         READ vibrations        CONSTANT)
-    Q_PROPERTY(float velocityVariance READ velocityVariance NOTIFY velocityVarianceChanged CONSTANT)
-    Q_PROPERTY(float posHorizVariance READ posHorizVariance NOTIFY posHorizVarianceChanged CONSTANT)
-    Q_PROPERTY(float posVertVariance READ posVertVariance NOTIFY posVertVarianceChanged CONSTANT)
-    Q_PROPERTY(float compassVariance READ compassVariance NOTIFY compassVarianceChanged CONSTANT)
-    Q_PROPERTY(float terrainAltVariance READ terrainAltVariance NOTIFY terrainAltVarianceChanged CONSTANT)
+    Q_PROPERTY(float velocityVariance READ velocityVariance NOTIFY velocityVarianceChanged)
+    Q_PROPERTY(float posHorizVariance READ posHorizVariance NOTIFY posHorizVarianceChanged)
+    Q_PROPERTY(float posVertVariance READ posVertVariance NOTIFY posVertVarianceChanged)
+    Q_PROPERTY(float compassVariance READ compassVariance NOTIFY compassVarianceChanged)
+    Q_PROPERTY(float terrainAltVariance READ terrainAltVariance NOTIFY terrainAltVarianceChanged)
 
     Q_INVOKABLE float velocityVariance() const;
     Q_INVOKABLE float posHorizVariance() const;

@@ -23,8 +23,8 @@ Item {
     property alias status:              image.status
     property alias verticalAlignment:   image.verticalAlignment
 
-    width:  image.width
-    height: image.height
+    implicitWidth: image.implicitWidth
+    implicitHeight: image.implicitHeight
 
     Image {
         id:                 image

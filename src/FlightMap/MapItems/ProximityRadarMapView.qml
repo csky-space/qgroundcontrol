@@ -107,7 +107,6 @@ MapQuickItem {
             id:                 detectionLimitCircle
             width:              proximityValues.maxDistance * 2 *_ratio
             height:             proximityValues.maxDistance * 2 *_ratio
-            anchors.fill:       detectionLimitCircle
             color:              Qt.rgba(1,1,1,0)
             border.color:       Qt.rgba(1,1,1,1)
             border.width:       5

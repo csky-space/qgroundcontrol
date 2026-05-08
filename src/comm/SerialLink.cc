@@ -175,7 +175,7 @@ bool SerialLink::_hardwareConnect(QSerialPort::SerialPortError& error, QString& 
         }
     }
 
-    _port = new QSerialPort(_serialConfig->portName(), this);
+    _port = new QSerialPort(_serialConfig->portName());
 
 #ifdef Q_OS_ANDROID
     QObject::connect(_port, SIGNAL(&QSerialPort::error), this, SLOT(&SerialLink::linkError));

@@ -19,16 +19,16 @@ public:
     ~VibrationController();
 
     //Q_PROPERTY(QmlObjectListModel*  vibrations         READ vibrations        CONSTANT)
-    Q_PROPERTY(float xVibration READ xVibration NOTIFY xVibrationChanged CONSTANT)
-    Q_PROPERTY(float yVibration READ yVibration NOTIFY yVibrationChanged CONSTANT)
-    Q_PROPERTY(float zVibration READ zVibration NOTIFY zVibrationChanged CONSTANT)
-    Q_PROPERTY(unsigned int clipping1 READ clipping1 NOTIFY clipping1Changed CONSTANT)
-    Q_PROPERTY(unsigned int clipping2 READ clipping2 NOTIFY clipping2Changed CONSTANT)
-    Q_PROPERTY(unsigned int clipping3 READ clipping3 NOTIFY clipping3Changed CONSTANT)
+    Q_PROPERTY(float xVibration READ xVibration NOTIFY xVibrationChanged)
+    Q_PROPERTY(float yVibration READ yVibration NOTIFY yVibrationChanged)
+    Q_PROPERTY(float zVibration READ zVibration NOTIFY zVibrationChanged)
+    Q_PROPERTY(unsigned int clipping1 READ clipping1 NOTIFY clipping1Changed)
+    Q_PROPERTY(unsigned int clipping2 READ clipping2 NOTIFY clipping2Changed)
+    Q_PROPERTY(unsigned int clipping3 READ clipping3 NOTIFY clipping3Changed)
 
-    Q_PROPERTY(Fact* xVibrationFact READ xVibrationFact NOTIFY xVibrationFactChanged CONSTANT)
-    Q_PROPERTY(Fact* yVibrationFact READ yVibrationFact NOTIFY yVibrationFactChanged CONSTANT)
-    Q_PROPERTY(Fact* zVibrationFact READ zVibrationFact NOTIFY zVibrationFactChanged CONSTANT)
+    Q_PROPERTY(Fact* xVibrationFact READ xVibrationFact NOTIFY xVibrationFactChanged)
+    Q_PROPERTY(Fact* yVibrationFact READ yVibrationFact NOTIFY yVibrationFactChanged)
+    Q_PROPERTY(Fact* zVibrationFact READ zVibrationFact NOTIFY zVibrationFactChanged)
 
     Q_INVOKABLE float xVibration() const;
     Q_INVOKABLE float yVibration() const;
