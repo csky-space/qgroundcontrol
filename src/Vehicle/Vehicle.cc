@@ -1786,6 +1786,24 @@ void Vehicle::setActuatorsMetadata(uint8_t compid, const QString& metadataJsonFi
     _actuators->load(metadataJsonFileName);
 }
 
+void Vehicle::_handleTurboCommandAck(void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t failureCode) {
+    Vehicle* vehicle = static_cast<Vehicle*>(resultHandlerData);
+    vehicle->_turboModeEnabled = !vehicle->_turboModeEnabled;
+    vehicle->_emitTurboStateChanged();
+}
+
+void Vehicle::_emitTurboStateChanged() {
+    emit turboModeEnabledChanged();
+}
+
+void Vehicle::toggleTurboModeEnabled() {
+    MavCmdAckHandlerInfo_t handler;
+    handler.progressHandler = nullptr;
+    handler.resultHandler = _handleTurboCommandAck;
+    handler.resultHandlerData = this;
+    sendMavCommandWithHandler(&handler, _defaultComponentId, MAV_CMD::MAV_CMD_COMPONENT_ARM_DISARM);
+}
+
 void Vehicle::_handleHeartbeat(mavlink_message_t& message)
 {
     if (message.compid != _defaultComponentId) {

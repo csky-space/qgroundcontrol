@@ -263,6 +263,7 @@ public:
     Q_PROPERTY(bool                 requiresGpsFix              READ requiresGpsFix                                                 NOTIFY requiresGpsFixChanged)
     Q_PROPERTY(double               loadProgress                READ loadProgress                                                   NOTIFY loadProgressChanged)
     Q_PROPERTY(bool                 initialConnectComplete      READ isInitialConnectComplete                                       NOTIFY initialConnectComplete)
+    Q_PROPERTY(bool                 turboModeEnabled            READ turboModeEnabled                                               NOTIFY turboModeEnabledChanged)
 
     // The following properties relate to Orbit status
     Q_PROPERTY(bool             orbitActive     READ orbitActive        NOTIFY orbitActiveChanged)
@@ -486,6 +487,8 @@ public:
     /// Save the joystick enable setting to the settings group
     Q_INVOKABLE void saveJoystickSettings(void);
 
+    Q_INVOKABLE void toggleTurboModeEnabled();
+
     bool    isInitialConnectComplete() const;
     bool    guidedModeSupported     () const;
     bool    pauseVehicleSupported   () const;
@@ -494,8 +497,8 @@ public:
     bool    takeoffVehicleSupported () const;
     QString gotoFlightMode          () const;
     bool    hasGripper              () const;
-    bool haveMRSpeedLimits() const { return _multirotor_speed_limits_available; }
-    bool haveFWSpeedLimits() const { return _fixed_wing_airspeed_limits_available; }
+    bool    haveMRSpeedLimits       () const { return _multirotor_speed_limits_available; }
+    bool    haveFWSpeedLimits       () const { return _fixed_wing_airspeed_limits_available; }
 
     // Property accessors
 
@@ -668,6 +671,7 @@ public:
     bool            requiresGpsFix              () const { return static_cast<bool>(_onboardControlSensorsPresent & SysStatusSensorGPS); }
     bool            hilMode                     () const { return _base_mode & MAV_MODE_FLAG_HIL_ENABLED; }
     Actuators*      actuators                   () const { return _actuators; }
+    bool            turboModeEnabled            () const { return _turboModeEnabled; }
 
     /// Get the maximum MAVLink protocol version supported
     /// @return the maximum version
@@ -841,6 +845,9 @@ public:
     ///     @param resultHandler Callback for result
     ///     @param resultHandlerData Opaque data passed back to resultHandler
     void requestMessage(RequestMessageResultHandler resultHandler, void* resultHandlerData, int compId, int messageId, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f);
+
+    static void _handleTurboCommandAck(void* /*resultHandlerData*/, int compId, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t failureCode);
+    void _emitTurboStateChanged();
 
     int firmwareMajorVersion() const { return _firmwareMajorVersion; }
     int firmwareMinorVersion() const { return _firmwareMinorVersion; }
@@ -1053,6 +1060,8 @@ signals:
     void failsafeReasonChanged();
     void failsafeTypeChanged();
     void failsafeActionChanged();
+
+    void turboModeEnabledChanged();
 
 private slots:
     void _mavlinkMessageReceived            (LinkInterface* link, mavlink_message_t message);
@@ -1408,8 +1417,9 @@ private:
     bool _multirotor_speed_limits_available = false;
     bool _fixed_wing_airspeed_limits_available = false;
 
-    // FactGroup facts
+    bool _turboModeEnabled = false;
 
+    // FactGroup facts
     Fact _rollFact;
     Fact _pitchFact;
     Fact _headingFact;

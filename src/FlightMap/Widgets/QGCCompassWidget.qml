@@ -134,63 +134,6 @@ Item {
             }
         }
 
-        Item {
-            id: returnMarker
-            anchors.centerIn: parent
-
-            property var    _paramaterManager:   _activeVehicle ? _activeVehicle.parameterManager : undefined
-            property Fact   returnCourseFact:    null
-            property double angle:               0.0
-
-            function normalizeTo360(angle) {
-                return (angle + 360) % 360
-            }
-
-            function courseParameterChangedCallback() {
-                angle = normalizeTo360(returnCourseFact.value);
-            }
-
-            function fetchCourseFromParameters(readyState = true) {
-                if (readyState) {
-                    if (_paramaterManager.parameterExists(_activeVehicle.defaultComponentId(), "COMP_RET_YAW")) {
-                        returnCourseFact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
-                        angle = normalizeTo360(returnCourseFact.value);
-                        returnCourseFact.vehicleUpdated.connect(courseParameterChangedCallback);
-                    }
-                }
-            }
-
-            function handleVehicleChanged(vehicle) {
-                if (vehicle && _paramaterManager) {
-                    _paramaterManager.parametersReadyChanged.connect(fetchCourseFromParameters);
-                    fetchCourseFromParameters();
-                }
-            }
-
-            Component.onCompleted: {
-                var multiVehicleManager = QGroundControl.multiVehicleManager;
-                multiVehicleManager.activeVehicleChanged.connect(handleVehicleChanged);
-                if (multiVehicleManager.activeVehicle) {
-                    handleVehicleChanged(multiVehicleManager.activeVehicle);
-                }
-            }
-
-
-            Rectangle {
-                width:            size * 0.1
-                height:           size * 0.1
-                radius:           size * 0.05
-                anchors.centerIn: parent
-                color:            returnMarker.returnCourseFact ? "#ff00ff00" : "#0000ff00";
-
-                transform: Translate {
-                    property double _angle: isNoseUpLocked() ? returnMarker.angle - _heading : returnMarker.angle
-                    x: size/2.3 * Math.sin((_angle)*(Math.PI/180))
-                    y: - size/2.3 * Math.cos((_angle)*(Math.PI/180))
-                }            
-            }
-        }
-
         Image {
             id:                 pointer
             width:              size * 0.65
@@ -253,6 +196,102 @@ Item {
         anchors.fill:   instrument
         source:         instrument
         maskSource:     mask
-    }
 
+        Item {
+            id: returnMarker
+            anchors.fill:     parent;
+            anchors.centerIn: parent
+
+            property var    _paramaterManager:   _activeVehicle ? _activeVehicle.parameterManager : undefined
+            property Fact   returnCourseFact:    null
+            property double angle:               0.0
+
+            function normalizeTo360(angle) {
+                return (angle + 360) % 360;
+            }
+
+            function normalizeTo180(course) {
+                let c = ((course + 180) % 360 + 360) % 360;
+                return c - 180;
+            }
+
+            function courseParameterChangedCallback() {
+                angle = normalizeTo360(returnCourseFact.value);
+            }
+
+            function fetchCourseFromParameters(readyState = true) {
+                if (readyState) {
+                    if (_paramaterManager.parameterExists(_activeVehicle.defaultComponentId(), "COMP_RET_YAW")) {
+                        returnCourseFact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
+                        angle = normalizeTo360(returnCourseFact.value);
+                        returnCourseFact.vehicleUpdated.connect(courseParameterChangedCallback);
+                    }
+                }
+            }
+
+            function handleVehicleChanged(vehicle) {
+                if (vehicle && _paramaterManager) {
+                    _paramaterManager.parametersReadyChanged.connect(fetchCourseFromParameters);
+                    fetchCourseFromParameters();
+                }
+            }
+
+            Component.onCompleted: {
+                var multiVehicleManager = QGroundControl.multiVehicleManager;
+                multiVehicleManager.activeVehicleChanged.connect(handleVehicleChanged);
+                if (multiVehicleManager.activeVehicle) {
+                    handleVehicleChanged(multiVehicleManager.activeVehicle);
+                }
+            }
+
+            Rectangle {
+                width:            size * 0.1
+                height:           size * 0.1
+                radius:           size * 0.05
+                anchors.centerIn: parent
+                color:            returnMarker.returnCourseFact ? "#8000ff00" : "#0000ff00";
+
+                transform: Translate {
+                    property double _angle: isNoseUpLocked() ? returnMarker.angle - _heading : returnMarker.angle
+                    x: size/2.3 * Math.sin((_angle)*(Math.PI/180))
+                    y: - size/2.3 * Math.cos((_angle)*(Math.PI/180))
+                }            
+            }
+
+            MouseArea {
+                id:           compassMouseArea
+                anchors.fill: parent
+
+                function setAngleFromMousePosition(x, y) {
+                    if(!returnMarker.returnCourseFact) {
+                        return;
+                    }
+                    var offsetX = x - (width / 2);
+                    var offsetY = (height / 2) - y;
+                    var r = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+
+                    if (r < 10 || r > width / 2) {
+                        return;
+                    }
+
+                    var theta = Math.atan2(offsetY, offsetX) * (180 / Math.PI);
+                    if(isNoseUpLocked()) theta -= _heading;
+                    var normalizedAngle = -returnMarker.normalizeTo180(theta - 90);
+                    
+                    returnMarker.angle = normalizedAngle;
+                }
+
+                onPositionChanged: (mouse) => {
+                    setAngleFromMousePosition(mouse.x, mouse.y);
+                }
+
+                onReleased: (mouse) => {
+                    setAngleFromMousePosition(mouse.x, mouse.y);
+                    if (returnMarker.returnCourseFact) {
+                        returnMarker.returnCourseFact.value = returnMarker.angle;
+                    }                
+                }
+            }
+        }
+    }
 }

@@ -6,6 +6,8 @@
  * COPYING.md in the root of the source code directory.
  *
  ****************************************************************************/
+import QtQuick                  2.12
+import QtQuick.Controls         2.4
 
 import QtQml.Models 2.12
 
@@ -36,6 +38,40 @@ ToolStripActionList {
             fullColorIcon: true
             onTriggered:   {
                 QGroundControl.videoManager.crosshairEnabled = !QGroundControl.videoManager.crosshairEnabled;
+            }
+        },
+        ToolStripAction {
+            id:             turboModeAction
+            text:           qsTr("Turbo")
+            iconSource:     _turboModeEnabled ? "/qmlimages/turboActive.svg" : "/qmlimages/turbo.svg"
+            fullColorIcon: true
+
+            property var  _activeVehicle:   QGroundControl.multiVehicleManager.activeVehicle
+            property bool _turboModeEnabled: _activeVehicle ? _activeVehicle.turboModeEnabled : false
+
+            dropPanelComponent: Rectangle {
+                height: instrumentPanel ? instrumentPanel._heightAttComp * 0.5 : 0
+                width:  instrumentPanel ? instrumentPanel._heightAttComp * 2 : 0
+                Button {
+                    id:                 turboBtn
+                    text:               "Toggle max angle 17.5°"
+                    palette.buttonText: "white"
+                    anchors.fill:       parent
+
+                    background: Rectangle {
+                        anchors.fill:   parent
+                        radius:         2
+                        border.color:   "#555"
+                        border.width:   1
+                        color:          turboBtn.down ? "#2c2c2c" : turboBtn.hovered ? "#3a3a3a" : "#444444"
+                    }
+
+                    onClicked: {
+                        if(turboModeAction._activeVehicle) {
+                            turboModeAction._activeVehicle.toggleTurboModeEnabled();
+                        }
+                    }
+                }
             }
         },
         ReturnCourse { },
