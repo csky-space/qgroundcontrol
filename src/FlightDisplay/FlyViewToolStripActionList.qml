@@ -8,6 +8,7 @@
  ****************************************************************************/
 import QtQuick                  2.12
 import QtQuick.Controls         2.4
+import QtQuick.Layouts          1.12
 
 import QtQml.Models 2.12
 
@@ -49,26 +50,25 @@ ToolStripActionList {
             property var  _activeVehicle:   QGroundControl.multiVehicleManager.activeVehicle
             property bool _turboModeEnabled: _activeVehicle ? _activeVehicle.turboModeEnabled : false
 
-            dropPanelComponent: Rectangle {
-                height: instrumentPanel ? instrumentPanel._heightAttComp * 0.5 : 0
-                width:  instrumentPanel ? instrumentPanel._heightAttComp * 2 : 0
-                Button {
-                    id:                 turboBtn
-                    text:               "Toggle max angle 17.5°"
-                    palette.buttonText: "white"
-                    anchors.fill:       parent
-
-                    background: Rectangle {
-                        anchors.fill:   parent
-                        radius:         2
-                        border.color:   "#555"
-                        border.width:   1
-                        color:          turboBtn.down ? "#2c2c2c" : turboBtn.hovered ? "#3a3a3a" : "#444444"
-                    }
+            dropPanelComponent:  ColumnLayout {
+                QGCButton {
+                    text:             "Enable"
+                    Layout.fillWidth: true
 
                     onClicked: {
-                        if(turboModeAction._activeVehicle) {
-                            turboModeAction._activeVehicle.toggleTurboModeEnabled();
+                        if (turboModeAction._activeVehicle) {
+                            turboModeAction._activeVehicle.setTurboModeState(true);
+                        }
+                    }
+                }
+
+                QGCButton {
+                    text:             "Disable"
+                    Layout.fillWidth: true
+
+                    onClicked: {
+                        if (turboModeAction._activeVehicle) {
+                            turboModeAction._activeVehicle.setTurboModeState(false);
                         }
                     }
                 }

@@ -105,6 +105,7 @@
         <file alias="HITL.svg">src/AutoPilotPlugins/PX4/Images/HITL.svg</file>
         <file alias="Home.svg">src/FlightMap/Images/Home.svg</file>
         <file alias="Joystick.png">src/ui/toolbar/Images/Joystick.png</file>
+        <file alias="Servo.svg">src/ui/toolbar/Images/Servo.svg</file>
         <file alias="LandMode.svg">src/AutoPilotPlugins/PX4/Images/LandMode.svg</file>
         <file alias="LandModeCopter.svg">src/AutoPilotPlugins/PX4/Images/LandModeCopter.svg</file>
         <file alias="LightsComponentIcon.png">src/AutoPilotPlugins/APM/Images/LightsComponentIcon.png</file>

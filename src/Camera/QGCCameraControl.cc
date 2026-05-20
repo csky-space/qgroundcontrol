@@ -574,6 +574,26 @@ QGCCameraControl::setZoomLevel(qreal level)
 
 //-----------------------------------------------------------------------------
 void
+QGCCameraControl::setZoomRate(qreal rate)
+{
+    qCDebug(CameraControlLog) << "setZoomRate()" << rate;
+    if(hasZoom()) {
+        //-- Limit
+        rate = std::min(std::max(rate, -1.0), 1.0);
+        if(_vehicle) {
+            _vehicle->sendMavCommand(
+                _compID,                                // Target component
+                MAV_CMD_SET_CAMERA_ZOOM,                // Command id
+                false,                                  // ShowError
+                ZOOM_TYPE_CONTINUOUS,                   // Zoom type
+                static_cast<float>(rate));              // Level
+        }
+    }
+    _requestCameraSettings();
+}
+
+//-----------------------------------------------------------------------------
+void
 QGCCameraControl::setFocusLevel(qreal level)
 {
     qCDebug(CameraControlLog) << "setFocusLevel()" << level;

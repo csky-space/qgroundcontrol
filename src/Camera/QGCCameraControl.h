@@ -230,6 +230,8 @@ public:
     Q_INVOKABLE virtual void startTracking  (QRectF rec);
     Q_INVOKABLE virtual void startTracking  (QPointF point, double radius);
     Q_INVOKABLE virtual void stopTracking   ();
+    Q_INVOKABLE virtual void setZoomLevel   (qreal level);
+    Q_INVOKABLE virtual void setZoomRate    (qreal rate);
 
     virtual int         version             () { return _version; }
     virtual QString     modelName           () { return _modelName; }
@@ -292,7 +294,6 @@ public:
     virtual double      thermalOpacity      () { return _thermalOpacity; }
     virtual void        setThermalOpacity   (double val);
 
-    virtual void        setZoomLevel        (qreal level);
     virtual void        setFocusLevel       (qreal level);
     virtual void        setCameraMode       (CameraMode mode);
     virtual void        setPhotoMode        (PhotoMode mode);

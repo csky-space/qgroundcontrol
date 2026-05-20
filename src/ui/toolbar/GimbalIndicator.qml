@@ -17,6 +17,8 @@ import QGroundControl.ScreenTools         1.0
 import QGroundControl.Palette             1.0
 import QGroundControl.FactSystem          1.0
 import QGroundControl.FactControls        1.0
+import QGroundControl.Vehicle             1.0
+import QGroundControl.Controllers         1.0
 
 Item {
     id:             _root
@@ -70,27 +72,27 @@ Item {
                     property var acqControlButtonEnabled: QGroundControl.settingsManager.gimbalControllerSettings.toolbarIndicatorShowAcquireReleaseControl.rawValue
 
                     model: [
-                        {id: "yawLock",   text: activeGimbal.yawLock ? qsTr("Yaw <br> Follow") : qsTr("Yaw <br> Lock")  , visible: true                    },
-                        {id: "center",    text: qsTr("Center")                                                          , visible: true                    },
-                        {id: "tilt90",    text: qsTr("Tilt 90")                                                         , visible: true                    },
-                        {id: "pointHome", text: qsTr("Point <br> Home")                                                 , visible: true                    },
-                        {id: "retract",   text: qsTr("Retract")                                                         , visible: true                    },
-                        {id: "acqControl",text: hasControl ? qsTr("Release <br> Control") : qsTr("Acquire <br> Control"), visible: acqControlButtonEnabled },
-                        {id: "switchDayNight",text: qsTr("Day/Night"), visible: true}
+                        {id: "yawLock",        text: activeGimbal.yawLock ? qsTr("Yaw <br> Follow") : qsTr("Yaw <br> Lock")  , visible: true                    },
+                        {id: "center",         text: qsTr("Center")                                                          , visible: true                    },
+                        {id: "tilt90",         text: qsTr("Tilt 90")                                                         , visible: true                    },
+                        {id: "pointHome",      text: qsTr("Point <br> Home")                                                 , visible: true                    },
+                        {id: "retract",        text: qsTr("Retract")                                                         , visible: true                    },
+                        {id: "acqControl",     text: hasControl ? qsTr("Release <br> Control") : qsTr("Acquire <br> Control"), visible: acqControlButtonEnabled },
+                        {id: "switchDayNight", text: qsTr("Day/Night")                                                       , visible: true                    }
                     ]
 
                     QGCButton {
                         property var callbackList: [
-                           {"yawLock":      function(){ gimbalController.toggleGimbalYawLock(!activeGimbal.yawLock) }   },
-                           {"center":       function(){ gimbalController.centerGimbal() }                               },
-                           {"tilt90":       function(){ gimbalController.sendPitchBodyYaw(-90, 0) }                     },
-                           {"pointHome":    function(){ activeVehicle.guidedModeROI(activeVehicle.homePosition) }       },
-                           {"retract":      function(){ gimbalController.toggleGimbalRetracted(true) }                  },
-                           // This button changes its action depending on gimbal being under control or not
-                           {"acqControl":   function(){ simpleGimbalButtonsRepeater.hasControl ? 
-                                                            gimbalController.releaseGimbalControl() : 
-                                                                gimbalController.acquireGimbalControl() }               },
-                            {"switchDayNight": function(){QGroundControl.videoManager.switchDayNight()}}
+                            {"yawLock":         function() { gimbalController.toggleGimbalYawLock(!activeGimbal.yawLock) }  },
+                            {"center":          function() { gimbalController.centerGimbal() }                              },
+                            {"tilt90":          function() { gimbalController.sendPitchBodyYaw(-90, 0) }                    },
+                            {"pointHome":       function() { activeVehicle.guidedModeROI(activeVehicle.homePosition) }      },
+                            {"retract":         function() { gimbalController.toggleGimbalRetracted(true) }                 },
+                            // This button changes its action depending on gimbal being under control or not
+                            {"acqControl":      function() { simpleGimbalButtonsRepeater.hasControl ? 
+                                                                gimbalController.releaseGimbalControl() : 
+                                                                gimbalController.acquireGimbalControl() }                   },
+                            {"switchDayNight":  function() { QGroundControl.videoManager.switchDayNight() }                 }
                         ]
 
                         Layout.preferredWidth: Layout.preferredHeight
@@ -108,6 +110,49 @@ Item {
                             if (callback !== undefined) {
                                 callback[modelData.id]();
                             }
+                        }
+                    }
+                }
+
+                GridLayout {
+                    id: zoomControlLayout
+                    visible: currentCamera && currentCamera.hasZoom
+                    property var activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+                    property var cameraManager: activeVehicle ? activeVehicle.cameraManager : undefined
+                    property var currentCamera: cameraManager ? cameraManager.currentCameraInstance : undefined
+
+                    QGCButton {
+                        id: zoomInButton
+                        Layout.preferredWidth: Layout.preferredHeight
+                        Layout.preferredHeight: buttonHeight
+                        Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                        text: "Zoom Out"
+                        fontWeight: Font.Medium
+                        pointSize: ScreenTools.smallFontPointSize
+                        backRadius: panelRadius * 0.5
+
+                        onPressed: {
+                            zoomControlLayout.currentCamera.setZoomRate(-0.1)
+                        }
+                        onReleased: {
+                            zoomControlLayout.currentCamera.setZoomRate(0.0)
+                        }
+                    }
+                    QGCButton {
+                        id: zoomOutButton
+                        Layout.preferredWidth: Layout.preferredHeight
+                        Layout.preferredHeight: buttonHeight
+                        Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                        text: "Zoom In"
+                        fontWeight: Font.Medium
+                        pointSize: ScreenTools.smallFontPointSize
+                        backRadius: panelRadius * 0.5
+
+                        onPressed: {
+                            zoomControlLayout.currentCamera.setZoomRate(0.1)
+                        }
+                        onReleased: {
+                            zoomControlLayout.currentCamera.setZoomRate(0.0)
                         }
                     }
                 }

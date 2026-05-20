@@ -272,6 +272,17 @@ Rectangle {
                 property bool   _forcedToButtonsOnly:   !QGroundControl.corePlugin.options.allowJoystickSelection && _buttonsOnly
             }
 
+            SubMenuButton {
+                id:                 servoButton
+                imageResource:      "/qmlimages/drop.svg"
+                setupIndicator:     false
+                exclusiveGroup:     setupButtonGroup
+                text:               qsTr("Drop")
+                Layout.fillWidth:   true
+                onClicked:          showPanel(this, "DropConfig.qml")
+                visible:            _fullParameterVehicleAvailable
+            }
+
             Repeater {
                 id:     componentRepeater
                 model:  _fullParameterVehicleAvailable ? QGroundControl.multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0

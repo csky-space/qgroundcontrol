@@ -854,13 +854,6 @@ void Joystick::_remapAndSendRC() {
             bool buttonState = static_cast<bool>(_rgButtonValues[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];
             mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(buttonState, 0, 1, 1000, 2000));
         }
-        else if (mappedIndex < 16) {
-            if (_activeVehicle) {
-                mappedChannels[mappingIndex] = _activeVehicle->servoController()->getDesiredOutput(mappedIndex - 12);
-            } else {
-                mappedChannels[mappingIndex] = 1000;
-            }
-        }
         else if (mappedIndex < cMaxRcChannels) {
             int buttonIndex = mappedIndex - _axisCount;
             bool buttonState = static_cast<bool>(_rgButtonValues[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];

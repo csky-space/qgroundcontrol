@@ -33,24 +33,20 @@ ToolStripAction {
 
     text:           qsTr("Drop")
     iconSource:     "qrc:/qmlimages/drop.svg"
-    enabled:        _servoController && _servoController.dropControlEnabled ? true : false
+    enabled:        _servoController && _servoController.initialized ? true : false
 
     dropPanelComponent: Rectangle {
-        id:                   dropControl
-        anchors.topMargin:    _toolsMargin + parentToolInsets.topEdgeLeftInset
-        anchors.rightMargin:  _toolsMargin + parentToolInsets.topEdgeLeftInset
-        anchors.top:          toolStrip.bottom
-        anchors.left:         toolStrip.left
-        height:               instrumentPanel ? instrumentPanel._heightAttComp * 1.5 : 0
-        width:                instrumentPanel ? instrumentPanel._heightAttComp * 1.5 : 0
-        color:                Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.6)
+        id:     dropControl
+        height: instrumentPanel ? instrumentPanel._heightAttComp * 1.5 : 0
+        width:  instrumentPanel ? instrumentPanel._heightAttComp * 1.5 : 0
+        color:  Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.6)
 
         GridLayout {
-            id:             buttonsGrid
-            anchors.fill:   parent
-            columns:        2
-            columnSpacing:  2
-            rowSpacing:     2
+            id:            buttonsGrid
+            anchors.fill:  parent
+            columns:       2
+            columnSpacing: 2
+            rowSpacing:    2
 
             Repeater {
                 id:    servoButtonsRepeater
@@ -59,11 +55,14 @@ ToolStripAction {
                 Button {
                     required property int index
 
+                    property var servo:      _servoController.servoModel[index]
+                    property int assignment: _servoController.servoAssignments[index]
+
                     id:                     dropBtn
                     text:                   "Drop"
-                    enabled:                _servoController.rcAssignments[index] !== 0 ? true : false
-                    opacity:                _servoController.rcAssignments[index] !== 0 ? 1 : 0.7
-                    Layout.preferredWidth:  (buttonsGrid.width - 2) / buttonsGrid.columns
+                    enabled:                assignment !== 0 ? true : false
+                    opacity:                assignment !== 0 ? 1 : 0.7
+                    Layout.preferredWidth:  (buttonsGrid.width - 4) / buttonsGrid.columns
                     Layout.preferredHeight: Layout.preferredWidth
 
                     background: Rectangle {
@@ -71,7 +70,7 @@ ToolStripAction {
                         radius:         2
                         border.color:   "#555"
                         border.width:   1
-                        color:          _servoController.desiredOpenStates[index]
+                        color:          _servoController.servoStates[index]
                                             ? dropBtn.down ? "#acac2c" : dropBtn.hovered ? "#aaaa3a" : "#a4a444"
                                             : dropBtn.down ? "#2c2c2c" : dropBtn.hovered ? "#3a3a3a" : "#444444"
                     }
@@ -84,16 +83,33 @@ ToolStripAction {
                             source:                 "qrc:/qmlimages/drop.svg"
                         }
                         Text {
-                            Layout.alignment:  Qt.AlignHCenter
-                            font.family:       "Helvetica"
-                            font.pointSize:    8
-                            color:             "#ffffff"
-                            text:              _servoController.servoModel[index].displayIndex + ": " + (_servoController.rcAssignments[index] !== 0 ? "RC" + _servoController.rcAssignments[index] : "-")
+                            Layout.alignment:   Qt.AlignHCenter
+                            font.family:        "Helvetica"
+                            font.pointSize:     8
+                            color:              "#ffffff"
+                            text:               "S" + (servo.index + 1) + ": " + (assignment !== 0 ? "G" + assignment : "-")
                         }
                     }
 
                     onClicked: {
                         _servoController.toggleDesiredDropState(index);
+                    }
+
+                    Rectangle {
+                        height:         2
+                        anchors.left:   parent.left
+                        anchors.right:  parent.right
+                        anchors.bottom: parent.bottom
+                        radius:         2
+
+                        Rectangle {
+                            color:          "#20af20"
+                            anchors.left:   parent.left
+                            anchors.top:    parent.top
+                            anchors.bottom: parent.bottom
+                            width:          servo.normalizedValue * parent.width
+                            radius:         2
+                        }
                     }
                 }
             }

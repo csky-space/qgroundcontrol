@@ -487,7 +487,7 @@ public:
     /// Save the joystick enable setting to the settings group
     Q_INVOKABLE void saveJoystickSettings(void);
 
-    Q_INVOKABLE void toggleTurboModeEnabled();
+    Q_INVOKABLE void setTurboModeState(bool state);
 
     bool    isInitialConnectComplete() const;
     bool    guidedModeSupported     () const;
@@ -845,9 +845,6 @@ public:
     ///     @param resultHandler Callback for result
     ///     @param resultHandlerData Opaque data passed back to resultHandler
     void requestMessage(RequestMessageResultHandler resultHandler, void* resultHandlerData, int compId, int messageId, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f);
-
-    static void _handleTurboCommandAck(void* /*resultHandlerData*/, int compId, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t failureCode);
-    void _emitTurboStateChanged();
 
     int firmwareMajorVersion() const { return _firmwareMajorVersion; }
     int firmwareMinorVersion() const { return _firmwareMinorVersion; }
