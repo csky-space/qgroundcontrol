@@ -28,49 +28,86 @@ import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
 
 ToolStripAction {
-    property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
-    property var _servoController: _activeVehicle ? _activeVehicle.servoController : undefined
+    property var  _activeVehicle:                 QGroundControl.multiVehicleManager.activeVehicle
 
     text:           qsTr("Drop")
     iconSource:     "qrc:/qmlimages/drop.svg"
-    enabled:        _servoController && _servoController.initialized ? true : false
+    enabled:        _activeVehicle ? !QGroundControl.multiVehicleManager.activeVehicle.parameterManager.missingParameters : false
 
     dropPanelComponent: Rectangle {
         id:     dropControl
-        height: instrumentPanel ? instrumentPanel._heightAttComp * 1.5 : 0
-        width:  instrumentPanel ? instrumentPanel._heightAttComp * 1.5 : 0
+        height: instrumentPanel ? instrumentPanel._heightAttComp * 0.75 : 0
+        width:  instrumentPanel ? instrumentPanel._heightAttComp * 3 : 0
         color:  Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.6)
+
+        property int activeMode: -1;
+        property Fact dropModeFact: _activeVehicle.parameterManager.getParameter(_activeVehicle.defaultComponentId(), "DROP_MODE");
+
+        function fetchParamValue() {
+            dropControl.activeMode = dropControl.dropModeFact.value;
+        }
+
+        Component.onCompleted : {
+            fetchParamValue();
+        }
+
+        Connections {
+            target: _activeVehicle.parameterManager
+            onParametersReadyChanged: function(parametersReady) {
+                if (parametersReady) {
+                    fetchParamValue();
+                    return;
+                } else {
+                    dropControl.activeMode = -1;
+                }
+            }
+        }
+
+        Connections {
+            target: dropModeFact
+            onVehicleUpdated: {
+                activeMode = dropModeFact.value;
+            }
+        }
+
+        Timer {
+            id: paramRequestTimer
+            interval: 1000      
+            running: true       
+            repeat: true       
+            onTriggered: {
+                _activeVehicle.parameterManager.refreshParameter(_activeVehicle.defaultComponentId(), "DROP_MODE");                
+            }
+        }
 
         GridLayout {
             id:            buttonsGrid
             anchors.fill:  parent
-            columns:       2
+            columns:       3
             columnSpacing: 2
-            rowSpacing:    2
 
             Repeater {
-                id:    servoButtonsRepeater
-                model: _servoController ? _servoController.servoModel : 0
+                id:    buttonsRepeater
+                model: modelData
+
+                property var modelData: [1, 2, 4]
 
                 Button {
                     required property int index
 
-                    property var servo:      _servoController.servoModel[index]
-                    property int assignment: _servoController.servoAssignments[index]
+                    property var modeName:  "Mode " + buttonsRepeater.modelData[index]
 
                     id:                     dropBtn
-                    text:                   "Drop"
-                    enabled:                assignment !== 0 ? true : false
-                    opacity:                assignment !== 0 ? 1 : 0.7
-                    Layout.preferredWidth:  (buttonsGrid.width - 4) / buttonsGrid.columns
-                    Layout.preferredHeight: Layout.preferredWidth
+                    text:                   modeName
+                    Layout.preferredWidth:  (buttonsGrid.width - 6) / buttonsGrid.columns
+                    Layout.preferredHeight: Layout.preferredWidth * 0.75
 
                     background: Rectangle {
                         anchors.fill:   parent
                         radius:         2
                         border.color:   "#555"
                         border.width:   1
-                        color:          _servoController.servoStates[index]
+                        color:          dropControl.activeMode == index
                                             ? dropBtn.down ? "#acac2c" : dropBtn.hovered ? "#aaaa3a" : "#a4a444"
                                             : dropBtn.down ? "#2c2c2c" : dropBtn.hovered ? "#3a3a3a" : "#444444"
                     }
@@ -87,29 +124,12 @@ ToolStripAction {
                             font.family:        "Helvetica"
                             font.pointSize:     8
                             color:              "#ffffff"
-                            text:               "S" + (servo.index + 1) + ": " + (assignment !== 0 ? "G" + assignment : "-")
+                            text:               dropBtn.modeName
                         }
                     }
 
                     onClicked: {
-                        _servoController.toggleDesiredDropState(index);
-                    }
-
-                    Rectangle {
-                        height:         2
-                        anchors.left:   parent.left
-                        anchors.right:  parent.right
-                        anchors.bottom: parent.bottom
-                        radius:         2
-
-                        Rectangle {
-                            color:          "#20af20"
-                            anchors.left:   parent.left
-                            anchors.top:    parent.top
-                            anchors.bottom: parent.bottom
-                            width:          servo.normalizedValue * parent.width
-                            radius:         2
-                        }
+                        dropControl.dropModeFact.value = index
                     }
                 }
             }

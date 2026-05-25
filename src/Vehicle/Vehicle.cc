@@ -1787,11 +1787,7 @@ void Vehicle::setActuatorsMetadata(uint8_t compid, const QString& metadataJsonFi
 }
 
 void Vehicle::setTurboModeState(bool state) {
-    _turboModeEnabled = state;
-
-    sendMavCommand(_defaultComponentId, MAV_CMD::MAV_CMD_DO_SET_TURBO_MODE, true, static_cast<float>(_turboModeEnabled));
-
-    emit turboModeEnabledChanged();
+    sendMavCommand(_defaultComponentId, static_cast<MAV_CMD>(52002), false, static_cast<float>(state));
 }
 
 void Vehicle::_handleHeartbeat(mavlink_message_t& message)
@@ -2314,6 +2310,24 @@ bool Vehicle::setFlightModeCustom(const QString& flightMode, uint8_t* base_mode,
     return _firmwarePlugin->setFlightMode(flightMode, base_mode, custom_mode);
 }
 
+void Vehicle::_requestTurboModeParam() {
+    _parameterManager->refreshParameter(_defaultComponentId, "TURBO_ENABLE");
+}
+
+void Vehicle::_handleTurboModeParamChanged(QVariant param) {
+    bool ok;
+    Fact* dropModeParam = _parameterManager->getParameter(_defaultComponentId, "TURBO_ENABLE");
+    float value = dropModeParam->rawValue().toFloat(&ok);
+    if (!ok) {
+        qCWarning(VehicleLog) << "Vehicle::_handleTurboModeParamChanged: failed to cast parameter to toFloat";
+        _turboModeActive = false;
+        emit turboModeActiveChanged();
+        return;
+    }
+    _turboModeActive = value > 0.5f;
+    emit turboModeActiveChanged();
+}
+
 void Vehicle::setFlightMode(const QString& flightMode)
 {
     uint8_t     base_mode;
@@ -2515,6 +2529,17 @@ void Vehicle::_parametersReady(bool parametersReady)
         disconnect(_parameterManager, &ParameterManager::parametersReadyChanged, this, &Vehicle::_parametersReady);
         _setupAutoDisarmSignalling();
         _initialConnectStateMachine->advance();
+
+        if (_parameterManager->parameterExists(_defaultComponentId, "TURBO_ENABLE")) {
+            connect(&_turboParamRequestTimer, &QTimer::timeout, this, &Vehicle::_requestTurboModeParam);
+
+            Fact* turboEnableParam = _parameterManager->getParameter(_defaultComponentId, "TURBO_ENABLE");
+            connect(turboEnableParam, &Fact::vehicleUpdated, this, &Vehicle::_handleTurboModeParamChanged);
+
+            _turboParamRequestTimer.start(1000);
+            _turboModeEnabled = true;
+            emit turboModeEnabledChanged();
+        }
     }
 
     _multirotor_speed_limits_available = _firmwarePlugin->mulirotorSpeedLimitsAvailable(this);

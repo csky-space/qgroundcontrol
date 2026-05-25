@@ -274,12 +274,12 @@ Rectangle {
 
             SubMenuButton {
                 id:                 servoButton
-                imageResource:      "/qmlimages/drop.svg"
+                imageResource:      "/qmlimages/Servo.svg"
                 setupIndicator:     false
                 exclusiveGroup:     setupButtonGroup
-                text:               qsTr("Drop")
+                text:               qsTr("Servo")
                 Layout.fillWidth:   true
-                onClicked:          showPanel(this, "DropConfig.qml")
+                onClicked:          showPanel(this, "ServoConfig.qml")
                 visible:            _fullParameterVehicleAvailable
             }
 

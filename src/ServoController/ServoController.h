@@ -80,39 +80,17 @@ public:
 
     Q_PROPERTY(bool          initialized                READ initialized                NOTIFY initializedChanged)
     Q_PROPERTY(QVariantList  servoModel                 READ servoModel                 NOTIFY servoModelChanged)
-    Q_PROPERTY(QStringList   servoAssignmentsModel      READ servoAssignmentsModel      NOTIFY servoAssignmentsModelChanged)
-    Q_PROPERTY(QVector<int>  servoAssignments           READ servoAssignments           NOTIFY servoAssignmentsChanged)
-    Q_PROPERTY(QVector<bool> servoStates                READ servoStates                NOTIFY servoStatesChanged)
-    Q_PROPERTY(QStringList   dropConfigValidationErrors READ dropConfigValidationErrors NOTIFY dropConfigValidationErrorsChanged)
 
     bool          initialized                () const;
     QVariantList  servoModel                 () const;
-    QStringList   servoAssignmentsModel      () const;
-    QVector<int>  servoAssignments           () const;
-    QVector<bool> servoStates                () const;
-    QStringList   dropConfigValidationErrors () const;
-
-    Q_INVOKABLE void setDropState(int servoIndex, bool state);
-    Q_INVOKABLE void toggleDesiredDropState(int servoIndex);
-    Q_INVOKABLE void setServoGroup(int servoIndex, int groupIndex);
-    Q_INVOKABLE void resetGroupAssignments();
-    Q_INVOKABLE void validateDropConfiguration();
-
-    void saveSettings();
-    void loadSettings();
 
 private slots:
     void _mavlinkMessageReceived(const mavlink_message_t& message);
     void _onParametersReadyChanged(bool parametersReady);
-    void _onSetServoListCommandAccepted(QVector<int> servoIndexes, bool desiredState);
 
 signals:
     void initializedChanged                ();
     void servoModelChanged                 ();
-    void servoAssignmentsModelChanged      ();
-    void servoAssignmentsChanged           ();
-    void servoStatesChanged                ();
-    void dropConfigValidationErrorsChanged ();
 
 private:
     void   _handleServoOutputRaw      (const mavlink_message_t& msg);
@@ -121,20 +99,10 @@ private:
 
     MAVLinkProtocol*   _mavlink      = nullptr;
     Vehicle*           _vehicle      = nullptr;
-    const QVector<int> _servoIndexes = { 7, 8, 9, 10 };
-    static const int   _servoCount   = 16;
 
     bool               _initialized;
     QVariantList       _servoModel;
-    QStringList        _servoAssignmentsModel;
-    QVector<int>       _servoAssignments;
-    QVector<bool>      _servoStates;
-    QStringList        _dropConfigValidationErrors;
 
+    inline static const int _servoCount = 16;
     std::array<uint16_t, _servoCount> _servoOutputsRaw;
-
-    static void _handleDoSetServoListCommandAck(void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t failureCode);
-
-    static const char* _settingsGroup;
-    static const char* _servoAssignmentKey;
 };

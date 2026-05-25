@@ -14,6 +14,7 @@ import QtQml.Models 2.12
 
 import QGroundControl                1.0
 import QGroundControl.Controls       1.0
+import QGroundControl.FactSystem     1.0
 
 ToolStripActionList {
     id: _root
@@ -44,11 +45,11 @@ ToolStripActionList {
         ToolStripAction {
             id:             turboModeAction
             text:           qsTr("Turbo")
-            iconSource:     _turboModeEnabled ? "/qmlimages/turboActive.svg" : "/qmlimages/turbo.svg"
-            fullColorIcon: true
+            iconSource:     _activeVehicle && _activeVehicle.turboModeActive ? "/qmlimages/turboActive.svg" : "/qmlimages/turbo.svg"
+            fullColorIcon:  true
+            enabled:        _activeVehicle ? _activeVehicle.turboModeEnabled : false
 
-            property var  _activeVehicle:   QGroundControl.multiVehicleManager.activeVehicle
-            property bool _turboModeEnabled: _activeVehicle ? _activeVehicle.turboModeEnabled : false
+            property var  _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
 
             dropPanelComponent:  ColumnLayout {
                 QGCButton {

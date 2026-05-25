@@ -264,6 +264,7 @@ public:
     Q_PROPERTY(double               loadProgress                READ loadProgress                                                   NOTIFY loadProgressChanged)
     Q_PROPERTY(bool                 initialConnectComplete      READ isInitialConnectComplete                                       NOTIFY initialConnectComplete)
     Q_PROPERTY(bool                 turboModeEnabled            READ turboModeEnabled                                               NOTIFY turboModeEnabledChanged)
+    Q_PROPERTY(bool                 turboModeActive             READ turboModeActive                                                NOTIFY turboModeActiveChanged)
 
     // The following properties relate to Orbit status
     Q_PROPERTY(bool             orbitActive     READ orbitActive        NOTIFY orbitActiveChanged)
@@ -672,6 +673,7 @@ public:
     bool            hilMode                     () const { return _base_mode & MAV_MODE_FLAG_HIL_ENABLED; }
     Actuators*      actuators                   () const { return _actuators; }
     bool            turboModeEnabled            () const { return _turboModeEnabled; }
+    bool            turboModeActive             () const { return _turboModeActive; }
 
     /// Get the maximum MAVLink protocol version supported
     /// @return the maximum version
@@ -1059,6 +1061,7 @@ signals:
     void failsafeActionChanged();
 
     void turboModeEnabledChanged();
+    void turboModeActiveChanged();
 
 private slots:
     void _mavlinkMessageReceived            (LinkInterface* link, mavlink_message_t message);
@@ -1154,6 +1157,9 @@ private:
     void _setMessageInterval            (int messageId, int rate);
     EventHandler& _eventHandler         (uint8_t compid);
     bool setFlightModeCustom            (const QString& flightMode, uint8_t* base_mode, uint32_t* custom_mode);
+
+    void _requestTurboModeParam       ();
+    void _handleTurboModeParamChanged (QVariant param);
 
     static void _rebootCommandResultHandler(void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode);
 
@@ -1415,6 +1421,7 @@ private:
     bool _fixed_wing_airspeed_limits_available = false;
 
     bool _turboModeEnabled = false;
+    bool _turboModeActive = false;
 
     // FactGroup facts
     Fact _rollFact;
@@ -1544,6 +1551,8 @@ private:
     QString                     _failsafeReason;
     QString                     _failsafeType;
     QString                     _failsafeAction;
+
+    QTimer                      _turboParamRequestTimer;
 };
 
 Q_DECLARE_METATYPE(Vehicle::MavCmdResultFailureCode_t)
