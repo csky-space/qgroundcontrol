@@ -49,7 +49,8 @@ public:
         AUTOROTATE  = 26,
         AUTO_RTL    = 27,
         TURTLE      = 28,
-        RETURN      = 29
+        RETURN      = 29,
+        CRUISE      = 30
     };
 
     APMCopterMode(uint32_t mode, bool settable);
