@@ -23,6 +23,7 @@
 #include "SubtitleWriter.h"
 #include "common/mavlink.h"
 #include "qvector3d.h"
+#include "Vehicle/Vehicle.h"
 
 Q_DECLARE_LOGGING_CATEGORY(VideoManagerLog)
 
@@ -60,6 +61,7 @@ public:
     Q_PROPERTY(QSize            videoSize               READ    videoSize                                        NOTIFY videoSizeChanged)
     Q_PROPERTY(bool             crosshairEnabled        READ    crosshairEnabled    WRITE setCrosshairEnabled    NOTIFY crosshairEnabledChanged)
     Q_PROPERTY(QVector3D        cameraOrientation       READ    cameraOrientation                                NOTIFY cameraOrientationChanged)
+    Q_PROPERTY(bool             isRequestingToggleDayNight       READ    isRequestingToggleDayNight                                NOTIFY isRequestingToggleDayNightChanged)
 
     virtual bool        hasVideo            ();
     virtual bool        isGStreamer         ();
@@ -86,6 +88,10 @@ public:
 
     bool recording(void) {
         return _recording;
+    }
+
+    bool isRequestingToggleDayNight(void) const {
+        return _isRequestingToggleDayNight;
     }
 
     QSize videoSize(void) {
@@ -147,6 +153,7 @@ signals:
     void videoSizeChanged           ();
     void crosshairEnabledChanged    ();
     void cameraOrientationChanged   ();
+    void isRequestingToggleDayNightChanged();
 
 protected slots:
     void _videoSourceChanged        ();
@@ -198,6 +205,10 @@ protected:
     QString                 _uvcVideoSourceID;
     bool                    _fullScreen             = false;
     Vehicle*                _activeVehicle          = nullptr;
+    bool                    _isRequestingToggleDayNight = false;
+
+
+    static void _handleAckSwitchDayNight(void* resultHandlerData, int /*compId*/, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t failureCode);
 };
 
 #endif

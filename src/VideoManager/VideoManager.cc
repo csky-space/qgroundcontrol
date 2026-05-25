@@ -262,17 +262,41 @@ void VideoManager::_cleanupOldVideos()
 #endif
 }
 
+void VideoManager::_handleAckSwitchDayNight(void* resultHandlerData, int /*compId*/, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t failureCode) {
+    VideoManager* videoManager = reinterpret_cast<VideoManager*>(resultHandlerData);
+    if (failureCode == Vehicle::MavCmdResultFailureCode_t::MavCmdResultFailureNoResponseToCommand) {
+        qCDebug(VideoManagerLog) << "VideoManager::_handleAckSwitchDayNight: timeout";
+        if (!videoManager->switchDayNight()) {
+            qCDebug(VideoManagerLog) << "VideoManager::_handleAckSwitchDayNight: failed to repeat request";
+        }
+    } else {
+        videoManager->_isRequestingToggleDayNight = false;
+        emit videoManager->isRequestingToggleDayNightChanged();
+        qCDebug(VideoManagerLog) << "VideoManager::_handleAckSwitchDayNight: answer received" << ack.result;
+    }
+}
+
 bool VideoManager::switchDayNight() {
-    qCDebug(VideoManagerLog) << "switchDayNight";
-    if(_activeVehicle) {
-        mavlink_message_t msg{};
-        mavlink_wifi_config_ap_t conf{};
-        MAVLinkProtocol* protocol = qgcApp()->toolbox()->mavlinkProtocol();
-        mavlink_msg_wifi_config_ap_encode(protocol->getSystemId(), protocol->getComponentId(), &msg, &conf);
-        _activeVehicle->sendMessageOnLinkThreadSafe(_activeVehicle->vehicleLinkManager()->primaryLink().lock().get(), msg);
+    if (_activeVehicle) {
+        Vehicle::MavCmdAckHandlerInfo_t handlerInfo = {};
+        handlerInfo.resultHandler       = _handleAckSwitchDayNight;
+        handlerInfo.resultHandlerData   = reinterpret_cast<void*>(this);
+
+        _activeVehicle->sendMavCommandWithHandler(&handlerInfo, _activeVehicle->defaultComponentId(), static_cast<MAV_CMD>(52001));
+
+        _isRequestingToggleDayNight = true;
+        emit isRequestingToggleDayNightChanged();
+
+        qCDebug(VideoManagerLog) << "VideoManager::switchDayNight: request sent";
+
         return true;
     }
-    qCDebug(CameraControlLog) << "active vehicle not found";
+
+    _isRequestingToggleDayNight = false;
+    emit isRequestingToggleDayNightChanged();
+
+    qCDebug(CameraControlLog) << "VideoManager::switchDayNight: active vehicle not found";
+
     return false;
 }
 

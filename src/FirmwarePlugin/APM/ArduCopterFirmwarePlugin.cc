@@ -49,7 +49,8 @@ APMCopterMode::APMCopterMode(uint32_t mode, bool settable) :
         { AUTOROTATE,   "AutoRotate" },
         { AUTO_RTL,     "AutoRTL" },
         { TURTLE,       "Turtle" },
-                            { RETURN, "COMPASS RETURN"}
+        { RETURN,       "Compass Return"},
+        { CRUISE,       "Cruise"}
     });
 }
 
@@ -83,6 +84,7 @@ ArduCopterFirmwarePlugin::ArduCopterFirmwarePlugin(void)
         APMCopterMode(APMCopterMode::AUTO_RTL,      true),
         APMCopterMode(APMCopterMode::TURTLE,        true),
         APMCopterMode(APMCopterMode::RETURN,        true),
+        APMCopterMode(APMCopterMode::CRUISE,        true),
     });
 
     if (!_remapParamNameIntialized) {

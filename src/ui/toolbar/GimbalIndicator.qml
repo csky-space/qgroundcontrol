@@ -70,27 +70,27 @@ Item {
                     property var acqControlButtonEnabled: QGroundControl.settingsManager.gimbalControllerSettings.toolbarIndicatorShowAcquireReleaseControl.rawValue
 
                     model: [
-                        {id: "yawLock",   text: activeGimbal.yawLock ? qsTr("Yaw <br> Follow") : qsTr("Yaw <br> Lock")  , visible: true                    },
-                        {id: "center",    text: qsTr("Center")                                                          , visible: true                    },
-                        {id: "tilt90",    text: qsTr("Tilt 90")                                                         , visible: true                    },
-                        {id: "pointHome", text: qsTr("Point <br> Home")                                                 , visible: true                    },
-                        {id: "retract",   text: qsTr("Retract")                                                         , visible: true                    },
-                        {id: "acqControl",text: hasControl ? qsTr("Release <br> Control") : qsTr("Acquire <br> Control"), visible: acqControlButtonEnabled },
-                        {id: "switchDayNight",text: qsTr("Day/Night"), visible: true}
+                        {id: "yawLock",        text: activeGimbal.yawLock ? qsTr("Yaw <br> Follow") : qsTr("Yaw <br> Lock")  , visible: true                   , enabled: true },
+                        {id: "center",         text: qsTr("Center")                                                          , visible: true                   , enabled: true },
+                        {id: "tilt90",         text: qsTr("Tilt 90")                                                         , visible: true                   , enabled: true },
+                        {id: "pointHome",      text: qsTr("Point <br> Home")                                                 , visible: true                   , enabled: true },
+                        {id: "retract",        text: qsTr("Retract")                                                         , visible: true                   , enabled: true },
+                        {id: "acqControl",     text: hasControl ? qsTr("Release <br> Control") : qsTr("Acquire <br> Control"), visible: acqControlButtonEnabled, enabled: true },
+                        {id: "switchDayNight", text: qsTr("Day/Night")                                                       , visible: true                   , enabled: !QGroundControl.videoManager.isRequestingToggleDayNight }
                     ]
 
                     QGCButton {
                         property var callbackList: [
-                           {"yawLock":      function(){ gimbalController.toggleGimbalYawLock(!activeGimbal.yawLock) }   },
-                           {"center":       function(){ gimbalController.centerGimbal() }                               },
-                           {"tilt90":       function(){ gimbalController.sendPitchBodyYaw(-90, 0) }                     },
-                           {"pointHome":    function(){ activeVehicle.guidedModeROI(activeVehicle.homePosition) }       },
-                           {"retract":      function(){ gimbalController.toggleGimbalRetracted(true) }                  },
-                           // This button changes its action depending on gimbal being under control or not
-                           {"acqControl":   function(){ simpleGimbalButtonsRepeater.hasControl ? 
-                                                            gimbalController.releaseGimbalControl() : 
-                                                                gimbalController.acquireGimbalControl() }               },
-                            {"switchDayNight": function(){QGroundControl.videoManager.switchDayNight()}}
+                            {"yawLock":         function(){ gimbalController.toggleGimbalYawLock(!activeGimbal.yawLock) }},
+                            {"center":          function(){ gimbalController.centerGimbal() }                            },
+                            {"tilt90":          function(){ gimbalController.sendPitchBodyYaw(-90, 0) }                  },
+                            {"pointHome":       function(){ activeVehicle.guidedModeROI(activeVehicle.homePosition) }    },
+                            {"retract":         function(){ gimbalController.toggleGimbalRetracted(true) }               },
+                            // This button changes its action depending on gimbal being under control or not
+                            {"acqControl":      function(){ simpleGimbalButtonsRepeater.hasControl ? 
+                                                                gimbalController.releaseGimbalControl() : 
+                                                                gimbalController.acquireGimbalControl() }                },
+                            {"switchDayNight":  function(){ QGroundControl.videoManager.switchDayNight() }               }
                         ]
 
                         Layout.preferredWidth: Layout.preferredHeight
@@ -98,6 +98,7 @@ Item {
                         Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                         text: modelData.text
                         visible: modelData.visible
+                        enabled: modelData.enabled
                         fontWeight: Font.Medium
                         pointSize: ScreenTools.smallFontPointSize
                         backRadius: panelRadius * 0.5
