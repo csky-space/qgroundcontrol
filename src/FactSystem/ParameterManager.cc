@@ -575,7 +575,7 @@ int ParameterManager::_actualComponentId(int componentId)
     return componentId;
 }
 
-void ParameterManager::refreshParameter(int componentId, const QString& paramName)
+void ParameterManager::refreshParameter(int componentId, const QString& paramName, bool shouldUpdateProgressBar)
 {
     componentId = _actualComponentId(componentId);
     qCDebug(ParameterManagerLog) << _logVehiclePrefix(componentId) << "refreshParameter - name:" << paramName << ")";
@@ -589,7 +589,9 @@ void ParameterManager::refreshParameter(int componentId, const QString& paramNam
             _waitingReadParamNameBatchCount++;
         }
         _waitingReadParamNameMap[componentId][mappedParamName] = 0;     // Add new wait entry and update retry count
-        _updateProgressBar();
+        if (shouldUpdateProgressBar) {
+            _updateProgressBar();
+        }
         qCDebug(ParameterManagerLog) << _logVehiclePrefix(componentId) << "restarting _waitingParamTimeout";
         _waitingParamTimeoutTimer.start();
     } else {

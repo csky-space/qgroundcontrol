@@ -25,6 +25,7 @@
 #include "FollowMe.h"
 #include "PositionManager.h"
 #include "VideoManager.h"
+#include "SignalQualityMonitor/SignalQualityMonitor.h"
 #include "MAVLinkLogManager.h"
 #include "QGCCorePlugin.h"
 #include "QGCOptions.h"
@@ -71,6 +72,7 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     _qgcPositionManager     = new QGCPositionManager        (app, this);
     _followMe               = new FollowMe                  (app, this);
     _videoManager           = new VideoManager              (app, this);
+    _signalQualityMonitor   = new SignalQualityMonitor      (app, this);
     _mavlinkLogManager      = new MAVLinkLogManager         (app, this);
     _adsbVehicleManager     = new ADSBVehicleManager        (app, this);
 #ifdef QGC_AIRLINK_ENABLED
@@ -110,6 +112,7 @@ void QGCToolbox::setChildToolboxes(void)
     _followMe->setToolbox(this);
     _qgcPositionManager->setToolbox(this);
     _videoManager->setToolbox(this);
+    _signalQualityMonitor->setToolbox(this);
     _mavlinkLogManager->setToolbox(this);
     _adsbVehicleManager->setToolbox(this);
 #ifdef QGC_AIRLINK_ENABLED

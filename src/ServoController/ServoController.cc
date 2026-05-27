@@ -5,16 +5,6 @@
 
 QGC_LOGGING_CATEGORY(ServoControllerLog, "ServoControllerLog")
 
-struct DoSetServoListHandlerData {
-    ServoController* controller;
-    QVector<int> servoIndexes;
-    bool desiredState;
-
-    DoSetServoListHandlerData() = delete;
-    DoSetServoListHandlerData(ServoController* controller, const QVector<int>& servoIndexes, bool desiredState) :
-        controller(controller), servoIndexes(servoIndexes), desiredState(desiredState) {}
-};
-
 Servo::Servo(const QString& name, quint16 index, quint16 function, quint16 startValue, quint16 minValue, quint16 maxValue, bool reversed)
     : _name(name)
     , _index(index)

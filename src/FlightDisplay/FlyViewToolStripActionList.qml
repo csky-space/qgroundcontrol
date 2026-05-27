@@ -55,6 +55,7 @@ ToolStripActionList {
                 QGCButton {
                     text:             "Enable"
                     Layout.fillWidth: true
+                    enabled: _activeVehicle ? !_activeVehicle.isSwitchingTurboMode : false
 
                     onClicked: {
                         if (turboModeAction._activeVehicle) {
@@ -66,6 +67,7 @@ ToolStripActionList {
                 QGCButton {
                     text:             "Disable"
                     Layout.fillWidth: true
+                    enabled: _activeVehicle ? !_activeVehicle.isSwitchingTurboMode : false
 
                     onClicked: {
                         if (turboModeAction._activeVehicle) {

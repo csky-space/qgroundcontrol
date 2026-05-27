@@ -265,6 +265,7 @@ public:
     Q_PROPERTY(bool                 initialConnectComplete      READ isInitialConnectComplete                                       NOTIFY initialConnectComplete)
     Q_PROPERTY(bool                 turboModeEnabled            READ turboModeEnabled                                               NOTIFY turboModeEnabledChanged)
     Q_PROPERTY(bool                 turboModeActive             READ turboModeActive                                                NOTIFY turboModeActiveChanged)
+    Q_PROPERTY(bool                 isSwitchingTurboMode        READ isSwitchingTurboMode                                           NOTIFY isSwitchingTurboModeChanged)
 
     // The following properties relate to Orbit status
     Q_PROPERTY(bool             orbitActive     READ orbitActive        NOTIFY orbitActiveChanged)
@@ -674,6 +675,7 @@ public:
     Actuators*      actuators                   () const { return _actuators; }
     bool            turboModeEnabled            () const { return _turboModeEnabled; }
     bool            turboModeActive             () const { return _turboModeActive; }
+    bool            isSwitchingTurboMode        () const { return _isSwitchingTurboMode; }
 
     /// Get the maximum MAVLink protocol version supported
     /// @return the maximum version
@@ -1062,6 +1064,7 @@ signals:
 
     void turboModeEnabledChanged();
     void turboModeActiveChanged();
+    void isSwitchingTurboModeChanged();
 
 private slots:
     void _mavlinkMessageReceived            (LinkInterface* link, mavlink_message_t message);
@@ -1374,6 +1377,7 @@ private:
 
     static void _requestMessageCmdResultHandler             (void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode);
     static void _requestMessageWaitForMessageResultHandler  (void* resultHandlerData, bool noResponsefromVehicle, const mavlink_message_t& message);
+    static void _setTurboModeCmdResultHandler               (void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode);
 
     typedef struct MavCommandListEntry {
         int                     targetCompId        = MAV_COMP_ID_AUTOPILOT1;
@@ -1422,6 +1426,7 @@ private:
 
     bool _turboModeEnabled = false;
     bool _turboModeActive = false;
+    bool _isSwitchingTurboMode = false;
 
     // FactGroup facts
     Fact _rollFact;

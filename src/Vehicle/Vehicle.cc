@@ -1787,7 +1787,17 @@ void Vehicle::setActuatorsMetadata(uint8_t compid, const QString& metadataJsonFi
 }
 
 void Vehicle::setTurboModeState(bool state) {
-    sendMavCommand(_defaultComponentId, static_cast<MAV_CMD>(52002), false, static_cast<float>(state));
+    if (_isSwitchingTurboMode) {
+        qCDebug(VehicleLog) << "Vehicle::setTurboModeState: request duplicated";
+        return;
+    }
+    Vehicle::MavCmdAckHandlerInfo_t handlerInfo = {};
+    handlerInfo.resultHandler       = _setTurboModeCmdResultHandler;
+    handlerInfo.resultHandlerData   = reinterpret_cast<void*>(this);
+    sendMavCommandWithHandler(&handlerInfo, _defaultComponentId, static_cast<MAV_CMD>(52002), static_cast<float>(state));
+
+    _isSwitchingTurboMode = true;
+    emit isSwitchingTurboModeChanged();
 }
 
 void Vehicle::_handleHeartbeat(mavlink_message_t& message)
@@ -2311,7 +2321,7 @@ bool Vehicle::setFlightModeCustom(const QString& flightMode, uint8_t* base_mode,
 }
 
 void Vehicle::_requestTurboModeParam() {
-    _parameterManager->refreshParameter(_defaultComponentId, "TURBO_ENABLE");
+    _parameterManager->refreshParameter(_defaultComponentId, "TURBO_ENABLE", false);
 }
 
 void Vehicle::_handleTurboModeParamChanged(QVariant param) {
@@ -3342,8 +3352,6 @@ void Vehicle::_sendMavCommandFromList(int index)
                                             &msg,
                                             &cmd);
     } else {
-        if(commandEntry.command == MAV_CMD_DO_SET_SERVO)
-            qDebug() << "Send command long: sysId: " << _id << ". compId: " << commandEntry.targetCompId << ". param1: " << commandEntry.rgParam1 << ". param2: " << commandEntry.rgParam2;
         mavlink_command_long_t  cmd;
 
         memset(&cmd, 0, sizeof(cmd));
@@ -3587,6 +3595,12 @@ void Vehicle::_requestMessageWaitForMessageResultHandler(void* resultHandlerData
         // Result handler will be called when we get the Ack
         pInfo->message = message;
     }
+}
+
+void Vehicle::_setTurboModeCmdResultHandler(void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode) {
+    Vehicle* vehicle = reinterpret_cast<Vehicle*>(resultHandlerData);
+    vehicle->_isSwitchingTurboMode = false;
+    emit vehicle->isSwitchingTurboModeChanged();
 }
 
 void Vehicle::setPrearmError(const QString& prearmError)
