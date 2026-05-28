@@ -674,6 +674,7 @@ HEADERS += \
     src/Gimbal/GimbalController.h \
     src/Vibration/VibrationController.h \
     src/ServoController/ServoController.h \
+    src/DropController/DropController.h \
     src/SignalQualityMonitor/SignalQualityMonitor.h \
     src/EKF/EKFController.h \
     src/QGC.h \
@@ -941,6 +942,7 @@ SOURCES += \
     src/Gimbal/GimbalController.cc \
     src/Vibration/VibrationController.cc \
     src/ServoController/ServoController.cc \
+    src/DropController/DropController.cc \
     src/SignalQualityMonitor/SignalQualityMonitor.cc \
     src/EKF/EKFController.cc \
     src/QGC.cc \

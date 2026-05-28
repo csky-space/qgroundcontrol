@@ -107,7 +107,7 @@ void SignalQualityMonitor::_parseMessageJSON(const QByteArray& data) {
     }
 
     if (!doc.isObject()) {
-        qCDebug(SignalQualityMonitorLog) << "_parseMessageJSON: recieved data is not and object";
+        qCDebug(SignalQualityMonitorLog) << "_parseMessageJSON: received data is not an object";
         return;
     }
 

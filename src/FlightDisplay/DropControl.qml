@@ -27,58 +27,21 @@ import QGroundControl.Palette       1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
 
+// DropControl
 ToolStripAction {
-    property var  _activeVehicle:                 QGroundControl.multiVehicleManager.activeVehicle
+    text:       qsTr(_dropActionText ? _dropActionText : "Error")
+    iconSource: "qrc:/qmlimages/drop.svg"
+    enabled:    _activeVehicle ? !QGroundControl.multiVehicleManager.activeVehicle.parameterManager.missingParameters : false
 
-    text:           qsTr("Drop")
-    iconSource:     "qrc:/qmlimages/drop.svg"
-    enabled:        _activeVehicle ? !QGroundControl.multiVehicleManager.activeVehicle.parameterManager.missingParameters : false
+    property var _activeVehicle:  QGroundControl.multiVehicleManager.activeVehicle
+    property var _dropController: _activeVehicle ? _activeVehicle.dropController : null
+    property var _dropActionText: _dropController ? _dropController.dropModesModel[_dropController.activeModeIndex] : "Drop"
 
     dropPanelComponent: Rectangle {
         id:     dropControl
         height: instrumentPanel ? instrumentPanel._heightAttComp * 0.75 : 0
         width:  instrumentPanel ? instrumentPanel._heightAttComp * 3 : 0
         color:  Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.6)
-
-        property int activeMode: -1;
-        property Fact dropModeFact: _activeVehicle.parameterManager.getParameter(_activeVehicle.defaultComponentId(), "DROP_MODE");
-
-        function fetchParamValue() {
-            dropControl.activeMode = dropControl.dropModeFact.value;
-        }
-
-        Component.onCompleted : {
-            fetchParamValue();
-        }
-
-        Connections {
-            target: _activeVehicle.parameterManager
-            onParametersReadyChanged: function(parametersReady) {
-                if (parametersReady) {
-                    fetchParamValue();
-                    return;
-                } else {
-                    dropControl.activeMode = -1;
-                }
-            }
-        }
-
-        Connections {
-            target: dropModeFact
-            onVehicleUpdated: {
-                activeMode = dropModeFact.value;
-            }
-        }
-
-        Timer {
-            id: paramRequestTimer
-            interval: 1000      
-            running: true       
-            repeat: true       
-            onTriggered: {
-                _activeVehicle.parameterManager.refreshParameter(_activeVehicle.defaultComponentId(), "DROP_MODE");                
-            }
-        }
 
         GridLayout {
             id:            buttonsGrid
@@ -88,26 +51,23 @@ ToolStripAction {
 
             Repeater {
                 id:    buttonsRepeater
-                model: modelData
-
-                property var modelData: [1, 2, 4]
+                model: _dropController ? _dropController.dropModesModel : 0
 
                 Button {
                     required property int index
 
-                    property var modeName:  "Mode " + buttonsRepeater.modelData[index]
-
                     id:                     dropBtn
-                    text:                   modeName
                     Layout.preferredWidth:  (buttonsGrid.width - 6) / buttonsGrid.columns
                     Layout.preferredHeight: Layout.preferredWidth * 0.75
+                    enabled:                !_dropController.isInterfaceLocked
+                    opacity:                !_dropController.isInterfaceLocked ? 1 : 0.75
 
                     background: Rectangle {
                         anchors.fill:   parent
                         radius:         2
                         border.color:   "#555"
                         border.width:   1
-                        color:          dropControl.activeMode == index
+                        color:          _dropController.activeModeIndex === index
                                             ? dropBtn.down ? "#acac2c" : dropBtn.hovered ? "#aaaa3a" : "#a4a444"
                                             : dropBtn.down ? "#2c2c2c" : dropBtn.hovered ? "#3a3a3a" : "#444444"
                     }
@@ -124,12 +84,12 @@ ToolStripAction {
                             font.family:        "Helvetica"
                             font.pointSize:     8
                             color:              "#ffffff"
-                            text:               dropBtn.modeName
+                            text:               _dropController.dropModesModel[index]
                         }
                     }
 
                     onClicked: {
-                        dropControl.dropModeFact.value = index
+                        _dropController.setDropModeIndex(index);
                     }
                 }
             }

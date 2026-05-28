@@ -57,6 +57,7 @@
 #include "VibrationController.h"
 #include "EKFController.h"
 #include "ServoController/ServoController.h"
+#include "DropController/DropController.h"
 #ifdef QT_DEBUG
 #include "MockLink.h"
 #endif
@@ -512,6 +513,7 @@ void Vehicle::_commonInit()
     _vibrationController = new VibrationController(_mavlink, this);
     _ekfController = new EKFController(_mavlink, this);
     _servoController = new ServoController(_mavlink, this);
+    _dropController = new DropController(_mavlink, this);
 }
 
 Vehicle::~Vehicle()
