@@ -724,9 +724,9 @@ void Joystick::_handleAxis()
             float   throttle = _adjustRange(_rgAxisValues[axis],_rgCalibration[axis], _throttleMode==ThrottleModeDownZero?false:_deadband);
 
             // These are only used for printing JoystickValuesLog
-            float   gimbalPitch = 0.0f;
-            float   gimbalYaw   = 0.0f;
-            float   maxAxis = 0.0f;
+            // float   gimbalPitch = 0.0f;
+            // float   gimbalYaw   = 0.0f;
+            // float   maxAxis = 0.0f;
 
             //if(_axisCount > 4) {
             //    axis = _rgFunctionAxis[gimbalPitchFunction];
@@ -744,15 +744,15 @@ void Joystick::_handleAxis()
 
             if(_axisCount > 4) {
                 axis = _rgFunctionAxis[gimbalPitchFunction];
-                gimbalPitch = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
+                // gimbalPitch = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
             }
             if(_axisCount > 5) {
                 axis = _rgFunctionAxis[gimbalYawFunction];
-                gimbalYaw = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
+                // gimbalYaw = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
             }
             if(_axisCount > 6) {
                 axis = _rgFunctionAxis[extraFunction];
-                maxAxis = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
+                // maxAxis = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
             }
 
             if (_accumulator) {

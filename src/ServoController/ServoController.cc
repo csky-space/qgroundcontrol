@@ -135,7 +135,7 @@ void ServoController::_onParametersReadyChanged(bool parametersReady) {
         return;
     }
 
-    for (int servoIndex = 1; servoIndex <= _servoOutputsRaw.size(); servoIndex++) {
+    for (size_t servoIndex = 1; servoIndex <= _servoOutputsRaw.size(); servoIndex++) {
         QString functionParameterName = QString("SERVO%1_FUNCTION").arg(servoIndex);
         QString minValueParameterName = QString("SERVO%1_MIN").arg(servoIndex);
         QString maxValueParameterName = QString("SERVO%1_MAX").arg(servoIndex);
@@ -162,7 +162,7 @@ void ServoController::_onParametersReadyChanged(bool parametersReady) {
         }
     }
 
-    for (int servoIndex = 1; servoIndex <= _servoOutputsRaw.size(); servoIndex++) {
+    for (size_t servoIndex = 1; servoIndex <= _servoOutputsRaw.size(); servoIndex++) {
         QString functionParameterName = QString("SERVO%1_FUNCTION").arg(servoIndex);
         QString minValueParameterName = QString("SERVO%1_MIN").arg(servoIndex);
         QString maxValueParameterName = QString("SERVO%1_MAX").arg(servoIndex);
@@ -210,7 +210,7 @@ void ServoController::_handleServoOutputRaw(const mavlink_message_t& msg) {
     size_t offset2 = offsetof(mavlink_servo_output_raw_t, servo9_raw);
     memcpy(_servoOutputsRaw.data() + 8, base + offset2, 8 * sizeof(uint16_t));
 
-    for(int servoIndex = 0; servoIndex < _servoOutputsRaw.size(); servoIndex++) {
+    for(size_t servoIndex = 0; servoIndex < _servoOutputsRaw.size(); servoIndex++) {
         Servo* serv = _findServo(servoIndex);
         if (serv) {
             serv->setValue(_servoOutputsRaw[servoIndex]);
