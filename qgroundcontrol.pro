@@ -676,6 +676,9 @@ HEADERS += \
     src/ServoController/ServoController.h \
     src/DropController/DropController.h \
     src/SignalQualityMonitor/SignalQualityMonitor.h \
+    src/RCMappingManager/RCMappingManager.h \
+    src/RCMappingManager/RCMappingSourceType.h \
+    src/RCMappingManager/RCRangeMapper.h \
     src/EKF/EKFController.h \
     src/QGC.h \
     src/QGCApplication.h \
@@ -944,6 +947,9 @@ SOURCES += \
     src/ServoController/ServoController.cc \
     src/DropController/DropController.cc \
     src/SignalQualityMonitor/SignalQualityMonitor.cc \
+    src/RCMappingManager/RCMappingManager.cc \
+    src/RCMappingManager/RCMappingSourceType.cc \
+    src/RCMappingManager/RCRangeMapper.cc \
     src/EKF/EKFController.cc \
     src/QGC.cc \
     src/QGCApplication.cc \

@@ -4,9 +4,9 @@
 
 #include <array>
 #include <bitset>
+#include <cstdint>
 
 #include <QLoggingCategory>
-#include <cstdint>
 #include "Vehicle.h"
 #include "QmlObjectListModel.h"
 

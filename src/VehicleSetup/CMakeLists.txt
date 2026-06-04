@@ -21,6 +21,7 @@ add_custom_target(VehicleSetupQml
 		JoystickConfigButtons.qml
 		JoystickConfigCalibration.qml
 		JoystickConfigGeneral.qml
+		RCMapping.qml
 		JoystickConfig.qml
 		PX4FlowSensor.qml
 		SetupParameterEditor.qml

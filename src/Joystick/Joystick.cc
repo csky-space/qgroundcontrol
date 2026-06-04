@@ -21,7 +21,7 @@
 
 #include <QSettings>
 
-#include "ServoController/ServoController.h"
+#include "RCMappingManager/RCMappingManager.h"
 
 // JoystickLog Category declaration moved to QGCLoggingCategory.cc to allow access in Vehicle
 QGC_LOGGING_CATEGORY(JoystickValuesLog, "JoystickValuesLog")
@@ -30,8 +30,6 @@ const char* Joystick::_settingsGroup =                  "Joysticks";
 const char* Joystick::_calibratedSettingsKey =          "Calibrated4"; // Increment number to force recalibration
 const char* Joystick::_buttonActionNameKey =            "ButtonActionName%1";
 const char* Joystick::_buttonActionRepeatKey =          "ButtonActionRepeat%1";
-const char* Joystick::_rcMappingIndexKey =              "RCMappingIndex%1";
-const char* Joystick::_rcMappingInverseKey =            "RCMappingInverse%1";
 const char* Joystick::_throttleModeSettingsKey =        "ThrottleMode";
 const char* Joystick::_negativeThrustSettingsKey =      "NegativeThrust";
 const char* Joystick::_exponentialSettingsKey =         "Exponential";
@@ -111,7 +109,8 @@ AssignableButtonAction::AssignableButtonAction(QObject* parent, QString action_,
 }
 
 Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager)
-    : _isSendingRC(false)
+    : _rcMappingManager(new RCMappingManager(this))
+    , _isSendingRC(false)
     , _name(name)
     , _calibrated(true)
     , _axisCount(axisCount)
@@ -142,16 +141,7 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     _customMavCommands = JoystickMavCommand::load("JoystickMavCommands.json");
     _calibrated = true;
 
-
-    for (int32_t axisIndex = 0; axisIndex < _axisCount; axisIndex++) {
-        _rcMappingOptions.push_back(QString("Axis") + QString::number(axisIndex));
-    }
-    for (int32_t buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
-        _rcMappingOptions.push_back(QString("Button") + QString::number(buttonIndex));
-    }
-    _rcMappingOptions.push_back(QString("None"));
-
-    emit rcMappingOptionsChanged();
+    _rcMappingManager->init();
 }
 
 void Joystick::stop()
@@ -356,20 +346,6 @@ void Joystick::_loadSettings()
         }
     }
 
-    _rcMappingIndexes.reserve(cMaxRcChannels);
-    _rcMappingInverses.reserve(cMaxRcChannels);
-    while (_rcMappingIndexes.size() < cMaxRcChannels) {
-        _rcMappingIndexes.push_back(_rcMappingIndexes.size());
-        _rcMappingInverses.push_back(false);
-    }
-    for (int mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
-        _rcMappingIndexes[mappingIndex] = settings.value(QString(_rcMappingIndexKey).arg(mappingIndex), mappingIndex).toInt();
-        _rcMappingInverses[mappingIndex] = settings.value(QString(_rcMappingInverseKey).arg(mappingIndex), false).toBool();
-    }
-
-    emit rcMappingIndexesChanged();
-    emit rcMappingInversesChanged();
-
     if (badSettings) {
         _calibrated = false;
         settings.setValue(_calibratedSettingsKey, false);
@@ -388,20 +364,6 @@ void Joystick::_saveButtonSettings()
             qCDebug(JoystickLog) << "_saveButtonSettings button:action" << button <<  _buttonActionArray[button]->action << _buttonActionArray[button]->repeat;
         }
     }
-}
-
-void Joystick::_saveRCMappingSettings()
-{
-    QSettings settings;
-    settings.beginGroup(_settingsGroup);
-    settings.beginGroup(_name);
-    for (int mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
-        settings.setValue(QString(_rcMappingIndexKey).arg(mappingIndex),        _rcMappingIndexes[mappingIndex]);
-        settings.setValue(QString(_rcMappingInverseKey).arg(mappingIndex),      _rcMappingInverses[mappingIndex]);
-        qCDebug(JoystickLog) << "_saveRCMappingSettings mappingIndex:index:inverse" << mappingIndex <<  _rcMappingIndexes[mappingIndex] << _rcMappingInverses[mappingIndex];
-    }
-    emit rcMappingIndexesChanged();
-    emit rcMappingInversesChanged();
 }
 
 void Joystick::_saveSettings()
@@ -459,7 +421,6 @@ void Joystick::_saveSettings()
         qCDebug(JoystickLog) << "_saveSettings name:function:axis" << _name << function << _rgFunctionSettingsKey[function];
     }
     _saveButtonSettings();
-    _saveRCMappingSettings();
 }
 
 // Relative mappings of axis functions between different TX modes
@@ -609,13 +570,6 @@ void Joystick::_handleButtons()
             }
         }
     }
-    for (int mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
-        if (_rcMappingIndexes[mappingIndex] < _axisCount) continue;
-        int buttonIndex = _rcMappingIndexes[mappingIndex] - _axisCount;
-        if (buttonIndex >= _totalButtonCount) continue;
-        int16_t btnValue = (static_cast<bool>(_rgButtonValues[buttonIndex]) != _rcMappingInverses[mappingIndex]) ? INT16_MAX : INT16_MIN;
-        emit rawRCMappingValueChanged(mappingIndex, btnValue);
-    }
     //-- Process button press/release
     for (int buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
         if(_rgButtonValues[buttonIndex] == BUTTON_DOWN || _rgButtonValues[buttonIndex] == BUTTON_REPEAT) {
@@ -677,6 +631,12 @@ void Joystick::_handleButtons()
             }
         }
     }
+
+    QVector<int> buttonValues;
+    for (int i = 0; i < _totalButtonCount; i++) {
+        buttonValues.push_back(_rgButtonValues[i]);
+    }
+    emit buttonValuesPolled(buttonValues);
 }
 
 float jcastToNewRange(float value, float oldMin, float oldMax, float newMin, float newMax) {
@@ -699,16 +659,13 @@ void Joystick::_handleAxis()
             _rgAxisValues[axisIndex] = newAxisValue;
             emit rawAxisValueChanged(axisIndex, newAxisValue);
         }
-        for (int mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
-            int axisIndex = _rcMappingIndexes[mappingIndex];
-            if (axisIndex >= _axisCount) continue;
-            int16_t axisValue = _rgAxisValues[axisIndex];
-            if (_rcMappingInverses[mappingIndex]) {
-                if (axisValue == INT16_MIN) axisValue = INT16_MAX;
-                else axisValue = -axisValue;
-            }
-            emit rawRCMappingValueChanged(mappingIndex, axisValue);
+
+        QVector<int> axisValues;
+        for(int i = 0; i < _axisCount; i++) {
+            axisValues.push_back(_rgAxisValues[i]);
         }
+        emit axisValuesPolled(axisValues);
+
         if (_activeVehicle->joystickEnabled() && !_calibrationMode && _calibrated) {
             qCDebug(JoystickLog) << "joystick calibrated!";
             int     axis = _rgFunctionAxis[rollFunction];
@@ -742,18 +699,18 @@ void Joystick::_handleAxis()
             //    maxAxis = _adjustRange(_rgAxisValues[axis],   _rgCalibration[axis],_deadband);
             //}
 
-            if(_axisCount > 4) {
-                axis = _rgFunctionAxis[gimbalPitchFunction];
-                // gimbalPitch = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
-            }
-            if(_axisCount > 5) {
-                axis = _rgFunctionAxis[gimbalYawFunction];
-                // gimbalYaw = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
-            }
-            if(_axisCount > 6) {
-                axis = _rgFunctionAxis[extraFunction];
-                // maxAxis = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
-            }
+            // if(_axisCount > 4) {
+            //     axis = _rgFunctionAxis[gimbalPitchFunction];
+            //     gimbalPitch = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
+            // }
+            // if(_axisCount > 5) {
+            //     axis = _rgFunctionAxis[gimbalYawFunction];
+            //     gimbalYaw = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
+            // }
+            // if(_axisCount > 6) {
+            //     axis = _rgFunctionAxis[extraFunction];
+            //     maxAxis = jcastToNewRange(_rgAxisValues[axis], -32768, 32767, -1, 1);
+            // }
 
             if (_accumulator) {
                 static float throttle_accu = 0.f;
@@ -839,28 +796,11 @@ void Joystick::_handleAxis()
 
 void Joystick::_remapAndSendRC() {
     std::array<int16_t, cMaxRcChannels> mappedChannels;
-    for (int mappingIndex = 0; mappingIndex < cMaxRcChannels; mappingIndex++) {
-        int mappedIndex = _rcMappingIndexes[mappingIndex];
-        if (mappedIndex < _axisCount) {
-            int16_t axisValue = static_cast<int16_t>(_rgAxisValues[mappedIndex]);
-            if (_rcMappingInverses[mappingIndex]) {
-                if (axisValue == INT16_MIN) axisValue = INT16_MAX;
-                else axisValue = -axisValue;
-            }
-            mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(axisValue, INT16_MIN, INT16_MAX, 1000, 2000));
-        }
-        else if (mappedIndex < 12) {
-            int buttonIndex = mappedIndex - _axisCount;
-            bool buttonState = static_cast<bool>(_rgButtonValues[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];
-            mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(buttonState, 0, 1, 1000, 2000));
-        }
-        else if (mappedIndex < cMaxRcChannels) {
-            int buttonIndex = mappedIndex - _axisCount;
-            bool buttonState = static_cast<bool>(_rgButtonValues[buttonIndex] > 0) != _rcMappingInverses[mappingIndex];
-            mappedChannels[mappingIndex] = static_cast<uint16_t>(jcastToNewRange(buttonState, 0, 1, 1000, 2000));
-        } else {
-            mappedChannels[mappingIndex] = 1000;
-        }
+
+    for (int i = 0; i < cMaxRcChannels; i++) {
+        float mappedValue = _rcMappingManager->getMappedValue(i, 1000.0f, true);
+        float clampedValue = std::min(static_cast<float>(INT16_MAX), std::max(static_cast<float>(INT16_MIN), mappedValue));
+        mappedChannels[i] = static_cast<int16_t>(clampedValue);
     }
 
     qCDebug(JoystickLog) << "sent RC";
@@ -1066,22 +1006,8 @@ void Joystick::startSendingRC() {
     emit isSendingRCChanged();
 }
 
-void Joystick::setRCMappingIndexes(QList<int> values) {
-    if (values.size() != _rcMappingIndexes.size()) {
-        qCWarning(JoystickLog) << "Invalid RCMappingIndexes count:" << values.size();
-        return;
-    }
-    _rcMappingIndexes = values;
-    _saveRCMappingSettings();
-}
-
-void Joystick::setRCMappingInverses(QList<bool> values) {
-    if (values.size() != _rcMappingIndexes.size()) {
-        qCWarning(JoystickLog) << "Invalid RCMappingInverses count:" << values.size();
-        return;
-    }
-    _rcMappingInverses = values;
-    _saveRCMappingSettings();
+RCMappingManager* Joystick::rcMappingManager() const {
+    return _rcMappingManager;
 }
 
 void Joystick::setIsSendingRC(bool enabled) {

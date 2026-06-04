@@ -110,6 +110,7 @@
 #include "GimbalController.h"
 #include "ServoController/ServoController.h"
 #include "DropController/DropController.h"
+#include "RCMappingManager/RCMappingManager.h"
 
 #if defined(QGC_ENABLE_PAIRING)
 #include "PairingManager.h"
@@ -482,8 +483,10 @@ void QGCApplication::_initCommon()
     qmlRegisterUncreatableType<VisualMissionItem>   (kQGroundControl,                       1, 0, "VisualMissionItem",          kRefOnly);
     qmlRegisterUncreatableType<VibrationController> (kQGroundControl,                       1, 0, "VibrationController",        kRefOnly);
     qmlRegisterUncreatableType<ServoController>     (kQGroundControl,                       1, 0, "ServoController",            kRefOnly);
-    qmlRegisterUncreatableType<DropController>      (kQGroundControl,                       1, 0, "DropController",             kRefOnly);
     qmlRegisterUncreatableType<Servo>               (kQGroundControl,                       1, 0, "Servo",                      kRefOnly);
+    qmlRegisterUncreatableType<DropController>      (kQGroundControl,                       1, 0, "DropController",             kRefOnly);
+    qmlRegisterUncreatableType<RCMappingManager>    (kQGroundControl,                       1, 0, "RCMappingManager",           kRefOnly);
+    qmlRegisterUncreatableType<RCRangeMapper>       (kQGroundControl,                       1, 0, "RCRangeMapper",              kRefOnly);
     qmlRegisterUncreatableType<EKFController>       (kQGroundControl,                       1, 0, "EKFController",              kRefOnly);
     qmlRegisterUncreatableType<FlightPathSegment>   (kQGroundControl,                       1, 0, "FlightPathSegment",          kRefOnly);
     qmlRegisterUncreatableType<QmlObjectListModel>  (kQGroundControl,                       1, 0, "QmlObjectListModel",         kRefOnly);

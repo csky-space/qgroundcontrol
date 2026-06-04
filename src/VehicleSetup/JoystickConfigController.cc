@@ -189,14 +189,6 @@ void JoystickConfigController::_axisValueChanged(int axis, int value)
     }
 }
 
-void JoystickConfigController::_rcMappingValueChanged(int index, int value) 
-{
-    if (index < 0 || index >= Joystick::cMaxRcChannels) {
-        return;
-    }
-    emit rcMappingValueChanged(index, value);
-}
-
 void JoystickConfigController::nextButtonClicked()
 {
     if (_currentStep == -1) {
@@ -699,7 +691,6 @@ void JoystickConfigController::_activeJoystickChanged(Joystick* joystick)
     if (_activeJoystick) {
         joystickTransition = true;
         disconnect(_activeJoystick, &Joystick::rawAxisValueChanged, this, &JoystickConfigController::_axisValueChanged);
-        disconnect(_activeJoystick, &Joystick::rawRCMappingValueChanged, this, &JoystickConfigController::_rcMappingValueChanged);
         // This will reset _rgFunctionAxis values to -1 to prevent out-of-bounds accesses
         _resetInternalCalibrationValues();
         delete[] _rgAxisInfo;
@@ -721,7 +712,6 @@ void JoystickConfigController::_activeJoystickChanged(Joystick* joystick)
         _axisRawValue   = new int[_axisCount];
         _setInternalCalibrationValuesFromSettings();
         connect(_activeJoystick, &Joystick::rawAxisValueChanged, this, &JoystickConfigController::_axisValueChanged);
-        connect(_activeJoystick, &Joystick::rawRCMappingValueChanged, this, &JoystickConfigController::_rcMappingValueChanged);
     }
 }
 

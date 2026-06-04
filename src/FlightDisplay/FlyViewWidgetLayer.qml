@@ -223,6 +223,171 @@ Item {
         }
     }
 
+    Rectangle {
+        id:                  cameraTiltControl
+        width:               60
+        radius:              4
+        color:               "#80202020"
+        anchors.top:         instrumentPanel.top
+        anchors.bottom:      photoVideoControl.bottom
+        anchors.right:       instrumentPanel.left
+        anchors.rightMargin: 6
+        visible:             initialized
+
+        property var  activeVehicle:      QGroundControl.multiVehicleManager.activeVehicle
+        property var  paramaterManager:   activeVehicle ? activeVehicle.parameterManager : null
+        property bool parametersReady:    paramaterManager ? !paramaterManager.missingParameters : false
+        property var  gimbalController:   activeVehicle ? activeVehicle.gimbalController : null
+        property var  activeGimbal:       gimbalController ? gimbalController.activeGimbal : null
+        property var  deviceId:           activeGimbal ? activeGimbal.deviceId.value : 0
+        property var  gimbalReady:        activeGimbal ? deviceId > 0 : false
+        property bool initialized:        parametersReady && gimbalReady
+        property var  currentTilt:        activeGimbal ? activeGimbal.absolutePitch.rawValue : 0
+        property var  currentYaw:         activeGimbal ? activeGimbal.bodyYaw.rawValue : 0
+        property Fact tiltMinFact:        initialized ? paramaterManager.getParameter(-1, qsTr("MNT%1_PITCH_MIN").arg(deviceId)) : null
+        property Fact tiltMaxFact:        initialized ? paramaterManager.getParameter(-1, qsTr("MNT%1_PITCH_MAX").arg(deviceId)) : null
+        property real tiltMin:            tiltMinFact ? tiltMinFact.value : -90
+        property real tiltMax:            tiltMaxFact ? tiltMaxFact.value : 10
+        property real range:              tiltMax - tiltMin
+        property real targetTilt:         currentTilt
+        property bool isTargetVisible:    false
+
+        Rectangle {
+            anchors.fill:         parent
+            color:                "#00000000"
+            anchors.topMargin:    4
+            anchors.bottomMargin: 36
+            anchors.leftMargin:   4
+            anchors.rightMargin:  4
+
+            Rectangle {
+                anchors.top:          parent.top
+                anchors.left:         parent.left
+                anchors.right:        parent.right
+                height:               2
+                color:                "#ffffff"
+                radius:               2
+            }
+
+            Rectangle {
+                anchors.bottom:       parent.bottom
+                anchors.left:         parent.left
+                anchors.right:        parent.right
+                height:               2
+                color:                "#ffffff"
+                radius:               2
+            }
+
+            Rectangle {
+                anchors.top:              parent.top
+                anchors.bottom:           parent.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+                width:                    2
+                color:                    "#ffffff"
+            }
+
+            Rectangle {
+                anchors.left:                 parent.left
+                anchors.right:                parent.right
+                height:                       2
+                color:                        "#ffffff"
+                radius:                       2
+                anchors.verticalCenter:       parent.bottom
+                anchors.verticalCenterOffset: -(parent.height * position)
+
+                property real position: -cameraTiltControl.tiltMin / cameraTiltControl.range
+            }
+
+            Rectangle {
+                anchors.left:                 parent.left
+                anchors.right:                parent.right
+                anchors.leftMargin:           6
+                anchors.rightMargin:          6
+                height:                       4
+                color:                        "#C02020"
+                radius:                       2
+                anchors.verticalCenter:       parent.bottom
+                anchors.verticalCenterOffset: -(parent.height * position)
+                visible:                      cameraTiltControl.isTargetVisible
+
+                property real position: (cameraTiltControl.targetTilt - cameraTiltControl.tiltMin) / cameraTiltControl.range
+            }
+
+            Rectangle {
+                anchors.left:                 parent.left
+                anchors.right:                parent.right
+                anchors.leftMargin:           6
+                anchors.rightMargin:          6
+                height:                       4
+                color:                        "#20a020"
+                radius:                       2
+                anchors.verticalCenter:       parent.bottom
+                anchors.verticalCenterOffset: -(parent.height * position)
+
+                property real position: (cameraTiltControl.currentTilt - cameraTiltControl.tiltMin) / cameraTiltControl.range
+            }
+
+            MouseArea {
+                anchors.fill: parent
+
+                function updateTargetTiltFromMouse(mouseY) {
+                    let normalized = 1.0 - Math.max(0.0, Math.min(1.0, mouseY / parent.height));
+                    let targetAngle = normalized * cameraTiltControl.range + cameraTiltControl.tiltMin;
+                    cameraTiltControl.targetTilt = targetAngle;
+                }
+
+                onPressed: (mouse) => {
+                    updateTargetTiltFromMouse(mouse.y);
+                    cameraTiltControl.isTargetVisible = true;
+                }
+
+                onPositionChanged: (mouse) => {
+                    updateTargetTiltFromMouse(mouse.y);
+                }
+
+                onReleased: (mouse) => {
+                    updateTargetTiltFromMouse(mouse.y);
+                    if (cameraTiltControl.gimbalController) {
+                        cameraTiltControl.gimbalController.sendPitchBodyYaw(cameraTiltControl.targetTilt, cameraTiltControl.currentYaw)
+                    }
+                    cameraTiltControl.isTargetVisible = false;
+                }
+            }
+        }
+
+        Row {
+            anchors.bottom:           parent.bottom
+            anchors.bottomMargin:     18
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            QGCLabel {
+                text: "C: "
+                color: "#20a020"
+            }
+            QGCLabel {
+                text: cameraTiltControl.currentTilt.toFixed(1)
+                width: 24
+            }
+        }
+
+        Row {
+            anchors.bottom:           parent.bottom
+            anchors.bottomMargin:     2
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible:                  cameraTiltControl.isTargetVisible
+
+            QGCLabel {
+                text:  "T: "
+                color: "#C02020"
+            }
+            QGCLabel {
+                text: cameraTiltControl.targetTilt.toFixed(1)
+                width: 24
+            }
+        }
+    }
+
+
     EKFIndicator {
         id:        ekfIndicator
         height:    instrumentPanel ? instrumentPanel._heightAttComp : 0

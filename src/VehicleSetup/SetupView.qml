@@ -309,7 +309,6 @@ Rectangle {
                 Layout.fillWidth:   true
                 onClicked:          showPanel(this, "SetupParameterEditor.qml")
             }
-
         }
     }
 

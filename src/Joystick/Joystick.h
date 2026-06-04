@@ -20,6 +20,7 @@
 #include "Vehicle.h"
 #include "MultiVehicleManager.h"
 #include "JoystickMavCommand.h"
+#include "RCMappingManager/RCMappingManager.h"
 
 // JoystickLog Category declaration moved to QGCLoggingCategory.cc to allow access in Vehicle
 Q_DECLARE_LOGGING_CATEGORY(JoystickValuesLog)
@@ -96,7 +97,6 @@ public:
     Q_PROPERTY(int      totalButtonCount        READ totalButtonCount       CONSTANT)
     Q_PROPERTY(int      axisCount               READ axisCount              CONSTANT)
     Q_PROPERTY(bool     requiresCalibration     READ requiresCalibration    CONSTANT)
-    Q_PROPERTY(int      rcMappingsCount         READ rcMappingsCount        CONSTANT)
 
     //-- Actions assigned to buttons
     Q_PROPERTY(QStringList buttonActions        READ buttonActions          NOTIFY buttonActionsChanged)
@@ -105,9 +105,8 @@ public:
     Q_PROPERTY(QmlObjectListModel* assignableActions    READ assignableActions          NOTIFY      assignableActionsChanged)
     Q_PROPERTY(QStringList assignableActionTitles       READ assignableActionTitles     NOTIFY      assignableActionsChanged)
     Q_PROPERTY(QString  disabledActionName              READ disabledActionName         CONSTANT)
-    Q_PROPERTY(QStringList rcMappingOptions             READ rcMappingOptions           NOTIFY      rcMappingOptionsChanged)
-    Q_PROPERTY(QList<int> rcMappingIndexes              READ rcMappingIndexes           WRITE       setRCMappingIndexes     NOTIFY      rcMappingIndexesChanged)
-    Q_PROPERTY(QList<bool> rcMappingInverses            READ rcMappingInverses          WRITE       setRCMappingInverses    NOTIFY      rcMappingInversesChanged)
+
+    Q_PROPERTY(RCMappingManager*    rcMappingManager    READ rcMappingManager    CONSTANT)
 
     Q_PROPERTY(int      throttleMode            READ throttleMode           WRITE setThrottleMode       NOTIFY throttleModeChanged)
     Q_PROPERTY(float    axisFrequencyHz         READ axisFrequencyHz        WRITE setAxisFrequency      NOTIFY axisFrequencyHzChanged)
@@ -128,10 +127,10 @@ public:
     Q_INVOKABLE QString getButtonAction     (int button);
     Q_INVOKABLE void    stopSendingRC       ();
     Q_INVOKABLE void    startSendingRC      ();
-    Q_INVOKABLE void    setRCMappingIndexes (QList<int> values);
-    Q_INVOKABLE void    setRCMappingInverses(QList<bool> values);
 
-    void    setIsSendingRC      (bool enabled);
+    RCMappingManager* rcMappingManager() const;
+
+    void    setIsSendingRC   (bool enabled);
     bool    isSendingRC      () const;
     // Property accessors
 
@@ -139,14 +138,10 @@ public:
     int         totalButtonCount    () const{ return _totalButtonCount; }
     int         axisCount           () const{ return _axisCount; }
     QStringList buttonActions       ();
-    int         rcMappingsCount     () const{ return cMaxRcChannels; }
 
     QmlObjectListModel* assignableActions   () { return &_assignableButtonActions; }
     QStringList assignableActionTitles      () { return _availableActionTitles; }
     QString     disabledActionName          () { return _buttonActionNone; }
-    QStringList rcMappingOptions            () { return _rcMappingOptions; }
-    QList<int>  rcMappingIndexes            () { return _rcMappingIndexes; }
-    QList<bool> rcMappingInverses           () { return _rcMappingInverses; }
 
     /// Start the polling thread which will in turn emit joystick signals
     void startPolling(Vehicle* vehicle);
@@ -206,13 +201,9 @@ signals:
     // The raw signals are only meant for use by calibration
     void rawAxisValueChanged        (int index, int value);
     void rawButtonPressedChanged    (int index, int pressed);
-    void rawRCMappingValueChanged   (int index, int value);
     void calibratedChanged          (bool calibrated);
     void buttonActionsChanged       ();
     void assignableActionsChanged   ();
-    void rcMappingOptionsChanged    ();
-    void rcMappingIndexesChanged    ();
-    void rcMappingInversesChanged   ();
     void throttleModeChanged        (int mode);
     void negativeThrustChanged      (bool allowNegative);
     void exponentialChanged         (float exponential);
@@ -244,11 +235,14 @@ signals:
     void landingGearDeploy          ();
     void landingGearRetract         ();
     void isSendingRCChanged         ();
+
+    void axisValuesPolled           (QVector<int> values);
+    void buttonValuesPolled         (QVector<int> values);
+
 protected:
     void    _setDefaultCalibration  ();
     void    _saveSettings           ();
     void    _saveButtonSettings     ();
-    void    _saveRCMappingSettings  ();
     void    _loadSettings           ();
     float   _adjustRange            (int value, Calibration_t calibration, bool withDeadbands);
     void    _executeButtonAction    (const QString& action, bool buttonDown);
@@ -285,6 +279,8 @@ protected:
         BUTTON_DOWN,
         BUTTON_REPEAT
     };
+
+    RCMappingManager* _rcMappingManager;
 
     static const float  _defaultAxisFrequencyHz;
     static const float  _defaultButtonFrequencyHz;
@@ -333,19 +329,12 @@ protected:
     static const float  _maxButtonFrequencyHz;
 
 private:
-    QStringList           _rcMappingOptions;
-    QList<int>            _rcMappingIndexes;
-    QList<bool>           _rcMappingInverses;
-
-private:
     static const char*  _rgFunctionSettingsKey[maxFunction];
 
     static const char* _settingsGroup;
     static const char* _calibratedSettingsKey;
     static const char* _buttonActionNameKey;
     static const char* _buttonActionRepeatKey;
-    static const char* _rcMappingIndexKey;
-    static const char* _rcMappingInverseKey;
     static const char* _throttleModeSettingsKey;
     static const char* _negativeThrustSettingsKey;
     static const char* _exponentialSettingsKey;
