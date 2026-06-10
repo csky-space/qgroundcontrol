@@ -66,33 +66,33 @@ Item {
 
                 RowLayout {
                     QGCLabel {
-                        font.pointSize:         ScreenTools.mediumFontPointSize
+                        font.pointSize:         ScreenTools.mediumFontPointSize * 0.8
                         text:                   "S" + letterCode + ":"
                         color:                  indicatorCol.statusToColor()
-                        Layout.preferredWidth:  20
+                        Layout.preferredWidth:  18
                     }
 
                     QGCLabel {
-                        text:                   _root.status == 0 ? "-" : signalQualityMonitor.signalsModel[index].snr.toFixed(2)
-                        font.pointSize:         ScreenTools.mediumFontPointSize
+                        text:                   _root.status == 0 ? "-" : signalQualityMonitor.signalsModel[index].snr.toFixed(1)
+                        font.pointSize:         ScreenTools.mediumFontPointSize * 0.8
                         color:                  indicatorCol.statusToColor()
-                        Layout.preferredWidth:  40
+                        Layout.preferredWidth:  32
                     }
                 }
 
                 RowLayout {
                     QGCLabel {
-                        font.pointSize:         ScreenTools.mediumFontPointSize
+                        font.pointSize:         ScreenTools.mediumFontPointSize * 0.8
                         text:                   "G" + letterCode + ":"
                         color:                  indicatorCol.statusToColor()
-                        Layout.preferredWidth:  20
+                        Layout.preferredWidth:  18
                     }
 
                     QGCLabel {
-                        text:                   _root.status == 0 ? "-" : signalQualityMonitor.signalsModel[index].gain.toFixed(2)
-                        font.pointSize:         ScreenTools.mediumFontPointSize
+                        text:                   _root.status == 0 ? "-" : signalQualityMonitor.signalsModel[index].gain.toFixed(1)
+                        font.pointSize:         ScreenTools.mediumFontPointSize * 0.8
                         color:                  indicatorCol.statusToColor()
-                        Layout.preferredWidth:  40
+                        Layout.preferredWidth:  32
                     }
                 }
             }

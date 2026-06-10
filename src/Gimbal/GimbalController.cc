@@ -286,7 +286,7 @@ GimbalController::_handleGimbalDeviceAttitudeStatus(const mavlink_message_t& mes
     gimbal._neutral = (attitude_status.flags & GIMBAL_DEVICE_FLAGS_NEUTRAL) > 0;
 
     float roll, pitch, yaw;
-    mavlink_quaternion_to_euler(attitude_status.q, &roll, &pitch, &yaw);
+    _safeQuaternionToEuler(attitude_status.q, &roll, &pitch, &yaw);
 
     gimbal.setAbsoluteRoll(qRadiansToDegrees(roll));
     gimbal.setAbsolutePitch(qRadiansToDegrees(pitch));
@@ -649,4 +649,31 @@ void GimbalController::releaseGimbalControl()
         NAN, // Reserved
         NAN, // Reserved
         _activeGimbal->deviceId()->rawValue().toUInt());
+}
+
+void GimbalController::_safeQuaternionToEuler(const float quaternion[4], float* roll, float* pitch, float* yaw) {
+    float dcm[3][3];
+    mavlink_quaternion_to_dcm(quaternion, dcm);
+    _safeDCMToEuler((const float(*)[3])dcm, roll, pitch, yaw);
+}
+
+// same as mavlink_dcm_to_euler, but introdeuces clamping before asinf
+void GimbalController::_safeDCMToEuler(const float dcm[3][3], float* roll, float* pitch, float* yaw) {
+    float phi, theta, psi;
+    theta = asinf(std::max(-1.0f, std::min(1.0f, -dcm[2][0])));
+
+    if (fabsf(theta - (float)M_PI_2) < 1.0e-3f) {
+        phi = 0.0f;
+        psi = (atan2f(dcm[1][2] - dcm[0][1], dcm[0][2] + dcm[1][1]) + phi);
+    } else if (fabsf(theta + (float)M_PI_2) < 1.0e-3f) {
+        phi = 0.0f;
+        psi = atan2f(dcm[1][2] - dcm[0][1], dcm[0][2] + dcm[1][1] - phi);
+    } else {
+        phi = atan2f(dcm[2][1], dcm[2][2]);
+        psi = atan2f(dcm[1][0], dcm[0][0]);
+    }
+
+    *roll = phi;
+    *pitch = theta;
+    *yaw = psi;
 }

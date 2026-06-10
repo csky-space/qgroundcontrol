@@ -72,22 +72,34 @@ public:
     Q_PROPERTY(QVariantList    signalsModel    READ signalsModel    NOTIFY signalsModelChanged)
     Q_PROPERTY(QStringList     dataKeys        READ dataKeys        NOTIFY dataKeysChanged)
     Q_PROPERTY(QStringList     dataValues      READ dataValues      NOTIFY dataValuesChanged)
+    Q_PROPERTY(quint16         port            READ port            NOTIFY portChanged)
 
     int          status       () const;
     QVariantList signalsModel () const;
     QStringList  dataKeys     () const;
     QStringList  dataValues   () const;
+    quint16      port         () const;
+
+    Q_INVOKABLE void setPort(quint16 newPort);
 
 private:
-    QUdpSocket* _monitoredSocket;
+    QUdpSocket* _monitoredSocket = nullptr;
     QTimer      _dataRecieveTimer;
 
     SignalMonitorStatus _status = SignalMonitorStatus::STATUS_UNINITIALIZED;
     QVariantList        _signalsModel;
     QStringList         _dataKeys;
     QStringList         _dataValues;
+    quint16             _port = 9000;
 
-    void _parseMessageJSON(const QByteArray& data);
+    void _saveSettings();
+    void _loadSettings();
+
+    void _parseMessageJSON (const QByteArray& data);
+    void _recreatePort     ();
+
+    static const char* _settingsGroup;
+    static const char* _portKey;
 
 private slots:
     void _onMonitoredSocketReadyRead();
@@ -98,6 +110,7 @@ signals:
     void signalsModelChanged();
     void dataKeysChanged();
     void dataValuesChanged();
+    void portChanged();
 };
 
 #endif // C_SIGNAL_QUALITY_MONITOR_H

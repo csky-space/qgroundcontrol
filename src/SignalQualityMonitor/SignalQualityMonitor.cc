@@ -17,6 +17,8 @@
 
 QGC_LOGGING_CATEGORY(SignalQualityMonitorLog, "SignalQualityMonitorLog")
 
+const char* SignalQualityMonitor::_settingsGroup = "SignalQualityMonitor";
+const char* SignalQualityMonitor::_portKey       = "port";
 
 float SignalQuality::snr() const {
     return _snr;
@@ -61,11 +63,9 @@ SignalQualityMonitor::~SignalQualityMonitor() {
 void SignalQualityMonitor::setToolbox(QGCToolbox *toolbox) {
     QGCTool::setToolbox(toolbox);
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
-    qmlRegisterUncreatableType<SignalQualityMonitor>("QGroundControl.SignalQualityMonitor", 1, 0, "SignalQualityMonitor", "Reference only");
+    qmlRegisterUncreatableType<SignalQualityMonitor>("QGroundControl.signalQualityMonitor", 1, 0, "SignalQualityMonitor", "Reference only");
 
-    _monitoredSocket = new QUdpSocket();
-    _monitoredSocket->bind(9000);
-    connect(_monitoredSocket, &QUdpSocket::readyRead, this, &SignalQualityMonitor::_onMonitoredSocketReadyRead);
+    _recreatePort();
 
     _dataRecieveTimer.setInterval(5000);
     connect(&_dataRecieveTimer, &QTimer::timeout, this, &SignalQualityMonitor::_onDataRecieveTimeout);
@@ -77,6 +77,8 @@ void SignalQualityMonitor::setToolbox(QGCToolbox *toolbox) {
     SignalQuality* signalB = new SignalQuality();
     QQmlEngine::setObjectOwnership(signalB, QQmlEngine::CppOwnership);
     _signalsModel.append(QVariant::fromValue(signalB));
+
+    _loadSettings();
 
     emit signalsModelChanged();
 }
@@ -95,6 +97,42 @@ QStringList SignalQualityMonitor::dataKeys() const {
 
 QStringList SignalQualityMonitor::dataValues() const {
     return _dataValues;
+}
+
+quint16 SignalQualityMonitor::port() const {
+    return _port;
+}
+
+void SignalQualityMonitor::setPort(quint16 newPort) {
+    if (_port == newPort) {
+        return;
+    }
+    _port = newPort;
+
+    _recreatePort();
+
+    emit portChanged();
+
+    _saveSettings();
+}
+
+void SignalQualityMonitor::_saveSettings() {
+    QSettings settings;
+    settings.beginGroup(_settingsGroup);
+
+    settings.setValue(QString(_portKey), _port);
+
+    qCDebug(SignalQualityMonitorLog) << "settings saved";
+}
+
+void SignalQualityMonitor::_loadSettings() {
+    QSettings settings;
+    settings.beginGroup(_settingsGroup);
+
+    quint16 newPort = static_cast<quint16>(settings.value(_portKey, _port).toUInt());
+    setPort(newPort);
+
+    qCDebug(SignalQualityMonitorLog) << "settings loaded";
 }
 
 void SignalQualityMonitor::_parseMessageJSON(const QByteArray& data) {
@@ -161,6 +199,20 @@ void SignalQualityMonitor::_parseMessageJSON(const QByteArray& data) {
         float gain = rootObject["Gain_B"].toString().toFloat();
         signalB->setGain(gain);
     }
+}
+
+void SignalQualityMonitor::_recreatePort() {
+    if (_monitoredSocket) {
+        disconnect(_monitoredSocket, &QUdpSocket::readyRead, this, &SignalQualityMonitor::_onMonitoredSocketReadyRead);
+        _monitoredSocket->deleteLater();
+        _monitoredSocket = nullptr;
+        qCDebug(SignalQualityMonitorLog) << "_recreatePort: udp socket destroyed";
+    }
+
+    _monitoredSocket = new QUdpSocket();
+    _monitoredSocket->bind(_port);
+    connect(_monitoredSocket, &QUdpSocket::readyRead, this, &SignalQualityMonitor::_onMonitoredSocketReadyRead);
+    qCDebug(SignalQualityMonitorLog) << "_recreatePort: udp socket created";
 }
 
 void SignalQualityMonitor::_onMonitoredSocketReadyRead() {

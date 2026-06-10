@@ -181,6 +181,8 @@ private:
     void    _checkComplete                      (Gimbal& gimbal, GimbalPairId pairId);
     bool    _tryGetGimbalControl                ();
     bool    _yawInVehicleFrame                  (uint32_t flags);
+    void    _safeQuaternionToEuler              (const float quaternion[4], float* roll, float* pitch, float* yaw);
+    void    _safeDCMToEuler                     (const float dcm[3][3], float* roll, float* pitch, float* yaw);
 
     MAVLinkProtocol*    _mavlink            = nullptr;
     Vehicle*            _vehicle            = nullptr;

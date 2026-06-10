@@ -427,6 +427,7 @@ Rectangle {
                         }
                     }
 
+                    Item { width: 1; height: _margins; visible: asbSectionLabel.visible }
                     QGCLabel {
                         id: asbSectionLabel
                         text: qsTr("Airlink Stream Bridge")
@@ -509,7 +510,6 @@ Rectangle {
                                     Layout.preferredWidth:  _comboFieldWidth
                                     fact:                   _asbPort
                                     focus: true
-                                    // visible:                _asbPort.visible
                                 }
                                 QGCLabel {
                                     id:         transportPolictyTypeLabel
@@ -520,6 +520,55 @@ Rectangle {
                                     Layout.preferredWidth:  _comboFieldWidth
                                     fact:                   _asbTransportPolicy
                                     visible:                true
+                                }
+                            }
+                        }
+                    }
+
+                    Item { width: 1; height: _margins; visible: signalQualitySectionLabel.visible }
+                    QGCLabel {
+                        id: signalQualitySectionLabel
+                        text: qsTr("Signal Quality Monitor")
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: signalQualityCol.height + (_margins * 2)
+                        Layout.preferredWidth:  signalQualityCol.width + (_margins * 2)
+                        color:                  qgcPal.windowShade
+                        visible:                signalQualitySectionLabel.visible
+                        Layout.fillWidth:       true
+
+                        ColumnLayout {
+                            id:                         signalQualityCol
+                            anchors.margins:            _margins
+                            anchors.top:                parent.top
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                            spacing:                    _margins
+
+                            GridLayout {
+                                id:         signalQualityGrid
+                                columns:    2
+                                QGCLabel {
+                                    text:       qsTr("Monitor UDP port")
+                                }
+                                QGCTextField {
+                                    id:                     signalQualityPortField
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    text:                   port.toString(); 
+
+                                    property int port: QGroundControl.signalQualityMonitor ? QGroundControl.signalQualityMonitor.port : 0
+
+                                    onEditingFinished: {
+                                        if (QGroundControl.signalQualityMonitor) {
+                                            QGroundControl.signalQualityMonitor.setPort(parseInt(text));
+                                        }
+                                    }
+
+                                    Connections {
+                                        target:  QGroundControl.signalQualityMonitor ? QGroundControl.signalQualityMonitor : null
+                                        onPortChanged: {
+                                            signalQualityPortField.text = QGroundControl.signalQualityMonitor.port.toString();
+                                        }
+                                    }
                                 }
                             }
                         }

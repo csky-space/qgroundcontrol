@@ -220,20 +220,25 @@ Item {
             anchors.fill:       parent
             visible:            QGroundControl.videoManager.crosshairEnabled
 
+            property var  activeVehicle:    QGroundControl.multiVehicleManager.activeVehicle
+            property var  gimbalController: activeVehicle ? activeVehicle.gimbalController : null
+            property var  activeGimbal:     gimbalController ? gimbalController.activeGimbal : null
+            property var  deviceId:         activeGimbal ? activeGimbal.deviceId.value : 0
+            property var  gimbalReady:      activeGimbal ? deviceId > 0 : false
+            property var  currentTilt:      activeGimbal ? activeGimbal.absolutePitch.rawValue : 0
+            property Fact vFov:             QGroundControl.settingsManager.gimbalControllerSettings.CameraVFov
+
             // configuration
-            property real size:          parent.height * 0.4
-            property real markSize:      size / 12
-            property real segmentsCount: 12
-            property real lineWidth:     2
-            property string color:       "#188060"
+            property real   size:          parent.height * 0.4
+            property real   markSize:      size / 12
+            property real   segmentsCount: 12
+            property real   lineWidth:     2
+            property string color:         "#188060"
 
             Canvas {
                 id:             cameraCrossCanvas
                 anchors.fill:   parent
         
-                property Fact _vFov:             QGroundControl.settingsManager.gimbalControllerSettings.CameraVFov
-                property var _cameraOrientation: QGroundControl.videoManager.cameraOrientation
-
                 function _requestRedraw() { 
                     if (QGroundControl.videoManager.crosshairEnabled) {
                         cameraCrossCanvas.requestPaint();
@@ -241,19 +246,29 @@ Item {
                 }
 
                 Connections {
-                    target: cameraCrossCanvas._vFov
+                    target: cameraCross.vFov
                     function onValueChanged() { cameraCrossCanvas._requestRedraw() }
+                }
+                
+                Connections {
+                    target: QGroundControl.videoManager
+                    function onCrosshairEnabledChanged() { cameraCrossCanvas._requestRedraw() }
                 }
 
                 Connections {
-                    target: QGroundControl.videoManager
-                    function onCameraOrientationChanged() { cameraCrossCanvas._requestRedraw() }
+                    target: cameraCross.gimbalController ? cameraCross.gimbalController : null
+                    function onActiveGimbalChanged() { cameraCrossCanvas._requestRedraw() }
+                }
+
+                Connections {
+                    target: cameraCross.activeGimbal ? cameraCross.activeGimbal.absolutePitch : null
+                    function onValueChanged() { cameraCrossCanvas._requestRedraw() }
                 }
 
                 onPaint: {
                     var vOffset = 0;
-                    if (cameraCrossCanvas._vFov) {
-                        var scaledOffset = (cameraCrossCanvas._cameraOrientation.y + 90) / cameraCrossCanvas._vFov.value;
+                    if (cameraCross.gimbalReady && cameraCross.vFov) {
+                        var scaledOffset = (cameraCross.currentTilt + 90) / cameraCross.vFov.value;
                         vOffset = scaledOffset * parent.height;
                     }
                     

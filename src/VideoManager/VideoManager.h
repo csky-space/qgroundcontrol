@@ -60,8 +60,7 @@ public:
     Q_PROPERTY(bool             recording               READ    recording                                        NOTIFY recordingChanged)
     Q_PROPERTY(QSize            videoSize               READ    videoSize                                        NOTIFY videoSizeChanged)
     Q_PROPERTY(bool             crosshairEnabled        READ    crosshairEnabled    WRITE setCrosshairEnabled    NOTIFY crosshairEnabledChanged)
-    Q_PROPERTY(QVector3D        cameraOrientation       READ    cameraOrientation                                NOTIFY cameraOrientationChanged)
-    Q_PROPERTY(bool             isRequestingToggleDayNight       READ    isRequestingToggleDayNight                                NOTIFY isRequestingToggleDayNightChanged)
+    Q_PROPERTY(bool             isRequestingToggleDayNight    READ isRequestingToggleDayNight                    NOTIFY isRequestingToggleDayNightChanged)
 
     virtual bool        hasVideo            ();
     virtual bool        isGStreamer         ();
@@ -101,10 +100,6 @@ public:
 
     bool crosshairEnabled(void) {
         return _crosshairEnabled;
-    }
-
-    QVector3D cameraOrientation(void) {
-        return _cameraOrientation;
     }
 
 // FIXME: AV: they should be removed after finishing multiple video stream support
@@ -152,7 +147,6 @@ signals:
     void recordingStarted           ();
     void videoSizeChanged           ();
     void crosshairEnabledChanged    ();
-    void cameraOrientationChanged   ();
     void isRequestingToggleDayNightChanged();
 
 protected slots:
@@ -165,8 +159,6 @@ protected slots:
     void _setActiveVehicle          (Vehicle* vehicle);
     void _aspectRatioChanged        ();
     void _communicationLostChanged  (bool communicationLost);
-    void _handleMavlinkMessage      (const mavlink_message_t& message);
-    void _handleGimbalStatus        (const mavlink_gimbal_device_attitude_status_t& message);
 
 protected:
     friend class FinishVideoInitialization;
@@ -200,7 +192,6 @@ protected:
     QAtomicInteger<bool>    _recording              = false;
     QAtomicInteger<quint32> _videoSize              = 0;
     QAtomicInteger<bool>    _crosshairEnabled       = false;
-    QVector3D               _cameraOrientation      = { 0, 0, 0 };
     VideoSettings*          _videoSettings          = nullptr;
     QString                 _uvcVideoSourceID;
     bool                    _fullScreen             = false;
