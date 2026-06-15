@@ -86,6 +86,9 @@ Rectangle {
                     toolStripAction:    modelData
                     dropPanel:          _dropPanel
                     onDropped:          _root.dropped(index)
+                    focus:              false
+                    focusPolicy:        Qt.NoFocus
+                    activeFocusOnTab:   false
 
                     onCheckedChanged: {
                         // We deal with exclusive check state manually since usinug autoExclusive caused all sorts of crazt problems
