@@ -267,10 +267,12 @@ Item {
 
                 onPaint: {
                     var vOffset = 0;
-                    if (cameraCross.gimbalReady && cameraCross.vFov) {
-                        var scaledOffset = (cameraCross.currentTilt + 90) / cameraCross.vFov.value;
-                        vOffset = scaledOffset * parent.height;
-                    }
+
+                    // crosshair offset caused by camera tilt. 16:30 22.06.26 disabled
+                    // if (cameraCross.gimbalReady && cameraCross.vFov) {
+                    //     var scaledOffset = (cameraCross.currentTilt + 90) / cameraCross.vFov.value;
+                    //     vOffset = scaledOffset * parent.height;
+                    // }
                     
                     var ctx = getContext("2d");
                     ctx.reset();
