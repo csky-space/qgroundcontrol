@@ -302,6 +302,13 @@ void APMSensorsComponentController::calibrateCompassNorth(float lat, float lon, 
     _vehicle->sendMavCommand(_vehicle->defaultComponentId(), MAV_CMD_FIXED_MAG_CAL_YAW, true /* showError */, 0 /* north*/, mask, lat, lon);
 }
 
+void APMSensorsComponentController::calibrateCompassYaw(float lat, float lon, float yaw, int mask)
+{
+    _startLogCalibration();
+    connect(_vehicle, &Vehicle::mavCommandResult, this, &APMSensorsComponentController::_mavCommandResult);
+    _vehicle->sendMavCommand(_vehicle->defaultComponentId(), MAV_CMD_FIXED_MAG_CAL_YAW, true /* showError */, yaw, mask, lat, lon);
+}
+
 void APMSensorsComponentController::calibrateAccel(bool doSimpleAccelCal)
 {
 

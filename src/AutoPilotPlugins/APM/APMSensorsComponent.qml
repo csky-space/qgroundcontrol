@@ -441,7 +441,19 @@ SetupPage {
                                 if (isNaN(lat) || isNaN(lon)) {
                                     return
                                 }
-                                controller.calibrateCompassNorth(lat, lon, compassMask())
+                                if (northCalibrationYawCheckBox.visible && northCalibrationYawCheckBox.checked) {
+                                    var yaw = parseFloat(northCalYaw.text)
+                                    if (isNaN(yaw)) {
+                                        return;
+                                    }
+                                    var normalizedYaw = ((yaw % 360) + 360) % 360;
+                                    console.log("calibrate compass using yaw: ", normalizedYaw)
+
+                                    controller.calibrateCompassYaw(lat, lon, normalizedYaw, compassMask())
+                                }
+                                else {
+                                    controller.calibrateCompassNorth(lat, lon, compassMask())
+                                }
                             }
                         }
                     }
@@ -573,21 +585,83 @@ SetupPage {
                                 text:       qsTr(`Lat: ${_mapPosition.latitude.toFixed(4)} Lon: ${_mapPosition.longitude.toFixed(4)}`)
                             }
 
-                            FactTextField {
-                                id:         northCalLat
+
+                            Row {
                                 visible:    !useGcsPositionCheckbox.checked && !useMapPositionCheckbox.checked && northCalibrationCheckBox.checked
-                                text:       "0.00"
-                                textColor:  isNaN(parseFloat(text)) ? qgcPal.warningText: qgcPal.textFieldText
-                                enabled:    !useGcsPositionCheckbox.checked
-                            }
-                            FactTextField {
-                                id:         northCalLon
-                                visible:    !useGcsPositionCheckbox.checked && !useMapPositionCheckbox.checked && northCalibrationCheckBox.checked
-                                text:       "0.00"
-                                textColor:  isNaN(parseFloat(text)) ? qgcPal.warningText: qgcPal.textFieldText
-                                enabled:    !useGcsPositionCheckbox.checked
+
+                                QGCLabel {
+                                    width:                  28
+                                    wrapMode:               Text.WordWrap
+                                    text:                   qsTr(`Lat:`)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                FactTextField {
+                                    id:                     northCalLat
+                                    text:                   "0.00"
+                                    textColor:              isNaN(parseFloat(text)) ? qgcPal.warningText: qgcPal.textFieldText
+                                    enabled:                !useGcsPositionCheckbox.checked
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
                             }
 
+                            Row {
+                                visible:    !useGcsPositionCheckbox.checked && !useMapPositionCheckbox.checked && northCalibrationCheckBox.checked
+
+                                QGCLabel {
+                                    width:                  28
+                                    wrapMode:               Text.WordWrap
+                                    text:                   qsTr(`Lon:`)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                FactTextField {
+                                    id:                     northCalLon
+                                    text:                   "0.00"
+                                    textColor:              isNaN(parseFloat(text)) ? qgcPal.warningText: qgcPal.textFieldText
+                                    enabled:                !useGcsPositionCheckbox.checked
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            QGCCheckBox {
+                                id:             northCalibrationYawCheckBox
+                                visible:        !useGcsPositionCheckbox.checked && !useMapPositionCheckbox.checked && northCalibrationCheckBox.checked
+                                text:           qsTr("Fast Calibration Yaw")
+                            }
+
+                            QGCLabel {
+                                width:    parent.width
+                                visible:  northCalibrationYawCheckBox.checked
+                                wrapMode: Text.WordWrap
+                                text:     qsTr(`Specify drone earth-frame yaw in degrees. 0 is North. `) +
+                                          qsTr(`Angle is automatically normalized to range [0, 360). `)
+                            }
+                            Row {
+                                visible: northCalibrationYawCheckBox.checked
+
+                                QGCLabel {
+                                    width:                  28
+                                    wrapMode:               Text.WordWrap
+                                    text:                   qsTr(`Yaw:`)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                QGCTextField {
+                                    id:                     northCalYaw
+                                    text:                   "0.00"
+                                    textColor:              isNaN(parseFloat(text)) ? qgcPal.warningText: qgcPal.textFieldText
+                                    enabled:                !useGcsPositionCheckbox.checked
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    onEditingFinished: {
+                                        let rawDegrees = parseFloat(text);
+                                        if (isNaN(rawDegrees)) {
+                                            text = "0.0";
+                                        } else {
+                                            let normalizedDegrees = ((rawDegrees % 360) + 360) % 360;
+                                            text = normalizedDegrees.toString();
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
