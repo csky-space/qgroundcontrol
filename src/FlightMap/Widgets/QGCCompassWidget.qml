@@ -15,6 +15,7 @@
  */
 
 import QtQuick              2.3
+import QtQuick.Shapes       1.12
 import QtGraphicalEffects   1.0
 
 import QGroundControl              1.0
@@ -244,18 +245,35 @@ Item {
                 }
             }
 
-            Rectangle {
+            Shape {
+                id:               dirMark
                 width:            size * 0.1
                 height:           size * 0.1
-                radius:           size * 0.05
                 anchors.centerIn: parent
-                color:            returnMarker.returnCourseFact ? "#8000ff00" : "#0000ff00";
+                visible:          returnMarker.returnCourseFact
+
+                rotation: _angle
+
+                property double _angle: isNoseUpLocked() ? returnMarker.angle - _heading : returnMarker.angle
+
+                ShapePath {
+                    strokeColor: "#8000ff00";
+                    strokeWidth: 1
+                    fillColor: "#8000ff00";
+
+                    startX: dirMark.width / 2
+                    startY: 0
+
+                    PathLine { x: dirMark.width; y: dirMark.height }
+                    PathLine { x: 0; y: dirMark.height }
+                    PathLine { x: dirMark.width / 2; y: 0 }
+                }
 
                 transform: Translate {
                     property double _angle: isNoseUpLocked() ? returnMarker.angle - _heading : returnMarker.angle
                     x: size/2.3 * Math.sin((_angle)*(Math.PI/180))
                     y: - size/2.3 * Math.cos((_angle)*(Math.PI/180))
-                }            
+                }
             }
 
             MouseArea {

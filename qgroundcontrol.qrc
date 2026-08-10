@@ -243,6 +243,7 @@
         <file alias="QGroundControl/FlightDisplay/PreFlightCheckListShowAction.qml">src/FlightDisplay/PreFlightCheckListShowAction.qml</file>
         <file alias="QGroundControl/FlightDisplay/DropControl.qml">src/FlightDisplay/DropControl.qml</file>
         <file alias="QGroundControl/FlightDisplay/ReturnCourse.qml">src/FlightDisplay/ReturnCourse.qml</file>
+        <file alias="QGroundControl/FlightDisplay/AntennaConfiguration.qml">src/FlightDisplay/AntennaConfiguration.qml</file>
         <file alias="QGroundControl/FlightDisplay/ProximityRadarValues.qml">src/FlightDisplay/ProximityRadarValues.qml</file>
         <file alias="QGroundControl/FlightDisplay/ProximityRadarVideoView.qml">src/FlightDisplay/ProximityRadarVideoView.qml</file>
         <file alias="QGroundControl/FlightDisplay/TerrainProgress.qml">src/FlightDisplay/TerrainProgress.qml</file>
@@ -361,7 +362,7 @@
         <file alias="Vehicle/EFIFact.json">src/Vehicle/EFIFact.json</file>
         <file alias="Vehicle/GimbalFact.json">src/Gimbal/GimbalFact.json</file>
         <file alias="Video.SettingsGroup.json">src/Settings/Video.SettingsGroup.json</file>
-		<file alias="VibrationController.SettingsGroup.json">src/Settings/VibrationController.SettingsGroup.json</file>
+        <file alias="VibrationController.SettingsGroup.json">src/Settings/VibrationController.SettingsGroup.json</file>
         <file alias="VTOLLandingPattern.FactMetaData.json">src/MissionManager/VTOLLandingPattern.FactMetaData.json</file>
         <file alias="GimbalController.SettingsGroup.json">src/Settings/GimbalController.SettingsGroup.json</file>
     </qresource>

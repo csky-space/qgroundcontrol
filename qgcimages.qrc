@@ -74,6 +74,7 @@
         <file alias="compassDottedLine.svg">src/FlightMap/Images/compassDottedLine.svg</file>
         <file alias="compassInstrumentArrow.svg">src/FlightMap/Images/compassInstrumentArrow.svg</file>
         <file alias="compassInstrumentDial.svg">src/FlightMap/Images/compassInstrumentDial.svg</file>
+        <file alias="antenna-direction-dial.svg">resources/antenna/antenna-direction-dial.svg</file>
         <file alias="Connect.svg">src/ui/toolbar/Images/Connect.svg</file>
         <file alias="crossHair.svg">src/FlightMap/Images/crossHair.svg</file>
         <file alias="DatalinkLoss.svg">src/AutoPilotPlugins/PX4/Images/DatalinkLoss.svg</file>
@@ -212,6 +213,7 @@
         <file alias="crosshairIcon.svg">resources/crosshair/crosshairIcon.svg</file>
         <file alias="crosshairIconActive.svg">resources/crosshair/crosshairIconActive.svg</file>
         <file alias="return.svg">resources/return/return.svg</file>
+        <file alias="icon-antenna.svg">resources/antenna/icon-antenna.svg</file>
         <file alias="close.svg">resources/drop/close.svg</file>
         <file alias="wifi.svg">src/AutoPilotPlugins/Common/Images/wifi.svg</file>
         <file alias="Yield.svg">src/ui/toolbar/Images/Yield.svg</file>

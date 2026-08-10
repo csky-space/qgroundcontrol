@@ -78,6 +78,7 @@ ToolStripActionList {
             }
         },
         ReturnCourse { },
+        AntennaConfiguration { },
         GuidedActionTakeoff { },
         GuidedActionLand { },
         GuidedActionRTL { },

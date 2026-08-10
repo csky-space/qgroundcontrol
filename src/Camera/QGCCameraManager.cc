@@ -122,6 +122,7 @@ QGCCameraManager::_handleHeartbeat(const mavlink_message_t &message)
         _cameraInfoRequest[sCompID] = pInfo;
         //-- Request camera info
         _requestCameraInfo(message.compid, pInfo->tryCount);
+        _requestCameraSettings(message.compid, pInfo->tryCount);
     } else {
         if(_cameraInfoRequest[sCompID]) {
             CameraStruct* pInfo = _cameraInfoRequest[sCompID];
@@ -141,6 +142,7 @@ QGCCameraManager::_handleHeartbeat(const mavlink_message_t &message)
                         pInfo->tryCount++;
                         //-- Request camera info again.
                         _requestCameraInfo(message.compid, pInfo->tryCount);
+                        _requestCameraSettings(message.compid, pInfo->tryCount);
                     }
                 }
             }
@@ -404,6 +406,30 @@ QGCCameraManager::_requestCameraInfo(int compID, int tryCount)
             _vehicle->sendMavCommand(
                 compID,                                 // target component
                 MAV_CMD_REQUEST_CAMERA_INFORMATION,     // command id
+                false,                                  // showError
+                1);                                     // Do Request
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+void
+QGCCameraManager::_requestCameraSettings(int compID, int tryCount)
+{
+    qCDebug(CameraManagerLog) << "_requestCameraSettings(" << compID << ")";
+    if(_vehicle) {
+        // The MAV_CMD_REQUEST_CAMERA_SETTINGS command is deprecated, so we
+        // only fall back to it on the second and every other try.
+        if (tryCount % 2 == 0) {
+            _vehicle->sendMavCommand(
+                compID,                                 // target component
+                MAV_CMD_REQUEST_MESSAGE,                // command id
+                false,                                  // showError
+                MAVLINK_MSG_ID_CAMERA_SETTINGS);     // msgid
+        } else {
+            _vehicle->sendMavCommand(
+                compID,                                 // target component
+                MAV_CMD_REQUEST_CAMERA_SETTINGS,     // command id
                 false,                                  // showError
                 1);                                     // Do Request
         }
