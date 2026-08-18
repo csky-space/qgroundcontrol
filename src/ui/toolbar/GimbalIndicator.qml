@@ -338,6 +338,24 @@ Item {
                         visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
                     }
 
+                    QGCLabel {
+                        text:               qsTr("Max pitch:")
+                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
+                    }
+                    FactTextField {
+                        fact:               QGroundControl.settingsManager.gimbalControllerSettings.CameraMaxPitch
+                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
+                    }
+
+                    QGCLabel {
+                        text:               qsTr("Min pitch:")
+                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
+                    }
+                    FactTextField {
+                        fact:               QGroundControl.settingsManager.gimbalControllerSettings.CameraMinPitch
+                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
+                    }
+
                     // Separator
                     Rectangle {
                         Layout.columnSpan:       2

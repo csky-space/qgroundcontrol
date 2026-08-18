@@ -19,8 +19,7 @@ DropController::DropController(MAVLinkProtocol* mavlink, Vehicle* vehicle)
 
     _dropModesModel = QStringList({
         "Drop 1",
-        "Drop 2",
-        "Drop 4"
+        "Drop 3"
     });
     emit dropModesModelChanged();
 }

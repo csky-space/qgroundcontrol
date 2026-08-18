@@ -232,20 +232,17 @@ Item {
         anchors.bottom:      photoVideoControl.bottom
         anchors.right:       instrumentPanel.left
         anchors.rightMargin: 6
-        visible:             initialized
+        visible:             gimbalReady
 
         property var  activeVehicle:      QGroundControl.multiVehicleManager.activeVehicle
-        property var  paramaterManager:   activeVehicle ? activeVehicle.parameterManager : null
-        property bool parametersReady:    paramaterManager ? !paramaterManager.missingParameters : false
         property var  gimbalController:   activeVehicle ? activeVehicle.gimbalController : null
         property var  activeGimbal:       gimbalController ? gimbalController.activeGimbal : null
         property var  deviceId:           activeGimbal ? activeGimbal.deviceId.value : 0
         property var  gimbalReady:        activeGimbal ? deviceId > 0 : false
-        property bool initialized:        parametersReady && gimbalReady
         property var  currentTilt:        activeGimbal ? activeGimbal.absolutePitch.rawValue : 0
         property var  currentYaw:         activeGimbal ? activeGimbal.bodyYaw.rawValue : 0
-        property Fact tiltMinFact:        initialized ? paramaterManager.getParameter(-1, qsTr("MNT%1_PITCH_MIN").arg(deviceId)) : null
-        property Fact tiltMaxFact:        initialized ? paramaterManager.getParameter(-1, qsTr("MNT%1_PITCH_MAX").arg(deviceId)) : null
+        property Fact tiltMinFact:        gimbalReady ? QGroundControl.settingsManager.gimbalControllerSettings.CameraMinPitch : null
+        property Fact tiltMaxFact:        gimbalReady ? QGroundControl.settingsManager.gimbalControllerSettings.CameraMaxPitch : null
         property real tiltMin:            tiltMinFact ? tiltMinFact.value : -90
         property real tiltMax:            tiltMaxFact ? tiltMaxFact.value : 10
         property real range:              tiltMax - tiltMin
@@ -296,42 +293,97 @@ Item {
             anchors.leftMargin:   4
             anchors.rightMargin:  4
 
-            Rectangle {
-                anchors.top:          parent.top
-                anchors.left:         parent.left
-                anchors.right:        parent.right
-                height:               2
-                color:                "#ffffff"
-                radius:               2
-            }
+            // Camera pitch control
+            Item {
+                id:                 cameraPitchMarks
+                anchors.fill:       parent
 
-            Rectangle {
-                anchors.bottom:       parent.bottom
-                anchors.left:         parent.left
-                anchors.right:        parent.right
-                height:               2
-                color:                "#ffffff"
-                radius:               2
-            }
+                Canvas {
+                    id:             cameraPitchMarksCanvas
+                    anchors.fill:   parent
 
-            Rectangle {
-                anchors.top:              parent.top
-                anchors.bottom:           parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                width:                    2
-                color:                    "#ffffff"
-            }
+                    Component.onCompleted: {
+                        cameraPitchMarksCanvas._requestRedraw();
+                    }
+            
+                    function _requestRedraw() { 
+                        cameraPitchMarksCanvas.requestPaint();
+                    }
 
-            Rectangle {
-                anchors.left:                 parent.left
-                anchors.right:                parent.right
-                height:                       2
-                color:                        "#ffffff"
-                radius:                       2
-                anchors.verticalCenter:       parent.bottom
-                anchors.verticalCenterOffset: -(parent.height * position)
+                    Connections {
+                        target: cameraTiltControl.gimbalController
+                        function onActiveGimbalChanged() { cameraPitchMarksCanvas._requestRedraw() }
+                    }
 
-                property real position: -cameraTiltControl.tiltMin / cameraTiltControl.range
+                    Connections {
+                        target: cameraTiltControl.tiltMinFact
+                        function onValueChanged() { cameraPitchMarksCanvas._requestRedraw() }
+                    }
+                    
+                    Connections {
+                        target: cameraTiltControl.tiltMaxFact
+                        function onValueChanged() { cameraPitchMarksCanvas._requestRedraw() }
+                    }
+
+                    onPaint: {
+                        const rangeDegrees = Math.abs(cameraTiltControl.tiltMax - cameraTiltControl.tiltMin);
+                        const pixelsPerDegree = height / rangeDegrees;
+                        const markStepDegrees = 5;
+                        const markStepPixels = markStepDegrees * pixelsPerDegree;
+
+                        console.log(cameraTiltControl.tiltMax, cameraTiltControl.tiltMin, rangeDegrees)
+
+                        const marksCount = rangeDegrees / markStepDegrees + 1;
+                        const offsetY = (markStepDegrees - (cameraTiltControl.tiltMax % markStepDegrees)) * pixelsPerDegree
+
+                        const ctx = getContext("2d");
+                        ctx.reset();
+                        ctx.translate(width / 2, 0);
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 2;
+
+                        ctx.beginPath();
+
+                        ctx.moveTo(-width / 2, 0);
+                        ctx.lineTo(width / 2, 0);
+
+                        ctx.moveTo(-width / 2, height);
+                        ctx.lineTo(width / 2, height);
+
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(0, height);
+
+                        for (let i = 0; i <= marksCount; i++) {
+                            let roundCorrection = 0;
+                            let angle = Math.ceil(cameraTiltControl.tiltMax / markStepDegrees) * markStepDegrees - i * markStepDegrees;
+                            if ((cameraTiltControl.tiltMax % markStepDegrees) == 0) {
+                                if (i == 0) continue;
+                                angle += markStepDegrees;
+                            }
+                            else if (cameraTiltControl.tiltMax < 0) {
+                                angle += markStepDegrees;
+                            }
+                            let index = Math.abs(angle) / markStepDegrees;
+
+                            console.log("Mark angle:", angle, index, (angle % 15) == 0)
+
+                            if (angle == 0) {
+                                ctx.moveTo(-parent.width / 2, i * markStepPixels-offsetY);
+                                ctx.lineTo(parent.width / 2, i * markStepPixels-offsetY);
+                            }
+                            else if ((index % 3) == 0) {
+                                ctx.moveTo(-parent.width / 4, i * markStepPixels-offsetY);
+                                ctx.lineTo(parent.width / 4, i * markStepPixels-offsetY);
+                            }
+                            else {
+                                ctx.moveTo(-parent.width / 8, i * markStepPixels-offsetY);
+                                ctx.lineTo(parent.width / 8, i * markStepPixels-offsetY);
+                            }
+                        }
+
+                        ctx.stroke();
+                    }
+                }
             }
 
             Rectangle {

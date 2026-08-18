@@ -66,7 +66,7 @@ signals:
 private:
     void _initFacts(); // To be called EXCLUSIVELY in Gimbal constructors
 
-    // Private members only accesed by friend class GimbalController
+    // Private members only accessed by friend class GimbalController
     unsigned _requestInformationRetries = 3;
     unsigned _requestStatusRetries = 6;
     unsigned _requestAttitudeRetries = 3;
@@ -159,7 +159,7 @@ public:
     Q_INVOKABLE void releaseGimbalControl   ();
 
 public slots:
-    // These slots are conected with joysticks for button control
+    // These slots are connected with joysticks for button control
     void gimbalYawLock              (bool yawLock) { toggleGimbalYawLock(yawLock); }
     Q_INVOKABLE void centerGimbal   (); // Also used by qml
     void gimbalPitchStep            (int direction);
@@ -167,7 +167,7 @@ public slots:
 
 signals:
     void    activeGimbalChanged           ();
-    void    showAcquireGimbalControlPopup (); // This triggers a popup in QML asking the user for aproval to take control
+    void    showAcquireGimbalControlPopup (); // This triggers a popup in QML asking the user for approval to take control
 
 private slots:
     void    _mavlinkMessageReceived(const mavlink_message_t& message);

@@ -39,6 +39,20 @@
     "units":             "deg/s"
 },
 {
+    "name":              "CameraMaxPitch",
+    "shortDesc":         "Maximum gimbal pitch on slider control",
+    "type":              "int32",
+    "default":           20,
+    "units":             "deg"
+},
+{
+    "name":              "CameraMinPitch",
+    "shortDesc":         "Minimum gimbal pitch on slider control",
+    "type":              "int32",
+    "default":           -90,
+    "units":             "deg"
+},
+{
     "name":              "showAzimuthIndicatorOnMap",
     "shortDesc":         "Show gimbal Azimuth indicator over vehicle icon in map",
     "type":              "bool",

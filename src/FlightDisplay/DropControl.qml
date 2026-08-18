@@ -40,13 +40,13 @@ ToolStripAction {
     dropPanelComponent: Rectangle {
         id:     dropControl
         height: instrumentPanel ? instrumentPanel._heightAttComp * 0.75 : 0
-        width:  instrumentPanel ? instrumentPanel._heightAttComp * 3 : 0
+        width:  instrumentPanel ? instrumentPanel._heightAttComp * 2 : 0
         color:  Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.6)
 
         GridLayout {
             id:            buttonsGrid
             anchors.fill:  parent
-            columns:       3
+            columns:       2
             columnSpacing: 2
 
             Repeater {

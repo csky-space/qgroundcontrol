@@ -116,7 +116,7 @@ QGCCameraManager::_handleHeartbeat(const mavlink_message_t &message)
     //-- First time hearing from this one?
     QString sCompID = QString::number(message.compid);
     if(!_cameraInfoRequest.contains(sCompID)) {
-        qCDebug(CameraManagerLog) << "Hearbeat from " << message.compid;
+        qCDebug(CameraManagerLog) << "Heartbeat from " << message.compid;
         CameraStruct* pInfo = new CameraStruct(this, message.compid);
         pInfo->lastHeartbeat.start();
         _cameraInfoRequest[sCompID] = pInfo;
