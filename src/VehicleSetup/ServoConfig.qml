@@ -7,7 +7,6 @@
  *
  ****************************************************************************/
 
-
 import QtQuick                      2.11
 import QtQuick.Controls             2.4
 import QtQuick.Dialogs              1.3
@@ -30,21 +29,41 @@ SetupPage {
 
     property var activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
     property var servoController:   activeVehicle.servoController
-    property bool isEditingEnabled: true
+    property bool isEditingEnabled: false
 
     Component {
         id: pageComponent
 
         ColumnLayout {
+            spacing: 10
+            anchors.fill: parent
+            anchors.margins: 10
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                QGCCheckBox {
+                    id: editToggle
+                    text: qsTr("Enable editing")
+                    checked: servoPage.isEditingEnabled
+                    onClicked: {
+                        servoPage.isEditingEnabled = checked
+                    }
+                }
+            }
+
             GridLayout {
                 columns: 4
+                columnSpacing: 8
+                rowSpacing: 8
+                Layout.fillWidth: true
 
                 Repeater {
                     model: servoController.servoModel
 
                     Rectangle {
                         required property int index
-                        
+
                         implicitWidth:  servoInfoLayout.implicitWidth
                         implicitHeight: servoInfoLayout.implicitHeight
                         color:          "#00000000"
@@ -55,7 +74,7 @@ SetupPage {
                         property var servo: servoController.servoModel[index]
 
                         ColumnLayout {
-                            id:             servoInfoLayout
+                            id: servoInfoLayout
 
                             ColumnLayout {
                                 Layout.margins: 6
@@ -125,6 +144,7 @@ SetupPage {
                                         text: qsTr("Reversed")
                                         fact: servo.reversedFact
                                         Layout.alignment:    Qt.AlignVCenter
+                                        enabled:             servoPage.isEditingEnabled   // добавлено
                                     }
 
                                     Item {
@@ -144,6 +164,7 @@ SetupPage {
                                             fact: servo.functionFact
                                             Layout.preferredWidth: 120
                                             Layout.alignment:    Qt.AlignVCenter
+                                            enabled:             servoPage.isEditingEnabled   // добавлено
                                         }
                                     }
                                 }
