@@ -30,13 +30,14 @@ SetupPage {
 
     property var activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
     property var servoController:   activeVehicle.servoController
+    property bool isEditingEnabled: true
 
     Component {
         id: pageComponent
 
         ColumnLayout {
             GridLayout {
-                columns: 6
+                columns: 4
 
                 Repeater {
                     model: servoController.servoModel
@@ -70,9 +71,16 @@ SetupPage {
                                     id: servoStateLayout
 
                                     QGCLabel {
-                                        text:                qsTr("min: ") + servo.minValue
+                                        text:                qsTr("min:")
                                         Layout.alignment:    Qt.AlignVCenter
-                                        Layout.minimumWidth: 60
+                                        Layout.minimumWidth: 20
+                                    }
+
+                                    FactTextField {
+                                        fact:                  servo.minValueFact
+                                        Layout.alignment:      Qt.AlignVCenter
+                                        Layout.preferredWidth: 70
+                                        enabled:               servoPage.isEditingEnabled
                                     }
 
                                     Rectangle {
@@ -99,25 +107,44 @@ SetupPage {
                                     }
 
                                     QGCLabel {
-                                        text:                qsTr("max: ") + servo.maxValue
+                                        text:                qsTr("max:")
                                         Layout.alignment:    Qt.AlignVCenter
-                                        Layout.minimumWidth: 60
+                                        Layout.minimumWidth: 20
+                                    }
+
+                                    FactTextField {
+                                        fact:                  servo.maxValueFact
+                                        Layout.alignment:      Qt.AlignVCenter
+                                        Layout.preferredWidth: 70
+                                        enabled:               servoPage.isEditingEnabled
                                     }
                                 }
 
                                 RowLayout {
-                                    id: servoReversedLayout
-
-                                    QGCLabel {
-                                        text:                qsTr("Reversed")
+                                    FactCheckBox {
+                                        text: qsTr("Reversed")
+                                        fact: servo.reversedFact
                                         Layout.alignment:    Qt.AlignVCenter
-                                        Layout.minimumWidth: 60
                                     }
 
-                                    QGCCheckBox {
-                                        checked:          servo.reversed
-                                        enabled:          false
-                                        Layout.alignment: Qt.AlignVCenter
+                                    Item {
+                                        Layout.fillWidth: true
+                                        height: 1
+                                    }
+
+                                    RowLayout {
+                                        Layout.alignment:    Qt.AlignVCenter
+
+                                        QGCLabel {
+                                            text:                qsTr("function:")
+                                            Layout.alignment:    Qt.AlignVCenter
+                                        }
+
+                                        FactComboBox {
+                                            fact: servo.functionFact
+                                            Layout.preferredWidth: 120
+                                            Layout.alignment:    Qt.AlignVCenter
+                                        }
                                     }
                                 }
                             }

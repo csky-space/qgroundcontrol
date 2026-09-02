@@ -2,19 +2,31 @@
 
 #include <QGCApplication.h>
 #include <ParameterManager.h>
+#include <cmath>          // для fminf/fmaxf
 
 QGC_LOGGING_CATEGORY(ServoControllerLog, "ServoControllerLog")
 
-Servo::Servo(const QString& name, quint16 index, quint16 function, quint16 startValue, quint16 minValue, quint16 maxValue, bool reversed)
+// ----------------------------------------------------------------------------
+// Servo implementation
+// ----------------------------------------------------------------------------
+
+Servo::Servo(const QString& name, quint16 index,
+             Fact* functionFact, Fact* minValueFact, Fact* maxValueFact, Fact* reversedFact)
     : _name(name)
     , _index(index)
-    , _function(function)
-    , _value(startValue)
-    , _minValue(minValue)
-    , _maxValue(maxValue)
-    , _reversed(reversed)
-    , _normalizedValue(fminf(1.0f, fmaxf(0.0f, static_cast<float>(startValue - minValue) / static_cast<float>(maxValue - minValue))))
-{}
+    , _functionFact(functionFact)
+    , _minValueFact(minValueFact)
+    , _maxValueFact(maxValueFact)
+    , _reversedFact(reversedFact)
+    , _value(0)   // будет обновлено из MAVLink
+{
+    // Инициализация внутренних копий параметров из Fact'ов
+    _function  = _functionFact ? _functionFact->rawValue().toUInt() : 0;
+    _minValue  = _minValueFact ? _minValueFact->rawValue().toUInt() : 1000;
+    _maxValue  = _maxValueFact ? _maxValueFact->rawValue().toUInt() : 2000;
+    _reversed  = _reversedFact ? _reversedFact->rawValue().toBool() : false;
+    _normalizedValue = 0.0f;
+}
 
 const QString& Servo::name() const {
     return _name;
@@ -24,92 +36,106 @@ quint16 Servo::index() const {
     return _index;
 }
 
-quint16 Servo::function() const {
-    return _function;
-}
-
 quint16 Servo::value() const {
     return _value;
 }
 
-quint16 Servo::minValue() const {
-    return _minValue;
-}
-
-quint16 Servo::maxValue() const {
-    return _maxValue;
-}
-
-bool Servo::reversed() const {
-    return _reversed;
-}
-
-float Servo::normalizedValue () const {
+float Servo::normalizedValue() const {
     return _normalizedValue;
 }
 
-void Servo::setFunction(quint16 function) {
-    _function = function;
-    emit functionChanged();
+// Геттеры для Fact* (исправлено: возвращают Fact*, а не quint16/bool)
+Fact* Servo::functionFact() const {
+    return _functionFact;
+}
+
+Fact* Servo::minValueFact() const {
+    return _minValueFact;
+}
+
+Fact* Servo::maxValueFact() const {
+    return _maxValueFact;
+}
+
+Fact* Servo::reversedFact() const {
+    return _reversedFact;
 }
 
 void Servo::setValue(quint16 value) {
-    _value = value;
-    _normalizedValue = fminf(1.0f, fmaxf(0.0f, static_cast<float>(_value - _minValue) / static_cast<float>(_maxValue - _minValue)));
-    emit valueChanged();
-    emit normalizedValueChanged();
+    if (_value != value) {
+        _value = value;
+        // пересчёт нормализованного значения с учётом текущих min/max
+        float range = static_cast<float>(_maxValue - _minValue);
+        if (range > 0.0f) {
+            _normalizedValue = fminf(1.0f, fmaxf(0.0f, static_cast<float>(_value - _minValue) / range));
+        } else {
+            _normalizedValue = 0.0f;
+        }
+        emit valueChanged();
+        emit normalizedValueChanged();
+    }
 }
 
-void Servo::setMinValue(quint16 minValue) {
-    _minValue = minValue;
-    _normalizedValue = fminf(1.0f, fmaxf(0.0f, static_cast<float>(_value - _minValue) / static_cast<float>(_maxValue - _minValue)));
-    emit minValueChanged();
-    emit normalizedValueChanged();
-}
-
-void Servo::setMaxValue(quint16 maxValue) {
-    _maxValue = maxValue;
-    _normalizedValue = fminf(1.0f, fmaxf(0.0f, static_cast<float>(_value - _minValue) / static_cast<float>(_maxValue - _minValue)));
-    emit maxValueChanged();
-    emit normalizedValueChanged();
-}
-
-void Servo::setReversed(bool reversed) {
-    _reversed = reversed;
-    emit reversedChanged();
-}
-
+// Слоты для обновления при изменении параметров (приходят от Fact::vehicleUpdated)
 void Servo::onFunctionParameterChanged(QVariant value) {
-    _function = value.toUInt();
-    emit functionChanged();
+    quint16 newFunc = value.toUInt();
+    if (_function != newFunc) {
+        _function = newFunc;
+        emit functionFactChanged();   // уведомление QML об изменении свойства functionFact
+    }
 }
 
 void Servo::onMinParameterChanged(QVariant value) {
-    _minValue = value.toUInt();
-    emit minValueChanged();
+    quint16 newMin = value.toUInt();
+    if (_minValue != newMin) {
+        _minValue = newMin;
+        float range = static_cast<float>(_maxValue - _minValue);
+        if (range > 0.0f) {
+            _normalizedValue = fminf(1.0f, fmaxf(0.0f, static_cast<float>(_value - _minValue) / range));
+        } else {
+            _normalizedValue = 0.0f;
+        }
+        emit minValueFactChanged();
+        emit normalizedValueChanged();   // т.к. изменился нормализатор
+    }
 }
 
 void Servo::onMaxParameterChanged(QVariant value) {
-    _maxValue = value.toUInt();
-    emit maxValueChanged();
+    quint16 newMax = value.toUInt();
+    if (_maxValue != newMax) {
+        _maxValue = newMax;
+        float range = static_cast<float>(_maxValue - _minValue);
+        if (range > 0.0f) {
+            _normalizedValue = fminf(1.0f, fmaxf(0.0f, static_cast<float>(_value - _minValue) / range));
+        } else {
+            _normalizedValue = 0.0f;
+        }
+        emit maxValueFactChanged();
+        emit normalizedValueChanged();
+    }
 }
 
 void Servo::onReversedParameterChanged(QVariant value) {
-    _reversed = value.toBool();
-    emit reversedChanged();
+    bool newRev = value.toBool();
+    if (_reversed != newRev) {
+        _reversed = newRev;
+        emit reversedFactChanged();
+    }
 }
 
 ServoController::ServoController(MAVLinkProtocol* mavlink, Vehicle* vehicle)
     : _mavlink(mavlink)
     , _vehicle(vehicle)
-    , _initialized(false) {
+    , _initialized(false)
+{
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     connect(_vehicle, &Vehicle::mavlinkMessageReceived, this, &ServoController::_mavlinkMessageReceived);
-    connect(_vehicle->parameterManager(), &ParameterManager::parametersReadyChanged, this, &ServoController::_onParametersReadyChanged);
+    connect(_vehicle->parameterManager(), &ParameterManager::parametersReadyChanged,
+            this, &ServoController::_onParametersReadyChanged);
 }
 
 ServoController::~ServoController() {
-    for (int i = 0; i < _servoModel.size(); i++) {
+    for (int i = 0; i < _servoModel.size(); ++i) {
         qvariant_cast<Servo*>(_servoModel[i])->deleteLater();
     }
 }
@@ -123,10 +149,8 @@ QVariantList ServoController::servoModel() const {
 }
 
 void ServoController::_mavlinkMessageReceived(const mavlink_message_t& message) {
-    switch(message.msgid) {
-    case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
+    if (message.msgid == MAVLINK_MSG_ID_SERVO_OUTPUT_RAW) {
         _handleServoOutputRaw(message);
-        break;
     }
 }
 
@@ -135,63 +159,46 @@ void ServoController::_onParametersReadyChanged(bool parametersReady) {
         return;
     }
 
-    for (size_t servoIndex = 1; servoIndex <= _servoOutputsRaw.size(); servoIndex++) {
-        QString functionParameterName = QString("SERVO%1_FUNCTION").arg(servoIndex);
-        QString minValueParameterName = QString("SERVO%1_MIN").arg(servoIndex);
-        QString maxValueParameterName = QString("SERVO%1_MAX").arg(servoIndex);
-        QString reversedParameterName = QString("SERVO%1_REVERSED").arg(servoIndex);
+    for (size_t servoIndex = 1; servoIndex <= _servoCount; ++servoIndex) {
+        QString funcName  = QString("SERVO%1_FUNCTION").arg(servoIndex);
+        QString minName   = QString("SERVO%1_MIN").arg(servoIndex);
+        QString maxName   = QString("SERVO%1_MAX").arg(servoIndex);
+        QString revName   = QString("SERVO%1_REVERSED").arg(servoIndex);
 
-        if (!_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), functionParameterName)) {
-            qCDebug(ServoControllerLog) << "ServoController failed to initialize because of missing SERVOx_FUNCTION for servo:" << servoIndex;
-            return;
-        }
-
-        if (!_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), minValueParameterName)) {
-            qCDebug(ServoControllerLog) << "ServoController failed to initialize because of missing SERVOx_MIN for servo:" << servoIndex;
-            return;
-        }
-
-        if (!_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), maxValueParameterName)) {
-            qCDebug(ServoControllerLog) << "ServoController failed to initialize because of missing SERVOx_MAX for servo:" << servoIndex;
-            return;
-        }
-
-        if (!_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), reversedParameterName)) {
-            qCDebug(ServoControllerLog) << "ServoController failed to initialize because of missing SERVOx_REVERSED for servo:" << servoIndex;
+        if (!_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), funcName) ||
+            !_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), minName)  ||
+            !_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), maxName)  ||
+            !_vehicle->parameterManager()->parameterExists(_vehicle->defaultComponentId(), revName)) {
+            qCDebug(ServoControllerLog) << "ServoController: missing parameters for servo" << servoIndex;
             return;
         }
     }
 
-    for (size_t servoIndex = 1; servoIndex <= _servoOutputsRaw.size(); servoIndex++) {
-        QString functionParameterName = QString("SERVO%1_FUNCTION").arg(servoIndex);
-        QString minValueParameterName = QString("SERVO%1_MIN").arg(servoIndex);
-        QString maxValueParameterName = QString("SERVO%1_MAX").arg(servoIndex);
-        QString reversedParameterName = QString("SERVO%1_REVERSED").arg(servoIndex);
+    for (size_t servoIndex = 1; servoIndex <= _servoCount; ++servoIndex) {
+        QString funcName  = QString("SERVO%1_FUNCTION").arg(servoIndex);
+        QString minName   = QString("SERVO%1_MIN").arg(servoIndex);
+        QString maxName   = QString("SERVO%1_MAX").arg(servoIndex);
+        QString revName   = QString("SERVO%1_REVERSED").arg(servoIndex);
 
-        Fact* functionParameter = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), functionParameterName);
-        Fact* minValueParameter = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), minValueParameterName);
-        Fact* maxValueParameter = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), maxValueParameterName);
-        Fact* reversedParameter = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), reversedParameterName);
+        Fact* funcFact = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), funcName);
+        Fact* minFact  = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), minName);
+        Fact* maxFact  = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), maxName);
+        Fact* revFact  = _vehicle->parameterManager()->getParameter(_vehicle->defaultComponentId(), revName);
 
-        quint16 rawValue = 0;
-        uint16_t function = functionParameter->rawValue().toUInt();
-        quint16 minValue = minValueParameter->rawValue().toUInt();
-        quint16 maxValue = maxValueParameter->rawValue().toUInt();
-        bool reversed = reversedParameter->rawValue().toBool();
-
-        Servo* servo = new Servo(QString("S%1").arg(servoIndex), servoIndex - 1, function, rawValue, minValue, maxValue, reversed);
+        Servo* servo = new Servo(QString("S%1").arg(servoIndex),
+                                 static_cast<quint16>(servoIndex - 1),
+                                 funcFact, minFact, maxFact, revFact);
         QQmlEngine::setObjectOwnership(servo, QQmlEngine::CppOwnership);
 
-        connect(functionParameter, &Fact::vehicleUpdated, servo, &Servo::onFunctionParameterChanged);
-        connect(minValueParameter, &Fact::vehicleUpdated, servo, &Servo::onMinParameterChanged);
-        connect(maxValueParameter, &Fact::vehicleUpdated, servo, &Servo::onMaxParameterChanged);
-        connect(reversedParameter, &Fact::vehicleUpdated, servo, &Servo::onReversedParameterChanged);
+        connect(funcFact, &Fact::vehicleUpdated, servo, &Servo::onFunctionParameterChanged);
+        connect(minFact,  &Fact::vehicleUpdated, servo, &Servo::onMinParameterChanged);
+        connect(maxFact,  &Fact::vehicleUpdated, servo, &Servo::onMaxParameterChanged);
+        connect(revFact,  &Fact::vehicleUpdated, servo, &Servo::onReversedParameterChanged);
 
         _servoModel.append(QVariant::fromValue(servo));
     }
 
     _initialized = true;
-
     emit servoModelChanged();
     emit initializedChanged();
 }
@@ -201,36 +208,32 @@ void ServoController::_handleServoOutputRaw(const mavlink_message_t& msg) {
         return;
     }
 
-    mavlink_servo_output_raw_t  _sor;
-    mavlink_msg_servo_output_raw_decode(&msg, &_sor);
+    mavlink_servo_output_raw_t sor;
+    mavlink_msg_servo_output_raw_decode(&msg, &sor);
 
-    const uint8_t* base = reinterpret_cast<const uint8_t*>(&_sor);
+    const uint8_t* base = reinterpret_cast<const uint8_t*>(&sor);
     size_t offset1 = offsetof(mavlink_servo_output_raw_t, servo1_raw);
     memcpy(_servoOutputsRaw.data(), base + offset1, 8 * sizeof(uint16_t));
     size_t offset2 = offsetof(mavlink_servo_output_raw_t, servo9_raw);
     memcpy(_servoOutputsRaw.data() + 8, base + offset2, 8 * sizeof(uint16_t));
 
-    for(size_t servoIndex = 0; servoIndex < _servoOutputsRaw.size(); servoIndex++) {
-        Servo* serv = _findServo(servoIndex);
-        if (serv) {
-            serv->setValue(_servoOutputsRaw[servoIndex]);
+    for (size_t i = 0; i < _servoOutputsRaw.size(); ++i) {
+        Servo* servo = _findServo(static_cast<uint16_t>(i));
+        if (servo) {
+            servo->setValue(_servoOutputsRaw[i]);
         }
     }
 }
 
 bool ServoController::_hasServo(uint16_t index) {
-    for (uint16_t i = 0; i < _servoModel.size(); ++i) {
-        if (_servoModel[i].value<Servo*>()->index() == index) {
-            return true;
-        }
-    }
-    return false;
+    return _findServo(index) != nullptr;
 }
 
 Servo* ServoController::_findServo(uint16_t index) {
-    for (uint16_t i = 0; i < _servoModel.size(); ++i) {
-        if (_servoModel[i].value<Servo*>()->index() == index) {
-            return _servoModel[i].value<Servo*>();
+    for (const QVariant& v : _servoModel) {
+        Servo* s = v.value<Servo*>();
+        if (s && s->index() == index) {
+            return s;
         }
     }
     return nullptr;
