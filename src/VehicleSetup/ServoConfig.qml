@@ -166,6 +166,7 @@ SetupPage {
                                     Layout.preferredWidth: 120
                                     Layout.alignment:      Qt.AlignVCenter
                                     enabled:               servoPage.isEditingEnabled
+                                    indexModel:            false
                                 }
                             }
                         }
