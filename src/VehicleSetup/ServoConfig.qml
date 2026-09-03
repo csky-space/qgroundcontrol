@@ -22,10 +22,11 @@ import QGroundControl.FactControls  1.0
 
 /// Servo Config
 SetupPage {
-    id:                 servoPage
-    pageComponent:      pageComponent
-    pageName:           qsTr("Servo")
-    pageDescription:    ""
+    id:              servoPage
+    pageComponent:   pageComponent
+    pageName:        qsTr("Servo")
+    pageDescription: ""
+    anchors.fill:    parent
 
     property var activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
     property var servoController:   activeVehicle.servoController
@@ -36,137 +37,135 @@ SetupPage {
 
         ColumnLayout {
             spacing: 10
-            anchors.fill: parent
-            anchors.margins: 10
+            width:   servoPage.width
+            height:  servoPage.height
 
             RowLayout {
                 Layout.fillWidth: true
 
                 QGCCheckBox {
-                    id: editToggle
-                    text: qsTr("Enable editing")
-                    checked: servoPage.isEditingEnabled
+                    id:        editToggle
+                    text:      qsTr("Enable editing")
+                    checked:   servoPage.isEditingEnabled
                     onClicked: {
                         servoPage.isEditingEnabled = checked
                     }
                 }
             }
 
-            GridLayout {
-                columns: 4
-                columnSpacing: 8
-                rowSpacing: 8
-                Layout.fillWidth: true
+            GridView {
+                id:                gridView
+                model:             servoController.servoModel
+                Layout.fillWidth:  true
+                Layout.fillHeight: true
+                cellWidth:         320
+                cellHeight:        120
+                flow:              GridView.FlowLeftToRight
+                clip:              true
 
-                Repeater {
-                    model: servoController.servoModel
+                delegate: Rectangle {
+                    color:        "#00000000"
+                    border.width: 1
+                    border.color: "#ffffff"
+                    radius:       4
+                    width:        gridView.cellWidth - 10
+                    height:       gridView.cellHeight - 10
+                    x:            5
+                    y:            5
 
-                    Rectangle {
-                        required property int index
+                    required property int index
+                    property var servo: servoController.servoModel[index]
 
-                        implicitWidth:  servoInfoLayout.implicitWidth
-                        implicitHeight: servoInfoLayout.implicitHeight
-                        color:          "#00000000"
-                        border.width:   1
-                        border.color:   "#ffffff"
-                        radius:         4
+                    ColumnLayout {
+                        anchors.fill:    parent
+                        anchors.margins: 6
 
-                        property var servo: servoController.servoModel[index]
+                        QGCLabel {
+                            text:                qsTr("Servo ") + (servo.index + 1)
+                            Layout.alignment:    Qt.AlignVCenter
+                            Layout.minimumWidth: 60
+                            font.pointSize:      ScreenTools.largeFontPointSize
+                        }
 
-                        ColumnLayout {
-                            id: servoInfoLayout
+                        RowLayout {
+                            id: servoStateLayout
 
-                            ColumnLayout {
-                                Layout.margins: 6
+                            QGCLabel {
+                                text:                qsTr("min:")
+                                Layout.alignment:    Qt.AlignVCenter
+                                Layout.minimumWidth: 20
+                            }
+
+                            FactTextField {
+                                fact:                  servo.minValueFact
+                                Layout.alignment:      Qt.AlignVCenter
+                                Layout.preferredWidth: 70
+                                enabled:               servoPage.isEditingEnabled
+                            }
+
+                            Rectangle {
+                                height:           ScreenTools.defaultFontPixelHeight
+                                width:            120
+                                color:            "#333333"
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                radius:           4
+
+                                Rectangle {
+                                    color:          "#20af20"
+                                    anchors.left:   parent.left
+                                    anchors.top:    parent.top
+                                    anchors.bottom: parent.bottom
+                                    width:          servo.normalizedValue * parent.width
+                                    radius:         4
+                                }
 
                                 QGCLabel {
-                                    text:                qsTr("Servo ") + (servo.index + 1)
-                                    Layout.alignment:    Qt.AlignVCenter
-                                    Layout.minimumWidth: 60
-                                    font.pointSize:     ScreenTools.largeFontPointSize
+                                    text:             servo.value
+                                    anchors.centerIn: parent
+                                }
+                            }
+
+                            QGCLabel {
+                                text:                qsTr("max:")
+                                Layout.alignment:    Qt.AlignVCenter
+                                Layout.minimumWidth: 20
+                            }
+
+                            FactTextField {
+                                fact:                  servo.maxValueFact
+                                Layout.alignment:      Qt.AlignVCenter
+                                Layout.preferredWidth: 70
+                                enabled:               servoPage.isEditingEnabled
+                            }
+                        }
+
+                        RowLayout {
+                            FactCheckBox {
+                                text:             qsTr("Reversed")
+                                fact:             servo.reversedFact
+                                Layout.alignment: Qt.AlignVCenter
+                                enabled:          servoPage.isEditingEnabled
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                height:           1
+                            }
+
+                            RowLayout {
+                                Layout.alignment: Qt.AlignVCenter
+
+                                QGCLabel {
+                                    text:             qsTr("function:")
+                                    Layout.alignment: Qt.AlignVCenter
                                 }
 
-                                RowLayout {
-                                    id: servoStateLayout
-
-                                    QGCLabel {
-                                        text:                qsTr("min:")
-                                        Layout.alignment:    Qt.AlignVCenter
-                                        Layout.minimumWidth: 20
-                                    }
-
-                                    FactTextField {
-                                        fact:                  servo.minValueFact
-                                        Layout.alignment:      Qt.AlignVCenter
-                                        Layout.preferredWidth: 70
-                                        enabled:               servoPage.isEditingEnabled
-                                    }
-
-                                    Rectangle {
-                                        height:           ScreenTools.defaultFontPixelHeight
-                                        width:            120
-                                        color:            "#333333"
-                                        Layout.fillWidth: true
-                                        Layout.alignment: Qt.AlignVCenter
-                                        radius:           4
-
-                                        Rectangle {
-                                            color:          "#20af20"
-                                            anchors.left:   parent.left
-                                            anchors.top:    parent.top
-                                            anchors.bottom: parent.bottom
-                                            width:          servo.normalizedValue * parent.width
-                                            radius:         4
-                                        }
-
-                                        QGCLabel {
-                                            text:             servo.value
-                                            anchors.centerIn: parent
-                                        }
-                                    }
-
-                                    QGCLabel {
-                                        text:                qsTr("max:")
-                                        Layout.alignment:    Qt.AlignVCenter
-                                        Layout.minimumWidth: 20
-                                    }
-
-                                    FactTextField {
-                                        fact:                  servo.maxValueFact
-                                        Layout.alignment:      Qt.AlignVCenter
-                                        Layout.preferredWidth: 70
-                                        enabled:               servoPage.isEditingEnabled
-                                    }
-                                }
-
-                                RowLayout {
-                                    FactCheckBox {
-                                        text: qsTr("Reversed")
-                                        fact: servo.reversedFact
-                                        Layout.alignment:    Qt.AlignVCenter
-                                        enabled:             servoPage.isEditingEnabled   // добавлено
-                                    }
-
-                                    Item {
-                                        Layout.fillWidth: true
-                                        height: 1
-                                    }
-
-                                    RowLayout {
-                                        Layout.alignment:    Qt.AlignVCenter
-
-                                        QGCLabel {
-                                            text:                qsTr("function:")
-                                            Layout.alignment:    Qt.AlignVCenter
-                                        }
-
-                                        FactComboBox {
-                                            fact: servo.functionFact
-                                            Layout.preferredWidth: 120
-                                            Layout.alignment:    Qt.AlignVCenter
-                                            enabled:             servoPage.isEditingEnabled   // добавлено
-                                        }
-                                    }
+                                FactComboBox {
+                                    fact:                  servo.functionFact
+                                    Layout.preferredWidth: 120
+                                    Layout.alignment:      Qt.AlignVCenter
+                                    enabled:               servoPage.isEditingEnabled
                                 }
                             }
                         }
