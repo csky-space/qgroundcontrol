@@ -127,6 +127,23 @@ Item {
             }
 
             QGCButton {
+                id:                  clearButton
+                anchors.bottom:      parent.bottom
+                anchors.right:       followTail.left
+                anchors.rightMargin: ScreenTools.defaultFontPixelWidth
+                text:                qsTr("Clear Log")
+                onClicked:           debugMessageModel.clear()
+            }
+
+            QGCButton {
+                id:             filterButton
+                anchors.bottom: parent.bottom
+                anchors.right:  parent.right
+                text:           qsTr("Set Logging")
+                onClicked:      filtersDialogComponent.createObject(mainWindow).open()
+            }
+
+            QGCButton {
                 id:                     followTail
                 anchors.right:          filterButton.left
                 anchors.rightMargin:    ScreenTools.defaultFontPixelWidth
@@ -140,14 +157,6 @@ Item {
                         listview.positionViewAtEnd();
                     }
                 }
-            }
-
-            QGCButton {
-                id:             filterButton
-                anchors.bottom: parent.bottom
-                anchors.right:  parent.right
-                text:           qsTr("Set Logging")
-                onClicked:      filtersDialogComponent.createObject(mainWindow).open()
             }
         }
     }
@@ -225,4 +234,3 @@ Item {
         }
     }
 }
-

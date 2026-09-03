@@ -83,6 +83,12 @@ void AppLogModel::writeMessages(const QString dest_file)
     });
 }
 
+void AppLogModel::clear() {
+    if (rowCount() > 0) {
+        removeRows(0, rowCount());
+    }
+}
+
 void AppLogModel::log(const QString message)
 {
     emit debug_model->emitLog(message);
