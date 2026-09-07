@@ -127,6 +127,18 @@ Item {
             }
 
             QGCButton {
+                id:                     popoutBtn
+                anchors.right:          clearButton.left
+                anchors.rightMargin:    ScreenTools.defaultFontPixelWidth
+                anchors.bottom:         parent.bottom
+                text:                   qsTr("Popout")
+
+                onClicked: {
+                    mainWindow.createWindowedPage("Console Messages", "QGroundControl/Controls/AppMessages.qml");
+                }
+            }
+
+            QGCButton {
                 id:                  clearButton
                 anchors.bottom:      parent.bottom
                 anchors.right:       followTail.left

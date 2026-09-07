@@ -695,7 +695,7 @@ ApplicationWindow {
     // to mainWindow. Otherwise if they are rooted to the AnalyzeView itself they will die when the analyze viewSwitch
     // closes.
 
-    function createrWindowedAnalyzePage(title, source) {
+    function createWindowedPage(title, source) {
         var windowedPage = windowedAnalyzePage.createObject(mainWindow)
         windowedPage.title = title
         windowedPage.source = source
