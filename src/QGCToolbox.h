@@ -30,6 +30,7 @@ class UASMessageHandler;
 class QGCPositionManager;
 class VideoManager;
 class SignalQualityMonitor;
+class AntennaController;
 class MAVLinkLogManager;
 class QGCCorePlugin;
 class SettingsManager;
@@ -70,6 +71,7 @@ public:
     QGCPositionManager*         qgcPositionManager      () { return _qgcPositionManager; }
     VideoManager*               videoManager            () { return _videoManager; }
     SignalQualityMonitor*       signalQualityMonitor    () { return _signalQualityMonitor; }
+    AntennaController*          antennaController       () { return _antennaController; }
     MAVLinkLogManager*          mavlinkLogManager       () { return _mavlinkLogManager; }
     QGCCorePlugin*              corePlugin              () { return _corePlugin; }
     SettingsManager*            settingsManager         () { return _settingsManager; }
@@ -113,6 +115,7 @@ private:
     QGCPositionManager*         _qgcPositionManager     = nullptr;
     VideoManager*               _videoManager           = nullptr;
     SignalQualityMonitor*       _signalQualityMonitor   = nullptr;
+    AntennaController*          _antennaController      = nullptr;
     MAVLinkLogManager*          _mavlinkLogManager      = nullptr;
     QGCCorePlugin*              _corePlugin             = nullptr;
     SettingsManager*            _settingsManager        = nullptr;

@@ -365,7 +365,7 @@ Item {
                             }
                             let index = Math.abs(angle) / markStepDegrees;
 
-                            console.log("Mark angle:", angle, index, (angle % 15) == 0)
+                            // console.log("Mark angle:", angle, index, (angle % 15) == 0)
 
                             if (angle == 0) {
                                 ctx.moveTo(-parent.width / 2, i * markStepPixels-offsetY);

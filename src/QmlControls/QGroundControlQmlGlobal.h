@@ -68,6 +68,7 @@ public:
     Q_PROPERTY(QGCPositionManager*      qgcPositionManger       READ    qgcPositionManger       CONSTANT)
     Q_PROPERTY(VideoManager*            videoManager            READ    videoManager            CONSTANT)
     Q_PROPERTY(SignalQualityMonitor*    signalQualityMonitor    READ    signalQualityMonitor    CONSTANT)
+    Q_PROPERTY(AntennaController*       antennaController       READ    antennaController       CONSTANT)
     Q_PROPERTY(MAVLinkLogManager*       mavlinkLogManager       READ    mavlinkLogManager       CONSTANT)
     Q_PROPERTY(SettingsManager*         settingsManager         READ    settingsManager         CONSTANT)
     Q_PROPERTY(ADSBVehicleManager*      adsbVehicleManager      READ    adsbVehicleManager      CONSTANT)
@@ -169,6 +170,7 @@ public:
     MissionCommandTree*     missionCommandTree  ()  { return _missionCommandTree; }
     VideoManager*           videoManager        ()  { return _videoManager; }
     SignalQualityMonitor*   signalQualityMonitor()  { return _signalQualityMonitor; }
+    AntennaController*      antennaController   ()  { return _antennaController; }
     MAVLinkLogManager*      mavlinkLogManager   ()  { return _mavlinkLogManager; }
     QGCCorePlugin*          corePlugin          ()  { return _corePlugin; }
     SettingsManager*        settingsManager     ()  { return _settingsManager; }
@@ -266,6 +268,7 @@ private:
     MissionCommandTree*     _missionCommandTree     = nullptr;
     VideoManager*           _videoManager           = nullptr;
     SignalQualityMonitor*   _signalQualityMonitor   = nullptr;
+    AntennaController*      _antennaController      = nullptr;
     MAVLinkLogManager*      _mavlinkLogManager      = nullptr;
     QGCCorePlugin*          _corePlugin             = nullptr;
     FirmwarePluginManager*  _firmwarePluginManager  = nullptr;

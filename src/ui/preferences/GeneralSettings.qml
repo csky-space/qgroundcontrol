@@ -574,6 +574,124 @@ Rectangle {
                         }
                     }
 
+                    Item { width: 1; height: _margins; visible: antennaControllerSectionLabel.visible }
+                    QGCLabel {
+                        id: antennaControllerSectionLabel
+                        text: qsTr("Antenna controller settings")
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: antennaControllerCol.height + (_margins * 2)
+                        Layout.preferredWidth:  antennaControllerCol.width + (_margins * 2)
+                        color:                  qgcPal.windowShade
+                        visible:                antennaControllerSectionLabel.visible
+                        Layout.fillWidth:       true
+
+                        ColumnLayout {
+                            id:                         antennaControllerCol
+                            anchors.margins:            _margins
+                            anchors.top:                parent.top
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                            spacing:                    _margins
+
+                            GridLayout {
+                                id:         antennaControllerGrid
+                                columns:    2
+                                QGCLabel {
+                                    text:       qsTr("Address")
+                                }
+                                QGCTextField {
+                                    id:                     antennaControllerAddressField
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    text:                   address;
+
+                                    property var address: QGroundControl.antennaController ? QGroundControl.antennaController.address : "192.168.2.2"
+
+                                    onEditingFinished: {
+                                        if (QGroundControl.antennaController) {
+                                            QGroundControl.antennaController.address = text;
+                                        }
+                                    }
+
+                                    Connections {
+                                        target:  QGroundControl.antennaController ? QGroundControl.antennaController : null
+                                        onAddressChanged: {
+                                            antennaControllerAddressField.text = QGroundControl.antennaController.address;
+                                        }
+                                    }
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Port")
+                                }
+                                QGCTextField {
+                                    id:                     antennaControllerPortField
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    text:                   QGroundControl.antennaController ? QGroundControl.antennaController.port : "8000"
+                                    enabled:                false
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Login")
+                                }
+                                QGCTextField {
+                                    id:                     antennaControllerLoginField
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    text:                   login;
+
+                                    property var login: QGroundControl.antennaController ? QGroundControl.antennaController.login : "Operator"
+
+                                    onEditingFinished: {
+                                        if (QGroundControl.antennaController) {
+                                            QGroundControl.antennaController.login = text;
+                                        }
+                                    }
+
+                                    Connections {
+                                        target:  QGroundControl.antennaController ? QGroundControl.antennaController : null
+                                        onLoginChanged: {
+                                            antennaControllerLoginField.text = QGroundControl.antennaController.login;
+                                        }
+                                    }
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Password")
+                                }
+                                QGCTextField {
+                                    id:                     antennaControllerPasswordField
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    text:                   password;
+                                    echoMode:               TextInput.Password
+
+
+                                    property var password: QGroundControl.antennaController ? QGroundControl.antennaController.password : ""
+
+                                    onEditingFinished: {
+                                        if (QGroundControl.antennaController) {
+                                            QGroundControl.antennaController.password = text;
+                                        }
+                                    }
+
+                                    Connections {
+                                        target:  QGroundControl.antennaController ? QGroundControl.antennaController : null
+                                        onPasswordChanged: {
+                                            antennaControllerPasswordField.text = QGroundControl.antennaController.password;
+                                        }
+                                    }
+                                }
+
+                                QGCButton {
+                                    text: "Reset"
+                                    onClicked: {
+                                        if (QGroundControl.antennaController) {
+                                            QGroundControl.antennaController.resetSettings();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Item { width: 1; height: _margins; visible: planViewSectionLabel.visible }
                     QGCLabel {
                         id:         planViewSectionLabel

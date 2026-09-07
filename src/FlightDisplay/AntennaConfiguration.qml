@@ -37,9 +37,12 @@ ToolStripAction {
     dropPanelComponent: Rectangle {
         id:       antennaDropPanel
         color:    "#00000000"
+        radius: 10
 
         property real targetAngle: 0;
         property real dialSize: 180
+        property int minAngle: -165;
+        property int maxAngle: 165;
 
         width:    mainLayout.implicitWidth
         height:   mainLayout.implicitHeight
@@ -59,109 +62,205 @@ ToolStripAction {
 
             Rectangle {
                 Layout.preferredWidth:  antennaDropPanel.dialSize
-                Layout.preferredHeight: antennaDropPanel.dialSize / 2
+                Layout.preferredHeight: antennaDropPanel.dialSize
                 Layout.alignment:       Qt.AlignHCenter
-                color:                  "#00000000" // Make transparent so it doesn't block the dial image
+                color:                  "#00000000"
 
-                Image {
-                    source:             "/qmlimages/antenna-direction-dial.svg"
-                    mipmap:             true
-                    fillMode:           Image.PreserveAspectFit
-                    anchors.fill:       parent
-                    sourceSize.height:  parent.height
+                Canvas {
+                    id:           dirCanvas
+                    anchors.fill: parent
 
-                    Shape {
-                        id:               dirMark
-                        width:            size
-                        height:           size
-                        anchors.left:     parent.horizontalCenter
-                        anchors.bottom:   parent.bottom
+                    onPaint: {
+                        const ctx = getContext("2d");
+                        const centerX = width / 2;
+                        const centerY = height / 2;
+                        const radius = (width - 2) / 2;
 
-                        rotation: antennaDropPanel.targetAngle
+                        const minAngleRadians = (antennaDropPanel.minAngle - 90) * Math.PI / 180;
+                        const maxAngleRadians = (antennaDropPanel.maxAngle - 90) * Math.PI / 180;
 
-                        property real size: antennaDropPanel.dialSize * 0.075
-                        property real targetAngleRadians: antennaDropPanel.targetAngle * (Math.PI/180.0)
-                        property real marksRadius: antennaDropPanel.dialSize / 2.5 // Safe reference directly to dialSize
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.fillStyle = "#80000000";
 
-                        ShapePath {
-                            strokeColor: "#8000ff00"
-                            strokeWidth: 1
-                            fillColor: "#8000ff00"
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.arc(centerX, centerY, radius, minAngleRadians, maxAngleRadians, true);
+                        ctx.closePath();
+                        ctx.fill();
 
-                            startX: dirMark.width / 2
-                            startY: 0
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+                        ctx.closePath();
+                        ctx.stroke();
 
-                            PathLine { x: dirMark.width; y: dirMark.height }
-                            PathLine { x: 0; y: dirMark.height }
-                            PathLine { x: dirMark.width / 2; y: 0 }
-                        }
+                        for (let deg = 0; deg < 360; deg += 10) {
+                            const rad = deg * Math.PI / 180;
+                            const cRad = Math.cos(rad);
+                            const sRad = Math.sin(rad);
 
-                        transform: Translate {
-                            x: dirMark.marksRadius * Math.sin(dirMark.targetAngleRadians) - dirMark.size / 2
-                            y: -dirMark.marksRadius * Math.cos(dirMark.targetAngleRadians) + 2
-                        }
-                    }
-
-                    MouseArea {
-                        id:           dialMouseArea
-                        anchors.fill: parent
-
-                        function setAngleFromMousePosition(x, y) {
-                            var offsetX = x - (width / 2);
-                            var offsetY = (height - dirMark.size / 2) - y;
-                            var r = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-
-                            if (r < 10 || r > width / 2) {
-                                return;
+                            let lineWidth = 1;
+                            let tickLength = radius * 0.075;
+                            if (deg % 30 === 0) {
+                                lineWidth = 2;
+                                tickLength = radius * 0.15;
                             }
+                            const innerRadius = radius - tickLength;
 
-                            var theta = Math.atan2(offsetY, offsetX) * (180 / Math.PI);
-                            var normalizedAngle = -antennaDropPanel.normalizeTo180(theta - 90);
+                            const outerX = centerX + radius * sRad;
+                            const outerY = centerY - radius * cRad;
 
-                            normalizedAngle = Math.min(Math.max(normalizedAngle, -90), 90);
+                            const innerX = centerX + innerRadius * sRad;
+                            const innerY = centerY - innerRadius * cRad;
 
-                            console.log(normalizedAngle);
+                            ctx.lineWidth = lineWidth;
 
-                            antennaDropPanel.targetAngle = normalizedAngle;
+                            ctx.beginPath();
+                            ctx.moveTo(outerX, outerY);
+                            ctx.lineTo(innerX, innerY);
+                            ctx.stroke();
                         }
 
-                        onPositionChanged: (mouse) => {
-                            setAngleFromMousePosition(mouse.x, mouse.y);
-                        }
+                        const labelAngles = [0, 30, 60, 90, 120, 150, -30, -60, -90, -120, -150, 180];
+                        const labelOffset = radius * 0.25;
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "10px sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
 
-                        onReleased: (mouse) => {
-                            setAngleFromMousePosition(mouse.x, mouse.y);
+                        for (let i = 0; i < labelAngles.length; i++) {
+                            const deg = labelAngles[i];
+                            const rad = deg * Math.PI / 180;
+                            const x = centerX + (radius - labelOffset) * Math.sin(rad);
+                            const y = centerY - (radius - labelOffset) * Math.cos(rad);
+                            let label = deg.toString();
+                            if (deg === 180) label = "±180";
+                            ctx.fillText(label, x, y);
                         }
                     }
+                }
 
-                    QGCTextField {
-                        id:                       altitudeInput
-                        text:                     antennaDropPanel.targetAngle.toFixed(2)
-                        unitsLabel:               "°"
-                        width:                    60
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom:           parent.bottom
+                Shape {
+                    id:               dirMark
+                    width:            size
+                    height:           size
+                    anchors.centerIn: parent
 
-                        onEditingFinished: {
-                            let value = parseFloat(text) ?? 0.0;
-                            if (isNaN(value)) value = 0.0;
-                            value = Math.min(Math.max(value, -90), 90);
-                            antennaDropPanel.targetAngle = value;
+                    rotation: antennaDropPanel.targetAngle
+
+                    property real size: antennaDropPanel.dialSize * 0.075
+                    property real targetAngleRadians: antennaDropPanel.targetAngle * (Math.PI/180.0)
+                    property real marksRadius: antennaDropPanel.dialSize / 2.25
+
+                    ShapePath {
+                        strokeColor: "#8000ff00"
+                        strokeWidth: 1
+                        fillColor: "#8000ff00"
+
+                        startX: dirMark.width / 2
+                        startY: 0
+
+                        PathLine { x: dirMark.width; y: dirMark.height }
+                        PathLine { x: 0; y: dirMark.height }
+                        PathLine { x: dirMark.width / 2; y: 0 }
+                    }
+
+                    transform: Translate {
+                        x: dirMark.marksRadius * Math.sin(dirMark.targetAngleRadians)
+                        y: -dirMark.marksRadius * Math.cos(dirMark.targetAngleRadians)
+                    }
+                }
+
+                MouseArea {
+                    id:           dialMouseArea
+                    anchors.fill: parent
+
+                    function setAngleFromMousePosition(x, y) {
+                        var offsetX = x - (width / 2);
+                        var offsetY = (height / 2) - y;
+                        var r = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+
+                        if (r < 10 || r > width / 2) {
+                            return;
+                        }
+
+                        var theta = Math.atan2(offsetY, offsetX) * (180 / Math.PI);
+                        var normalizedAngle = -antennaDropPanel.normalizeTo180(theta - 90);
+
+                        normalizedAngle = Math.min(Math.max(Math.round(normalizedAngle), antennaDropPanel.minAngle), antennaDropPanel.maxAngle);
+
+                        antennaDropPanel.targetAngle = normalizedAngle;
+                    }
+
+                    onPositionChanged: (mouse) => {
+                        setAngleFromMousePosition(mouse.x, mouse.y);
+                    }
+
+                    onReleased: (mouse) => {
+                        setAngleFromMousePosition(mouse.x, mouse.y);
+                    }
+                }
+
+                QGCTextField {
+                    id:                       angleInput
+                    text:                     antennaDropPanel.targetAngle.toFixed(0)
+                    unitsLabel:               "°"
+                    width:                    60
+                    anchors.centerIn: parent
+
+                    onEditingFinished: {
+                        let value = parseFloat(text) ?? 0.0;
+                        if (isNaN(value)) value = 0.0;
+                        value = Math.min(Math.max(Math.round(value), antennaDropPanel.minAngle), antennaDropPanel.maxAngle);
+                        text = value
+                        antennaDropPanel.targetAngle = value;
+                    }
+                }
+            }
+
+            RowLayout {
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                QGCButton {
+                    text: "Send"
+                    onClicked: {
+                        if (QGroundControl.antennaController) {
+                            QGroundControl.antennaController.sendSetAngleCommand(Math.round(antennaDropPanel.targetAngle));
+                        }
+                    }
+                }
+                QGCButton {
+                    text: "To zero"
+                    onClicked: {
+                        if (QGroundControl.antennaController) {
+                            antennaDropPanel.targetAngle = 0;
+                            QGroundControl.antennaController.sendSetAngleCommand(0);
                         }
                     }
                 }
             }
 
             RowLayout {
+                anchors.horizontalCenter: parent.horizontalCenter
                 Layout.alignment: Qt.AlignHCenter
                 spacing:          8
 
                 QGCButton {
-                    text: "Узкий"
+                    text: "Antenna 1"
+                    onClicked: {
+                        if (QGroundControl.antennaController) {
+                            QGroundControl.antennaController.sendSetAntennaCommand(0);
+                        }
+                    }
                 }
 
                 QGCButton {
-                    text: "Широкий"
+                    text: "Antenna 2"
+                    onClicked: {
+                        if (QGroundControl.antennaController) {
+                            QGroundControl.antennaController.sendSetAntennaCommand(1);
+                        }
+                    }
                 }
             }
         }

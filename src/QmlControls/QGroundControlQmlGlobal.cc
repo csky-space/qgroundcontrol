@@ -73,6 +73,7 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
     _missionCommandTree     = toolbox->missionCommandTree();
     _videoManager           = toolbox->videoManager();
     _signalQualityMonitor   = toolbox->signalQualityMonitor();
+    _antennaController      = toolbox->antennaController();
     _mavlinkLogManager      = toolbox->mavlinkLogManager();
     _corePlugin             = toolbox->corePlugin();
     _firmwarePluginManager  = toolbox->firmwarePluginManager();

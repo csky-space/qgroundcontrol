@@ -2,13 +2,9 @@
 
 #include <QGCApplication.h>
 #include <ParameterManager.h>
-#include <cmath>          // для fminf/fmaxf
+#include <cmath>          
 
 QGC_LOGGING_CATEGORY(ServoControllerLog, "ServoControllerLog")
-
-// ----------------------------------------------------------------------------
-// Servo implementation
-// ----------------------------------------------------------------------------
 
 Servo::Servo(const QString& name, quint16 index,
              Fact* functionFact, Fact* minValueFact, Fact* maxValueFact, Fact* reversedFact)
@@ -18,9 +14,8 @@ Servo::Servo(const QString& name, quint16 index,
     , _minValueFact(minValueFact)
     , _maxValueFact(maxValueFact)
     , _reversedFact(reversedFact)
-    , _value(0)   // будет обновлено из MAVLink
+    , _value(0)
 {
-    // Инициализация внутренних копий параметров из Fact'ов
     _function  = _functionFact ? _functionFact->rawValue().toUInt() : 0;
     _minValue  = _minValueFact ? _minValueFact->rawValue().toUInt() : 1000;
     _maxValue  = _maxValueFact ? _maxValueFact->rawValue().toUInt() : 2000;
@@ -44,7 +39,6 @@ float Servo::normalizedValue() const {
     return _normalizedValue;
 }
 
-// Геттеры для Fact* (исправлено: возвращают Fact*, а не quint16/bool)
 Fact* Servo::functionFact() const {
     return _functionFact;
 }
@@ -64,7 +58,6 @@ Fact* Servo::reversedFact() const {
 void Servo::setValue(quint16 value) {
     if (_value != value) {
         _value = value;
-        // пересчёт нормализованного значения с учётом текущих min/max
         float range = static_cast<float>(_maxValue - _minValue);
         if (range > 0.0f) {
             _normalizedValue = fminf(1.0f, fmaxf(0.0f, static_cast<float>(_value - _minValue) / range));
@@ -76,12 +69,11 @@ void Servo::setValue(quint16 value) {
     }
 }
 
-// Слоты для обновления при изменении параметров (приходят от Fact::vehicleUpdated)
 void Servo::onFunctionParameterChanged(QVariant value) {
     quint16 newFunc = value.toUInt();
     if (_function != newFunc) {
         _function = newFunc;
-        emit functionFactChanged();   // уведомление QML об изменении свойства functionFact
+        emit functionFactChanged(); 
     }
 }
 
@@ -96,7 +88,7 @@ void Servo::onMinParameterChanged(QVariant value) {
             _normalizedValue = 0.0f;
         }
         emit minValueFactChanged();
-        emit normalizedValueChanged();   // т.к. изменился нормализатор
+        emit normalizedValueChanged(); 
     }
 }
 
