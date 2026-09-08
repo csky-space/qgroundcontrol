@@ -608,7 +608,7 @@ Rectangle {
 
                                     onEditingFinished: {
                                         if (QGroundControl.antennaController) {
-                                            QGroundControl.antennaController.address = text;
+                                            QGroundControl.antennaController.setAddress(text);
                                         }
                                     }
 
@@ -642,7 +642,7 @@ Rectangle {
 
                                     onEditingFinished: {
                                         if (QGroundControl.antennaController) {
-                                            QGroundControl.antennaController.login = text;
+                                            QGroundControl.antennaController.setLogin(text);
                                         }
                                     }
 
@@ -668,7 +668,7 @@ Rectangle {
 
                                     onEditingFinished: {
                                         if (QGroundControl.antennaController) {
-                                            QGroundControl.antennaController.password = text;
+                                            QGroundControl.antennaController.setPassword(text);
                                         }
                                     }
 
@@ -681,13 +681,72 @@ Rectangle {
                                 }
 
                                 QGCButton {
-                                    text: "Reset"
+                                    text: "Reset Access"
                                     onClicked: {
                                         if (QGroundControl.antennaController) {
-                                            QGroundControl.antennaController.resetSettings();
+                                            QGroundControl.antennaController.resetAccessSettings();
                                         }
                                     }
                                 }
+                                Item { width: 1; height: _margins; }
+
+                                QGCLabel {
+                                    text:       qsTr("Min Angle")
+                                }
+                                QGCTextField {
+                                    id:                     antennaControllerMinAngleField
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    text:                   minAngle;
+
+                                    property var minAngle: QGroundControl.antennaController ? QGroundControl.antennaController.minAngle : "-165"
+
+                                    onEditingFinished: {
+                                        if (QGroundControl.antennaController) {
+                                            QGroundControl.antennaController.setMinAngle(parseInt(text));
+                                        }
+                                    }
+
+                                    Connections {
+                                        target:  QGroundControl.antennaController ? QGroundControl.antennaController : null
+                                        onMinAngleChanged: {
+                                            antennaControllerMinAngleField.text = QGroundControl.antennaController.minAngle;
+                                        }
+                                    }
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Max Angle")
+                                }
+                                QGCTextField {
+                                    id:                     antennaControllerMaxAngleField
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    text:                   maxAngle;
+
+                                    property var maxAngle: QGroundControl.antennaController ? QGroundControl.antennaController.maxAngle : "165"
+
+                                    onEditingFinished: {
+                                        if (QGroundControl.antennaController) {
+                                            QGroundControl.antennaController.setMaxAngle(text);
+                                        }
+                                    }
+
+                                    Connections {
+                                        target:  QGroundControl.antennaController ? QGroundControl.antennaController : null
+                                        onMaxAngleChanged: {
+                                            antennaControllerMaxAngleField.text = QGroundControl.antennaController.maxAngle;
+                                        }
+                                    }
+                                }
+
+                                QGCButton {
+                                    text: "Reset Config"
+                                    onClicked: {
+                                        if (QGroundControl.antennaController) {
+                                            QGroundControl.antennaController.resetConfiguration();
+                                        }
+                                    }
+                                }
+                                Item { width: 1; height: _margins; }
                             }
                         }
                     }

@@ -25,6 +25,7 @@ Item {
     id:         _root
 
     property bool loaded: false
+    property bool popped: false
 
     Item {
         id:             panel
@@ -132,6 +133,7 @@ Item {
                 anchors.rightMargin:    ScreenTools.defaultFontPixelWidth
                 anchors.bottom:         parent.bottom
                 text:                   qsTr("Popout")
+                visible:                !_root.popped
 
                 onClicked: {
                     mainWindow.createWindowedPage("Console Messages", "QGroundControl/Controls/AppMessages.qml");

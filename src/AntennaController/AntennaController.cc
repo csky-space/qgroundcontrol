@@ -1,8 +1,6 @@
 #include "AntennaController.h"
 
-#include <ParameterManager.h>
 #include <QGCApplication.h>
-#include <cmath>
 
 QGC_LOGGING_CATEGORY(AntennaControllerLog, "AntennaControllerLog")
 
@@ -11,6 +9,8 @@ const char* AntennaController::_addressKey    = "address";
 const char* AntennaController::_portKey       = "port";
 const char* AntennaController::_loginKey      = "login";
 const char* AntennaController::_passwordKey   = "password";
+const char* AntennaController::_minAngleKey   = "minAngle";
+const char* AntennaController::_maxAngleKey   = "maxAngle";
 
 AntennaController::AntennaController(QGCApplication *app, QGCToolbox *toolbox)
     : QGCTool(app, toolbox) {
@@ -20,18 +20,37 @@ AntennaController::AntennaController(QGCApplication *app, QGCToolbox *toolbox)
 AntennaController::~AntennaController() {}
 
 void AntennaController::setAddress(QString address) {
+    if (!_isValidIP(address)) {
+        qCDebug(AntennaControllerLog) << "Address is not a valid IP:" << address;
+        return;
+    }
+    if (_address == address) {
+        emit addressChanged();
+        return;
+    }
+    qCDebug(AntennaControllerLog) << "Address changed:" << _address << "=>" << address;
     _address = address;
     _saveSettings();
     emit addressChanged();
 }
 
 void AntennaController::setPort(quint16 port) {
+    if (_port == port) {
+        emit portChanged();
+        return;
+    }
+    qCDebug(AntennaControllerLog) << "Port changed:" << _port << "=>" << port;
     _port = port;
     _saveSettings();
     emit portChanged();
 }
 
 void AntennaController::setLogin(QString login) {
+    if (_login == login) {
+        emit loginChanged();
+        return;
+    }
+    qCDebug(AntennaControllerLog) << "Login changed:" << _login << "=>" << login;
     _login = login;
     _updateToken();
     _saveSettings();
@@ -39,10 +58,87 @@ void AntennaController::setLogin(QString login) {
 }
 
 void AntennaController::setPassword(QString password) {
+    if (_password == password) {
+        emit passwordChanged();
+        return;
+    }
+    qCDebug(AntennaControllerLog) << "Password changed.";
     _password = password;
     _updateToken();
     _saveSettings();
     emit passwordChanged();
+}
+
+void AntennaController::setMinAngle(qint32 angle) {
+    if (angle > _maxAngle) {
+        angle = _maxAngle;
+        qCDebug(AntennaControllerLog) << "New min angle is clamped to max angle:" << _maxAngle;
+    }
+    if (angle < _minAngleLimit || angle > _maxAngleLimit) {
+        qCDebug(AntennaControllerLog) << "New min angle is out of range:" << angle;
+        angle = std::clamp(angle, _minAngleLimit, _maxAngleLimit);
+        qCDebug(AntennaControllerLog) << "New min angle is clamped to value:" << angle;
+    }
+    if (_minAngle == angle) {
+        emit minAngleChanged();
+        return;
+    }
+    qCDebug(AntennaControllerLog) << "Min angle changed:" << _minAngle << "=>" << angle;
+    _minAngle = angle;
+    _saveSettings();
+    emit minAngleChanged();
+}
+
+void AntennaController::setMaxAngle(qint32 angle) {
+    if (angle < _minAngle) {
+        angle = _minAngle;
+        qCDebug(AntennaControllerLog) << "New max angle is clamped to min angle:" << _minAngle;
+    }
+    if (angle < _minAngleLimit || angle > _maxAngleLimit) {
+        qCDebug(AntennaControllerLog) << "New max angle is out of range:" << angle;
+        angle = std::clamp(angle, _minAngleLimit, _maxAngleLimit);
+        qCDebug(AntennaControllerLog) << "New max angle clamped to value:" << angle;
+    }
+    if (_maxAngle == angle) {
+        emit maxAngleChanged();
+        return;
+    }
+    qCDebug(AntennaControllerLog) << "Max angle changed:" << _maxAngle << "=>" << angle;
+    _maxAngle = angle;
+    _saveSettings();
+    emit maxAngleChanged();
+}
+
+void AntennaController::setCurrentAngle(qint32 angle) {
+    if (_isBusy) {
+        qCDebug(AntennaControllerLog) << "Can not set current angle. Antenna controller is busy.";
+        return;
+    }
+
+    if (angle < _minAngle || angle > _maxAngle) {
+        qCDebug(AntennaControllerLog) << "New angle is out of range:" << angle;
+        angle = std::clamp(angle, _minAngle, _maxAngle);
+        qCDebug(AntennaControllerLog) << "New angle clamped to value:" << angle;
+    }
+
+    if (_currentAngle != angle) {
+        qCDebug(AntennaControllerLog) << "Current angle changed:" << _currentAngle << "=>" << angle;
+        _currentAngle = angle;
+        _saveSettings();
+    }
+
+    emit currentAngleChanged();
+
+    QByteArray buffer(6, 0);
+    buffer[0] = char(0xFA);
+    buffer[1] = char(0x11);
+    buffer[2] = static_cast<char>( _currentAngle        & 0xFF);
+    buffer[3] = static_cast<char>((_currentAngle >> 8)  & 0xFF);
+    buffer[4] = static_cast<char>((_currentAngle >> 16) & 0xFF);
+    buffer[5] = static_cast<char>((_currentAngle >> 24) & 0xFF);
+
+    qCDebug(AntennaControllerLog) << "Sending set angle request. angle:" << _currentAngle;
+    _sendCommand(buffer);
 }
 
 void AntennaController::setToolbox(QGCToolbox *toolbox) {
@@ -51,20 +147,12 @@ void AntennaController::setToolbox(QGCToolbox *toolbox) {
     qmlRegisterUncreatableType<AntennaController>("QGroundControl.antennaController", 1, 0, "AntennaController", "Reference only");
 }
 
-void AntennaController::sendSetAngleCommand(qint32 angle) {
-    QByteArray buffer(6, 0);
-    buffer[0] = char(0xFA);
-    buffer[1] = char(0x11);
-    buffer[2] = static_cast<char>( angle        & 0xFF);
-    buffer[3] = static_cast<char>((angle >> 8)  & 0xFF);
-    buffer[4] = static_cast<char>((angle >> 16) & 0xFF);
-    buffer[5] = static_cast<char>((angle >> 24) & 0xFF);
-
-    qCDebug(AntennaControllerLog) << "Sending set angle request. angle:" << angle;
-    _sendCommand(buffer);
-}
-
 void AntennaController::sendSetAntennaCommand(qint8 antennaIndex) {
+    if (_isBusy) {
+        qCDebug(AntennaControllerLog) << "Sending set antenna request failed. Waiting for response.";
+        return;
+    }
+
     QByteArray buffer(3, 0);
     buffer[0] = char(0xFA);
     buffer[1] = char(0x12);
@@ -74,7 +162,7 @@ void AntennaController::sendSetAntennaCommand(qint8 antennaIndex) {
     _sendCommand(buffer);
 }
 
-void AntennaController::resetSettings() {
+void AntennaController::resetAccessSettings() {
     if (_address != _defaultAddress) {
         _address = _defaultAddress;
         emit addressChanged();
@@ -95,7 +183,23 @@ void AntennaController::resetSettings() {
         emit passwordChanged();
     }
 
-    qCDebug(AntennaControllerLog) << "settings are set to default";
+    qCDebug(AntennaControllerLog) << "access settings are set to default";
+
+    _saveSettings();
+}
+
+void AntennaController::resetConfiguration() {
+    if (_minAngle != _defaultMinAngle) {
+        _minAngle = _defaultMinAngle;
+        emit minAngleChanged();
+    }
+
+    if (_maxAngle != _defaultMaxAngle) {
+        _maxAngle = _defaultMaxAngle;
+        emit maxAngleChanged();
+    }
+
+    qCDebug(AntennaControllerLog) << "configuration is set to default";
 
     _saveSettings();
 }
@@ -129,6 +233,22 @@ QString AntennaController::password() const {
     return _password;
 }
 
+bool AntennaController::isBusy() const {
+    return _isBusy;
+}
+
+qint32 AntennaController::minAngle() const{
+    return _minAngle;
+}
+
+qint32 AntennaController::maxAngle() const{
+    return _maxAngle;
+}
+
+qint32 AntennaController::currentAngle() const{
+    return _currentAngle;
+}
+
 void AntennaController::_saveSettings() {
     QSettings settings;
     settings.beginGroup(_settingsGroup);
@@ -137,6 +257,8 @@ void AntennaController::_saveSettings() {
     settings.setValue(QString(_portKey), _port);
     settings.setValue(QString(_loginKey), _login);
     settings.setValue(QString(_passwordKey), _password);
+    settings.setValue(QString(_minAngleKey), _minAngle);
+    settings.setValue(QString(_maxAngleKey), _maxAngle);
 
     qCDebug(AntennaControllerLog) << "settings saved";
 }
@@ -164,74 +286,94 @@ void AntennaController::_loadSettings() {
     _password = newPassword;
     emit passwordChanged();
 
+    qint32 newMinAngle = settings.value(_minAngleKey, _defaultMinAngle).toInt(&ok);
+    if (ok) {
+        _minAngle = newMinAngle;
+        emit minAngleChanged();
+    }
+
+    qint32 newMaxAngle = settings.value(_maxAngleKey, _defaultMaxAngle).toInt(&ok);
+    if (ok) {
+        _maxAngle = newMaxAngle;
+        emit maxAngleChanged();
+    }
+
     _updateToken();
 
     qCDebug(AntennaControllerLog) << "settings loaded";
 }
 
 void AntennaController::_sendCommand(const QByteArray& bytes) {
-    const QUrl url(QString("http://%1:%2/api/plugins/command").arg(_address).arg(_port));
+    if (_isBusy) {
+        qCDebug(AntennaControllerLog) << "Sending command request failed. Waiting for response.";
+        return;
+    }
 
-    qCDebug(AntennaControllerLog) << "Sending command. url:" << url;
+    _isBusy = true;
+    emit isBusyChanged();
 
-    QNetworkRequest request(url);
-    request.setTransferTimeout(5000);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/octet-stream");
-    request.setRawHeader("Authorization", _token.toUtf8());
-
+    QNetworkRequest request = _createRequest("api/plugins/command");
     QNetworkReply *reply = m_networkManager.post(request, bytes);
-
-    QObject::connect(reply, &QNetworkReply::finished, [reply]() {
-        if (reply->error() == QNetworkReply::NoError) {
-            QByteArray response = reply->readAll();
-            qCDebug(AntennaControllerLog) << "Command request success:" << response;
-        } else {
-            qCDebug(AntennaControllerLog) << "Command request error:" << reply->errorString();
-        }
-        reply->deleteLater();
-    });
-
-    QObject::connect(reply, &QNetworkReply::errorOccurred, [](QNetworkReply::NetworkError code) {
-        if (code == QNetworkReply::TimeoutError) {
-            qCDebug(AntennaControllerLog) << "Command request timeout";
-        } else {
-            qCDebug(AntennaControllerLog) << "Command request network error:" << code;
-        }
-    });
+    _connectReply(reply);
 }
 
 void AntennaController::_getDeviceSettings() {
-    const QUrl url(QString("http://%1:%2/api/getDeviceSetting").arg(_address).arg(_port));
+    if (_isBusy) {
+        qCDebug(AntennaControllerLog) << "Sending get device settings request failed. Waiting for response.";
+        return;
+    }
 
-    qCDebug(AntennaControllerLog) << "Sending command. url:" << url;
+    _isBusy = true;
+    emit isBusyChanged();
 
-    QNetworkRequest request(url);
-    request.setTransferTimeout(5000);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/octet-stream");
-    request.setRawHeader("Authorization", _token.toUtf8());
-
-    QNetworkReply *reply = m_networkManager.get(request);
-
-    QObject::connect(reply, &QNetworkReply::finished, [reply]() {
-        if (reply->error() == QNetworkReply::NoError) {
-            QByteArray response = reply->readAll();
-            qCDebug(AntennaControllerLog) << "Get device settings request success:" << response;
-        } else {
-            qCDebug(AntennaControllerLog) << "Get device settings request error:" << reply->errorString();
-        }
-        reply->deleteLater();
-    });
-
-    QObject::connect(reply, &QNetworkReply::errorOccurred, [](QNetworkReply::NetworkError code) {
-        if (code == QNetworkReply::TimeoutError) {
-            qCDebug(AntennaControllerLog) << "Get device settings request timeout";
-        } else {
-            qCDebug(AntennaControllerLog) << "Get device settings request network error:" << code;
-        }
-    });
+    QNetworkRequest request = _createRequest("api/getDeviceSetting");
+    QNetworkReply* reply = m_networkManager.get(request);
+    _connectReply(reply);
 }
 
 void AntennaController::_updateToken() {
     const QString concatenated = _login + ":" + _password;
     _token = concatenated.toUtf8().toBase64();
+}
+
+QNetworkRequest AntennaController::_createRequest(const QString& apiAddress) {
+    const QUrl url(QString("http://%1:%2/api/getDeviceSetting").arg(_address).arg(_port));
+
+    qCDebug(AntennaControllerLog) << "Creating request. url:" << url;
+
+    QNetworkRequest request(url);
+    request.setTransferTimeout(_requestTimeout);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/octet-stream");
+    request.setRawHeader("Authorization", _token.toUtf8());
+
+    return request;
+}
+
+void AntennaController::_connectReply(QNetworkReply* reply) {
+    QObject::connect(reply, &QNetworkReply::finished, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray response = reply->readAll();
+            qCDebug(AntennaControllerLog) << "Request success:" << response;
+        } else {
+            qCDebug(AntennaControllerLog) << "Request error:" << reply->errorString();
+        }
+
+        reply->deleteLater();
+
+        _isBusy = false;
+        emit isBusyChanged();
+    });
+
+    QObject::connect(reply, &QNetworkReply::errorOccurred, [](QNetworkReply::NetworkError code) {
+        if (code == QNetworkReply::TimeoutError) {
+            qCDebug(AntennaControllerLog) << "Request timeout";
+        } else {
+            qCDebug(AntennaControllerLog) << "Request network error:" << code;
+        }
+    });
+}
+
+bool AntennaController::_isValidIP(const QString &ipString) {
+    QHostAddress address;
+    return address.setAddress(ipString);
 }

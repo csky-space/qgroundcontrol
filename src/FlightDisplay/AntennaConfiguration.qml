@@ -41,8 +41,8 @@ ToolStripAction {
 
         property real targetAngle: 0;
         property real dialSize: 180
-        property int minAngle: -165;
-        property int maxAngle: 165;
+        property int  minAngle: QGroundControl.antennaController ? QGroundControl.antennaController.minAngle : -180;
+        property int  maxAngle: QGroundControl.antennaController ? QGroundControl.antennaController.maxAngle : 180;
 
         width:    mainLayout.implicitWidth
         height:   mainLayout.implicitHeight
@@ -76,18 +76,26 @@ ToolStripAction {
                         const centerY = height / 2;
                         const radius = (width - 2) / 2;
 
-                        const minAngleRadians = (antennaDropPanel.minAngle - 90) * Math.PI / 180;
-                        const maxAngleRadians = (antennaDropPanel.maxAngle - 90) * Math.PI / 180;
+                        ctx.reset();
 
                         ctx.lineWidth = 1;
                         ctx.strokeStyle = "#ffffff";
                         ctx.fillStyle = "#80000000";
 
-                        ctx.beginPath();
-                        ctx.moveTo(centerX, centerY);
-                        ctx.arc(centerX, centerY, radius, minAngleRadians, maxAngleRadians, true);
-                        ctx.closePath();
-                        ctx.fill();
+                        if ((antennaDropPanel.maxAngle - antennaDropPanel.minAngle) < 360) {
+                            ctx.beginPath();
+                            ctx.moveTo(centerX, centerY);
+                            if (antennaDropPanel.maxAngle == antennaDropPanel.minAngle) {
+                                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+                            }
+                            else {
+                                const minAngleRadians = (antennaDropPanel.minAngle - 90) * Math.PI / 180;
+                                const maxAngleRadians = (antennaDropPanel.maxAngle - 90) * Math.PI / 180;
+                                ctx.arc(centerX, centerY, radius, minAngleRadians, maxAngleRadians, true);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                        }
 
                         ctx.beginPath();
                         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
@@ -136,6 +144,25 @@ ToolStripAction {
                             let label = deg.toString();
                             if (deg === 180) label = "±180";
                             ctx.fillText(label, x, y);
+                        }
+                    }
+
+                    function _requestRedraw() {
+                        dirCanvas.requestPaint();
+                        console.log("redraw", antennaDropPanel.minAngle, antennaDropPanel.maxAngle)
+                    }
+
+                    Connections {
+                        target:  QGroundControl.antennaController ? QGroundControl.antennaController : null
+                        onMinAngleChanged: {
+                            dirCanvas._requestRedraw();
+                        }
+                    }
+
+                    Connections {
+                        target:  QGroundControl.antennaController ? QGroundControl.antennaController : null
+                        onMaxAngleChanged: {
+                            dirCanvas._requestRedraw();
                         }
                     }
                 }
@@ -219,34 +246,36 @@ ToolStripAction {
             }
 
             RowLayout {
-                anchors.horizontalCenter: parent.horizontalCenter
+                Layout.alignment: Qt.AlignHCenter
 
                 QGCButton {
                     text: "Send"
+                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
-                            QGroundControl.antennaController.sendSetAngleCommand(Math.round(antennaDropPanel.targetAngle));
+                            QGroundControl.antennaController.setCurrentAngle(Math.round(antennaDropPanel.targetAngle));
                         }
                     }
                 }
                 QGCButton {
                     text: "To zero"
+                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
                             antennaDropPanel.targetAngle = 0;
-                            QGroundControl.antennaController.sendSetAngleCommand(0);
+                            QGroundControl.antennaController.setCurrentAngle(0);
                         }
                     }
                 }
             }
 
             RowLayout {
-                anchors.horizontalCenter: parent.horizontalCenter
-                Layout.alignment: Qt.AlignHCenter
+                Layout.alignment: Qt.AlignCenter
                 spacing:          8
 
                 QGCButton {
                     text: "Antenna 1"
+                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
                             QGroundControl.antennaController.sendSetAntennaCommand(0);
@@ -256,6 +285,7 @@ ToolStripAction {
 
                 QGCButton {
                     text: "Antenna 2"
+                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
                             QGroundControl.antennaController.sendSetAntennaCommand(1);
