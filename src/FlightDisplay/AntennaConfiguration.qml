@@ -29,23 +29,24 @@ import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
 
 ToolStripAction {
-    id:             returnCourseIcon
-    text:           "Antenna";
-    iconSource:     "qrc:/qmlimages/icon-antenna.svg"
-    enabled:        true
+    id:         returnCourseIcon
+    text:       "Antenna";
+    iconSource: "qrc:/qmlimages/icon-antenna.svg"
+    enabled:    true
 
     dropPanelComponent: Rectangle {
-        id:       antennaDropPanel
-        color:    "#00000000"
+        id:     antennaDropPanel
+        color:  "#00000000"
         radius: 10
 
-        property real targetAngle: 0;
-        property real dialSize: 180
-        property int  minAngle: QGroundControl.antennaController ? QGroundControl.antennaController.minAngle : -180;
-        property int  maxAngle: QGroundControl.antennaController ? QGroundControl.antennaController.maxAngle : 180;
+        property int dialSize:     180;
+        property int targetAngle:  0;
+        property int currentAngle: QGroundControl.antennaController ? QGroundControl.antennaController.currentAngle : 0;
+        property int minAngle:     QGroundControl.antennaController ? QGroundControl.antennaController.minAngle : -180;
+        property int maxAngle:     QGroundControl.antennaController ? QGroundControl.antennaController.maxAngle : 180;
 
-        width:    mainLayout.implicitWidth
-        height:   mainLayout.implicitHeight
+        width:  mainLayout.implicitWidth
+        height: mainLayout.implicitHeight
 
         function normalizeTo360(angle) {
             return (angle + 360) % 360;
@@ -56,7 +57,7 @@ ToolStripAction {
         }
 
         ColumnLayout {
-            id: mainLayout
+            id:           mainLayout
             anchors.fill: parent
             spacing:      10
 
@@ -168,6 +169,37 @@ ToolStripAction {
                 }
 
                 Shape {
+                    id:               currentDirMark
+                    width:            size
+                    height:           size
+                    anchors.centerIn: parent
+
+                    rotation: antennaDropPanel.currentAngle
+
+                    property real size:                antennaDropPanel.dialSize * 0.075
+                    property real currentAngleRadians: antennaDropPanel.currentAngle * (Math.PI/180.0)
+                    property real marksRadius:         antennaDropPanel.dialSize / 2.25
+
+                    ShapePath {
+                        strokeColor: "#80ff0000"
+                        strokeWidth: 1
+                        fillColor:   "#80ff0000"
+
+                        startX: currentDirMark.width / 2
+                        startY: 0
+
+                        PathLine { x: currentDirMark.width; y: currentDirMark.height }
+                        PathLine { x: 0; y: currentDirMark.height }
+                        PathLine { x: currentDirMark.width / 2; y: 0 }
+                    }
+
+                    transform: Translate {
+                        x: currentDirMark.marksRadius * Math.sin(currentDirMark.currentAngleRadians)
+                        y: -currentDirMark.marksRadius * Math.cos(currentDirMark.currentAngleRadians)
+                    }
+                }
+
+                Shape {
                     id:               dirMark
                     width:            size
                     height:           size
@@ -175,14 +207,14 @@ ToolStripAction {
 
                     rotation: antennaDropPanel.targetAngle
 
-                    property real size: antennaDropPanel.dialSize * 0.075
+                    property real size:               antennaDropPanel.dialSize * 0.075
                     property real targetAngleRadians: antennaDropPanel.targetAngle * (Math.PI/180.0)
-                    property real marksRadius: antennaDropPanel.dialSize / 2.25
+                    property real marksRadius:        antennaDropPanel.dialSize / 2.25
 
                     ShapePath {
                         strokeColor: "#8000ff00"
                         strokeWidth: 1
-                        fillColor: "#8000ff00"
+                        fillColor:   "#8000ff00"
 
                         startX: dirMark.width / 2
                         startY: 0
@@ -217,6 +249,12 @@ ToolStripAction {
                         normalizedAngle = Math.min(Math.max(Math.round(normalizedAngle), antennaDropPanel.minAngle), antennaDropPanel.maxAngle);
 
                         antennaDropPanel.targetAngle = normalizedAngle;
+
+                        angleInput.text = normalizedAngle.toFixed(0);
+                    }
+
+                    onPressed: {
+                        angleInput.focus = false;
                     }
 
                     onPositionChanged: (mouse) => {
@@ -228,19 +266,87 @@ ToolStripAction {
                     }
                 }
 
-                QGCTextField {
-                    id:                       angleInput
-                    text:                     antennaDropPanel.targetAngle.toFixed(0)
-                    unitsLabel:               "°"
-                    width:                    60
+
+                ColumnLayout {
                     anchors.centerIn: parent
 
-                    onEditingFinished: {
-                        let value = parseFloat(text) ?? 0.0;
-                        if (isNaN(value)) value = 0.0;
-                        value = Math.min(Math.max(Math.round(value), antennaDropPanel.minAngle), antennaDropPanel.maxAngle);
-                        text = value
-                        antennaDropPanel.targetAngle = value;
+                    RowLayout {
+                        Shape {
+                            id:               legendTargetMark
+                            width:            antennaDropPanel.dialSize * 0.025
+                            height:           antennaDropPanel.dialSize * 0.025
+                            Layout.alignment: Qt.AlignVCenter
+
+                            ShapePath {
+                                strokeColor: "#8000ff00"
+                                strokeWidth: 1
+                                fillColor:   "#8000ff00"
+
+                                startX: legendTargetMark.width / 2
+                                startY: 0
+
+                                PathLine { x: legendTargetMark.width; y: legendTargetMark.height }
+                                PathLine { x: 0; y: legendTargetMark.height }
+                                PathLine { x: legendTargetMark.width / 2; y: 0 }
+                            }
+                        }
+                        QGCLabel {
+                            id:               targetLabel
+                            text:             "Traget"
+                            color:            qgcPal.text
+                            font.pointSize:   ScreenTools.smallFontPointSize
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+                    }
+                    QGCTextField {
+                        id:                    angleInput
+                        text:                  antennaDropPanel.targetAngle.toFixed(0)
+                        unitsLabel:            "°"
+                        Layout.preferredWidth: 50
+
+                        onEditingFinished: {
+                            let value = parseFloat(text) ?? 0.0;
+                            if (isNaN(value)) value = 0.0;
+                            value = Math.min(Math.max(Math.round(value), antennaDropPanel.minAngle), antennaDropPanel.maxAngle);
+                            text = value
+                            antennaDropPanel.targetAngle = value;
+                        }
+                    }
+
+                    RowLayout {
+                        Shape {
+                            id:               legendLastSendMark
+                            width:            antennaDropPanel.dialSize * 0.025
+                            height:           antennaDropPanel.dialSize * 0.025
+                            Layout.alignment: Qt.AlignVCenter
+
+                            ShapePath {
+                                strokeColor: "#80ff0000"
+                                strokeWidth: 1
+                                fillColor:   "#80ff0000"
+
+                                startX: legendLastSendMark.width / 2
+                                startY: 0
+
+                                PathLine { x: legendLastSendMark.width; y: legendLastSendMark.height }
+                                PathLine { x: 0; y: legendLastSendMark.height }
+                                PathLine { x: legendLastSendMark.width / 2; y: 0 }
+                            }
+                        }
+                        QGCLabel {
+                            id:               lastSentLabel
+                            text:             "Last sent"
+                            color:            qgcPal.text
+                            font.pointSize:   ScreenTools.smallFontPointSize
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+                    }
+                    QGCTextField {
+                        id:                    lastSentInput
+                        text:                  antennaDropPanel.currentAngle.toFixed(0)
+                        unitsLabel:            "°"
+                        Layout.preferredWidth: 50
+                        enabled:               false
                     }
                 }
             }
@@ -249,8 +355,8 @@ ToolStripAction {
                 Layout.alignment: Qt.AlignHCenter
 
                 QGCButton {
-                    text: "Send"
-                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
+                    text:      "Send"
+                    enabled:   QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
                             QGroundControl.antennaController.setCurrentAngle(Math.round(antennaDropPanel.targetAngle));
@@ -258,8 +364,8 @@ ToolStripAction {
                     }
                 }
                 QGCButton {
-                    text: "To zero"
-                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
+                    text:      "To zero"
+                    enabled:   QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
                             antennaDropPanel.targetAngle = 0;
@@ -274,21 +380,23 @@ ToolStripAction {
                 spacing:          8
 
                 QGCButton {
-                    text: "Antenna 1"
-                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
+                    text:      "Antenna 1"
+                    enabled:   QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
+                    primary:   QGroundControl.antennaController ? QGroundControl.antennaController.currentAntenna === 0 : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
-                            QGroundControl.antennaController.sendSetAntennaCommand(0);
+                            QGroundControl.antennaController.setCurrentAntenna(0);
                         }
                     }
                 }
 
                 QGCButton {
-                    text: "Antenna 2"
-                    enabled: QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
+                    text:      "Antenna 2"
+                    enabled:   QGroundControl.antennaController ? !QGroundControl.antennaController.isBusy : false
+                    primary:   QGroundControl.antennaController ? QGroundControl.antennaController.currentAntenna === 1 : false
                     onClicked: {
                         if (QGroundControl.antennaController) {
-                            QGroundControl.antennaController.sendSetAntennaCommand(1);
+                            QGroundControl.antennaController.setCurrentAntenna(1);
                         }
                     }
                 }
