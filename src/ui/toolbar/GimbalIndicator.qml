@@ -38,7 +38,40 @@ Item {
     property var    separatorHeight:        buttonHeight * 0.9
     property var    settingsPanelVisible:   false
 
-    // Popup panel, appears when clicking top toolbar gimbal indicator
+    readonly property var gimbalSettings: QGroundControl.settingsManager.gimbalControllerSettings
+
+    readonly property int  pitchSource: gimbalSettings.PitchRangeSource.rawValue
+    readonly property bool paramsReady: activeVehicle && activeVehicle.parameterManager
+                                            ? activeVehicle.parameterManager.parametersReady
+                                            : false
+    readonly property string _mntPitchPrefix: pitchSource === 1 ? "MNT1_PITCH_" : "MNT2_PITCH_"
+
+    readonly property var maxPitchFact: {
+        if (pitchSource === 0 || !paramsReady) {
+            return gimbalSettings.CameraMaxPitch
+        }
+        const pm = activeVehicle.parameterManager
+        const name = _mntPitchPrefix + "MAX"
+        if (pm.parameterExists(-1, name)) {
+            return pm.getParameter(-1, name)
+        }
+        console.warn("[Gimbal] Pitch param not found:", name, "— fallback to QGC settings")
+        return gimbalSettings.CameraMaxPitch
+    }
+
+    readonly property var minPitchFact: {
+        if (pitchSource === 0 || !paramsReady) {
+            return gimbalSettings.CameraMinPitch
+        }
+        const pm = activeVehicle.parameterManager
+        const name = _mntPitchPrefix + "MIN"
+        if (pm.parameterExists(-1, name)) {
+            return pm.getParameter(-1, name)
+        }
+        console.warn("[Gimbal] Pitch param not found:", name, "— fallback to QGC settings")
+        return gimbalSettings.CameraMinPitch
+    }
+
     Component {
         id: gimbalControlsPopup
 
@@ -309,6 +342,7 @@ Item {
                         id:                 controlTypeCombo
                         fact:               QGroundControl.settingsManager.gimbalControllerSettings.ControlType
                         visible:            enableOnScreenControlCheckbox.checked
+                        Layout.fillWidth:   true
                     }
 
                     QGCLabel {
@@ -318,6 +352,7 @@ Item {
                     FactTextField {
                         fact:               QGroundControl.settingsManager.gimbalControllerSettings.CameraHFov
                         visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 0
+                        Layout.fillWidth:   true
                     }
 
                     QGCLabel {
@@ -327,6 +362,7 @@ Item {
                     FactTextField {
                         fact:               QGroundControl.settingsManager.gimbalControllerSettings.CameraVFov
                         visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 0
+                        Layout.fillWidth:   true
                     }
 
                     QGCLabel {
@@ -336,24 +372,33 @@ Item {
                     FactTextField {
                         fact:               QGroundControl.settingsManager.gimbalControllerSettings.CameraSlideSpeed
                         visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
+                        Layout.fillWidth:   true
+                    }
+
+                    QGCLabel {
+                        text:               qsTr("Pitch range source:")
+                        Layout.topMargin:   margins * 0.5
+                    }
+                    FactComboBox {
+                        id:                 pitchRangeSourceCombo
+                        fact:               gimbalSettings.PitchRangeSource
+                        Layout.fillWidth:   true
                     }
 
                     QGCLabel {
                         text:               qsTr("Max pitch:")
-                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
                     }
                     FactTextField {
-                        fact:               QGroundControl.settingsManager.gimbalControllerSettings.CameraMaxPitch
-                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
+                        fact:               _root.maxPitchFact
+                        Layout.fillWidth:   true
                     }
 
                     QGCLabel {
                         text:               qsTr("Min pitch:")
-                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
                     }
                     FactTextField {
-                        fact:               QGroundControl.settingsManager.gimbalControllerSettings.CameraMinPitch
-                        visible:            enableOnScreenControlCheckbox.checked && QGroundControl.settingsManager.gimbalControllerSettings.ControlType.rawValue === 1
+                        fact:               _root.minPitchFact
+                        Layout.fillWidth:   true
                     }
 
                     // Separator

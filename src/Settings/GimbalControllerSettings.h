@@ -23,6 +23,7 @@ public:
     DEFINE_SETTINGFACT(CameraVFov)
     DEFINE_SETTINGFACT(CameraHFov)
     DEFINE_SETTINGFACT(CameraSlideSpeed)
+    DEFINE_SETTINGFACT(PitchRangeSource)
     DEFINE_SETTINGFACT(CameraMaxPitch)
     DEFINE_SETTINGFACT(CameraMinPitch)
     DEFINE_SETTINGFACT(showAzimuthIndicatorOnMap)

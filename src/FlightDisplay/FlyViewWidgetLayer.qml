@@ -241,8 +241,40 @@ Item {
         property var  gimbalReady:        activeGimbal ? deviceId > 0 : false
         property var  currentTilt:        activeGimbal ? activeGimbal.absolutePitch.rawValue : 0
         property var  currentYaw:         activeGimbal ? activeGimbal.bodyYaw.rawValue : 0
-        property Fact tiltMinFact:        gimbalReady ? QGroundControl.settingsManager.gimbalControllerSettings.CameraMinPitch : null
-        property Fact tiltMaxFact:        gimbalReady ? QGroundControl.settingsManager.gimbalControllerSettings.CameraMaxPitch : null
+
+        readonly property var  gimbalSettings: QGroundControl.settingsManager.gimbalControllerSettings
+        readonly property int  pitchSource:    gimbalSettings.PitchRangeSource
+                                                   ? gimbalSettings.PitchRangeSource.rawValue
+                                                   : 0
+        readonly property bool paramsReady:    activeVehicle && activeVehicle.parameterManager
+                                                   ? activeVehicle.parameterManager.parametersReady
+                                                   : false
+        readonly property string _mntPitchPrefix: pitchSource === 1 ? "MNT1_PITCH_" : "MNT2_PITCH_"
+
+        property Fact tiltMinFact: {
+            if (!gimbalReady) return null
+            if (pitchSource === 0 || !paramsReady) return gimbalSettings.CameraMinPitch
+
+            const pm   = activeVehicle.parameterManager
+            const name = _mntPitchPrefix + "MIN"
+            if (pm.parameterExists(-1, name)) return pm.getParameter(-1, name)
+
+            console.warn("[CameraTiltControl] Param not found:", name, "— fallback to QGC settings")
+            return gimbalSettings.CameraMinPitch
+        }
+
+        property Fact tiltMaxFact: {
+            if (!gimbalReady) return null
+            if (pitchSource === 0 || !paramsReady) return gimbalSettings.CameraMaxPitch
+
+            const pm   = activeVehicle.parameterManager
+            const name = _mntPitchPrefix + "MAX"
+            if (pm.parameterExists(-1, name)) return pm.getParameter(-1, name)
+
+            console.warn("[CameraTiltControl] Param not found:", name, "— fallback to QGC settings")
+            return gimbalSettings.CameraMaxPitch
+        }
+
         property real tiltMin:            tiltMinFact ? tiltMinFact.value : -90
         property real tiltMax:            tiltMaxFact ? tiltMaxFact.value : 10
         property real range:              tiltMax - tiltMin
@@ -305,8 +337,8 @@ Item {
                     Component.onCompleted: {
                         cameraPitchMarksCanvas._requestRedraw();
                     }
-            
-                    function _requestRedraw() { 
+
+                    function _requestRedraw() {
                         cameraPitchMarksCanvas.requestPaint();
                     }
 
@@ -319,10 +351,17 @@ Item {
                         target: cameraTiltControl.tiltMinFact
                         function onValueChanged() { cameraPitchMarksCanvas._requestRedraw() }
                     }
-                    
                     Connections {
                         target: cameraTiltControl.tiltMaxFact
                         function onValueChanged() { cameraPitchMarksCanvas._requestRedraw() }
+                    }
+
+                    Connections {
+                        target: cameraTiltControl
+                        function onTiltMinFactChanged() { cameraPitchMarksCanvas._requestRedraw() }
+                        function onTiltMaxFactChanged() { cameraPitchMarksCanvas._requestRedraw() }
+                        function onPitchSourceChanged() { cameraPitchMarksCanvas._requestRedraw() }
+                        function onParamsReadyChanged() { cameraPitchMarksCanvas._requestRedraw() }
                     }
 
                     onPaint: {
@@ -330,29 +369,45 @@ Item {
                         const pixelsPerDegree = height / rangeDegrees;
                         const markStepDegrees = 5;
                         const markStepPixels = markStepDegrees * pixelsPerDegree;
-
-                        console.log(cameraTiltControl.tiltMax, cameraTiltControl.tiltMin, rangeDegrees)
-
                         const marksCount = rangeDegrees / markStepDegrees + 1;
                         const offsetY = (markStepDegrees - (cameraTiltControl.tiltMax % markStepDegrees)) * pixelsPerDegree
 
+                        const mainMarkSize = width * 0.5;
+                        const markSize = mainMarkSize / 3;
+                        const bigMarkSize = markSize * 2;
+
+                        // console.log(cameraTiltControl.tiltMax, cameraTiltControl.tiltMin, rangeDegrees)
+
                         const ctx = getContext("2d");
                         ctx.reset();
-                        ctx.translate(width / 2, 0);
+                        ctx.translate(width, 0);
                         ctx.strokeStyle = "#ffffff";
-                        ctx.lineWidth = 2;
+                        ctx.fillStyle = "#ffffff";
 
+                        const fontSize = 10;
+                        ctx.font = fontSize + "px sans-serif";
+                        ctx.textAlign = "right";
+                        ctx.textBaseline = "middle";
+
+                        // Vertical line
+                        ctx.lineWidth = 4;
                         ctx.beginPath();
-
-                        ctx.moveTo(-width / 2, 0);
-                        ctx.lineTo(width / 2, 0);
-
-                        ctx.moveTo(-width / 2, height);
-                        ctx.lineTo(width / 2, height);
-
                         ctx.moveTo(0, 0);
                         ctx.lineTo(0, height);
+                        ctx.stroke();
 
+                        // Edge lines
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(-mainMarkSize, 0);
+                        ctx.lineTo(0, 0);
+                        ctx.moveTo(-mainMarkSize, height);
+                        ctx.lineTo(0, height);
+                        ctx.stroke();
+
+                        // Marks
+                        const labels = [];
+                        ctx.beginPath();
                         for (let i = 0; i <= marksCount; i++) {
                             let roundCorrection = 0;
                             let angle = Math.ceil(cameraTiltControl.tiltMax / markStepDegrees) * markStepDegrees - i * markStepDegrees;
@@ -365,23 +420,30 @@ Item {
                             }
                             let index = Math.abs(angle) / markStepDegrees;
 
-                            // console.log("Mark angle:", angle, index, (angle % 15) == 0)
+                            const y = i * markStepPixels - offsetY;
 
                             if (angle == 0) {
-                                ctx.moveTo(-parent.width / 2, i * markStepPixels-offsetY);
-                                ctx.lineTo(parent.width / 2, i * markStepPixels-offsetY);
+                                ctx.moveTo(-mainMarkSize, y);
+                                ctx.lineTo(0, y);
                             }
                             else if ((index % 3) == 0) {
-                                ctx.moveTo(-parent.width / 4, i * markStepPixels-offsetY);
-                                ctx.lineTo(parent.width / 4, i * markStepPixels-offsetY);
+                                ctx.moveTo(-bigMarkSize, y);
+                                ctx.lineTo(0, y);
                             }
                             else {
-                                ctx.moveTo(-parent.width / 8, i * markStepPixels-offsetY);
-                                ctx.lineTo(parent.width / 8, i * markStepPixels-offsetY);
+                                ctx.moveTo(-markSize, y);
+                                ctx.lineTo(0, y);
+                            }
+
+                            if (angle == 0 || (index % 3) == 0) {
+                                labels.push({ text: Math.round(angle) + "°", y: y });
                             }
                         }
-
                         ctx.stroke();
+
+                        for (let j = 0; j < labels.length; j++) {
+                            ctx.fillText(labels[j].text, -mainMarkSize - 2, labels[j].y);
+                        }
                     }
                 }
             }
@@ -389,11 +451,10 @@ Item {
             Rectangle {
                 anchors.left:                 parent.left
                 anchors.right:                parent.right
-                anchors.leftMargin:           6
-                anchors.rightMargin:          6
-                height:                       4
-                color:                        "#C02020"
-                radius:                       2
+                anchors.leftMargin:           parent.width * 0.33
+                anchors.rightMargin:          0
+                height:                       2
+                color:                        "#20a020"
                 anchors.verticalCenter:       parent.bottom
                 anchors.verticalCenterOffset: -(parent.height * position)
                 visible:                      cameraTiltControl.isTargetVisible
@@ -404,11 +465,10 @@ Item {
             Rectangle {
                 anchors.left:                 parent.left
                 anchors.right:                parent.right
-                anchors.leftMargin:           6
-                anchors.rightMargin:          6
-                height:                       4
-                color:                        "#20a020"
-                radius:                       2
+                anchors.leftMargin:           parent.width * 0.33
+                anchors.rightMargin:          0
+                height:                       2
+                color:                        "#C02020"
                 anchors.verticalCenter:       parent.bottom
                 anchors.verticalCenterOffset: -(parent.height * position)
 
@@ -450,7 +510,7 @@ Item {
 
             QGCLabel {
                 text: "C: "
-                color: "#20a020"
+                color: "#C02020"
             }
             QGCLabel {
                 text: cameraTiltControl.currentTilt.toFixed(1)
@@ -462,11 +522,10 @@ Item {
             anchors.bottom:           parent.bottom
             anchors.bottomMargin:     2
             anchors.horizontalCenter: parent.horizontalCenter
-            visible:                  cameraTiltControl.isTargetVisible
 
             QGCLabel {
                 text:  "T: "
-                color: "#C02020"
+                color: "#20a020"
             }
             QGCLabel {
                 text: cameraTiltControl.targetTilt.toFixed(1)

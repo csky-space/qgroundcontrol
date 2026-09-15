@@ -39,6 +39,14 @@
     "units":             "deg/s"
 },
 {
+    "name":              "PitchRangeSource",
+    "shortDesc":         "Source for camera pitch range limits",
+    "type":              "uint32",
+    "enumStrings":       "QGC settings, Gimbal 1 params, Gimbal 2 params",
+    "enumValues":        "0, 1, 2",
+    "default":           0
+},
+{
     "name":              "CameraMaxPitch",
     "shortDesc":         "Maximum gimbal pitch on slider control",
     "type":              "int32",
