@@ -29,7 +29,7 @@ import QGroundControl.Vehicle       1.0
 
 ToolStripAction {
     id:             returnCourseIcon
-    text:           courseInitialized ? vehicleReturnCourse.toFixed(1) + "°" : "-";
+    text:           courseInitialized ? vehicleReturnCourse.toFixed(1) + "°" : "-"
     iconSource:     "qrc:/qmlimages/return.svg"
     enabled:        courseInitialized && _activeVehicle ? true : false
 
@@ -38,27 +38,23 @@ ToolStripAction {
     property bool courseInitialized:   false
     property real vehicleReturnCourse: 180
 
-    function normalizeTo360(angle) {
-        return (angle + 360) % 360
-    }
+    function normalizeTo360(angle) { return (angle + 360) % 360 }
 
     function normalizeCourse180(course) {
-        let c = ((course + 180) % 360 + 360) % 360;
-        return c - 180;
+        let c = ((course + 180) % 360 + 360) % 360
+        return c - 180
     }
 
     function courseParameterChangedCallback() {
-        console.log("course changed callback called")
-        var fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
+        const fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
         vehicleReturnCourse = normalizeTo360(fact.value);
         courseInitialized = true;
     }
 
     function fetchCourseFromParameters(readyState = true) {
-        console.log("fetchCourseFromParameters called. parametersReady:", readyState)
         if (readyState) {
             if (_paramaterManager.parameterExists(_activeVehicle.defaultComponentId(), "COMP_RET_YAW")) {
-                var fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
+                const fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
                 vehicleReturnCourse = normalizeTo360(fact.value);
                 courseInitialized = true;
                 fact.vehicleUpdated.connect(courseParameterChangedCallback);
@@ -67,11 +63,10 @@ ToolStripAction {
     }
 
     function handleVehicleChanged(vehicle) {
-        console.log("vehicle changed called")
         if (_activeVehicle) {
             _paramaterManager.parametersReadyChanged.disconnect(fetchCourseFromParameters);
             if (_paramaterManager.parameterExists(_activeVehicle.defaultComponentId(), "COMP_RET_YAW")) {
-                var fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
+                const fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
                 fact.vehicleUpdated.disconnect(courseParameterChangedCallback);
             }
         }
@@ -85,49 +80,344 @@ ToolStripAction {
     }
 
     Component.onCompleted: {
-        var multiVehicleManager = QGroundControl.multiVehicleManager;
-        multiVehicleManager.activeVehicleChanged.connect(handleVehicleChanged);
-        if (multiVehicleManager.activeVehicle) {
-            handleVehicleChanged(activeVehicle);
-        }    
+        const mvm = QGroundControl.multiVehicleManager;
+        mvm.activeVehicleChanged.connect(handleVehicleChanged);
+        if (mvm.activeVehicle) handleVehicleChanged(activeVehicle);
     }
 
-    dropPanelComponent: Rectangle {
-        id:       returnCourse
-        height:   instrumentPanel ? instrumentPanel._heightAttComp : 0
-        width:    instrumentPanel ? instrumentPanel._heightAttComp * 4 : 0
+    dropPanelComponent: ColumnLayout {
+        id: returnCourse
+        spacing: 0
 
         property Fact retYawFact: null
         property bool initialCourseSet: false
         property Fact headingFact: null
 
         function updatePositions() {
-            var containerWidth = compassContainer.width
-            var segmentWidth = compassStrip.segmentWidth
-            var stepWidth = compassStrip.stepWidth
-            if (segmentWidth <= 0) return
+            if (!compassContainer || !compassCanvas || !currentMarker) {
+                return;
+            }
+            const centerX  = compassContainer.width / 2;
+            const pxPerDeg = compassContainer.pxPerDegree;
+            if (pxPerDeg <= 0) return;
 
-            var centerX = containerWidth / 2
-            var pxPerDegree = segmentWidth / 360
-            var middleOffset = segmentWidth
+            const offset = normalizeCourse180(returnYaw.realCourse - returnYaw.currentCourse);
+            currentMarker.x = centerX + offset * pxPerDeg - currentMarker.width / 2;
 
-            // var targetPx = returnYaw.targetCourseNormalized * pxPerDegree + stepWidth / 2
-            // var realPx = returnYaw.realCourse * pxPerDegree + stepWidth / 2
+            compassCanvas.requestPaint();
 
-            var offsetPx = normalizeCourse180(returnYaw.realCourse - returnYaw.currentCourse) * pxPerDegree
-            var currentPx = returnYaw.currentCourse * pxPerDegree + stepWidth / 2
-            currentMarker.x = centerX + offsetPx;
-            compassStrip.x = centerX - (middleOffset + currentPx)
-
-            //currentText.text = isNaN(returnYaw.realCourse) ? "" : returnYaw.realCourse.toFixed(1) + "°"
-            currentText.x = currentMarker.x + currentMarker.width/2 - currentText.width/2
+            if (currentText) {
+                currentText.x = currentMarker.x + currentMarker.width / 2 - currentText.width / 2;
+            }
         }
 
         function sendCourseToDrone(course) {
             if (returnCourse.retYawFact) {
-                returnCourse.retYawFact.value = course
-                let _course = normalizeCourse180(course)
-                console.log("set parameter to", _course)
+                returnCourse.retYawFact.value = course;
+                console.log("set parameter to", normalizeCourse180(course));
+            }
+        }
+
+        Item {
+            Layout.fillWidth:  true
+            height:            16
+        }
+
+        Rectangle {
+            id: returnYaw
+
+            Layout.preferredWidth:  compassContainer.implicitWidth
+            Layout.preferredHeight: compassContainer.implicitHeight
+            Layout.alignment:       Qt.AlignLeft
+            radius: 4
+            color: Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.5)
+
+            property real rawTargetCourse: 0
+            readonly property real targetCourseNormalized: ((rawTargetCourse % 360) + 360) % 360
+            property real currentCourse: 0
+            property real realCourse: 0
+            property bool isDragging: false
+
+            Timer {
+                id:       animationTimer
+                interval: 20
+                running:  returnCourse.initialCourseSet
+                repeat:   true
+                onTriggered: {
+                    let diff = returnYaw.targetCourseNormalized - returnYaw.currentCourse;
+                    if (diff >  180) diff -= 360;
+                    if (diff < -180) diff += 360;
+
+                    if (Math.abs(diff) > 179.5) {
+                        diff = diff > 0 ? 179.5 : -179.5;
+                    }
+
+                    const step = diff * 6 * (animationTimer.interval / wheelDebounceTimer.interval);
+                    returnYaw.currentCourse = normalizeTo360(returnYaw.currentCourse + step);
+                    returnCourse.updatePositions();
+                }
+            }
+
+            Rectangle {
+                id: compassContainer
+                x: 0
+                y: 0
+                width:  returnYaw.width
+                height: returnYaw.height
+                implicitWidth:  360
+                implicitHeight: 80
+                color: Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 1.0)
+                border.color: qgcPal.windowShade
+                border.width: 1
+                radius: 4
+                clip: true
+
+                property real pxPerDegree: 6
+
+                Canvas {
+                    id: compassCanvas
+                    x: 0
+                    y: 0
+                    width:  parent.width
+                    height: parent.height
+
+                    antialiasing: true
+                    renderStrategy: Canvas.Cooperative
+
+                    property color tickColor:      qgcPal.text
+                    property color majorTickColor: qgcPal.buttonHighlight
+
+                    onTickColorChanged:      requestPaint()
+                    onMajorTickColorChanged: requestPaint()
+
+                    Connections {
+                        target: returnYaw
+                        function onCurrentCourseChanged() {
+                            compassCanvas.requestPaint()
+                        }
+                    }
+
+                    onWidthChanged:   requestPaint()
+                    onHeightChanged:  requestPaint()
+                    onVisibleChanged: if (visible) requestPaint()
+                    Component.onCompleted: requestPaint()
+
+                    onPaint: {
+                        const ctx = getContext("2d");
+                        ctx.reset();
+                        ctx.clearRect(0, 0, width, height);
+
+                        const centerX  = width / 2;
+                        const course   = returnYaw.currentCourse;
+                        const pxPerDeg = compassContainer.pxPerDegree;
+                        if (pxPerDeg <= 0 || height <= 0){
+                            return;
+                        }
+
+                        const halfRangeDeg = (width / 2) / pxPerDeg + 10;
+                        const startDeg = Math.floor((course - halfRangeDeg) / 5) * 5;
+                        const endDeg   = Math.ceil ((course + halfRangeDeg) / 5) * 5;
+
+                        ctx.textAlign    = "center";
+                        ctx.textBaseline = "top";
+                        ctx.font = "12px sans-serif";
+
+                        for (let deg = startDeg; deg <= endDeg; deg += 5) {
+                            const x = centerX + (deg - course) * pxPerDeg;
+                            if (x < -30 || x > width + 30) continue;
+
+                            const normDeg = ((deg % 360) + 360) % 360;
+                            const is90 = (normDeg % 90) === 0;
+                            const is10 = (normDeg % 10) === 0;
+                            const tickHeight = is90 ? 16 : (is10 ? 12 : 6);
+
+                            ctx.fillStyle = is90 ? majorTickColor : tickColor;
+                            ctx.fillRect(x - 1, 4, 2, tickHeight);
+                            ctx.fillRect(x - 1, height - 4 - tickHeight, 2, tickHeight);
+
+                            if (normDeg % 10 === 0) {
+                                let label;
+                                if (normDeg === 0)        label = "N";
+                                else if (normDeg === 90)  label = "E";
+                                else if (normDeg === 180) label = "S";
+                                else if (normDeg === 270) label = "W";
+                                else                      label = normDeg + "°";
+
+                                ctx.fillStyle = is90 ? majorTickColor : tickColor;
+                                ctx.fillText(label, x, 20);
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    id: targetMarker
+                    x: (compassContainer.width - width) / 2
+                    y: 0
+                    width: 2
+                    height: compassContainer.height
+                    color: "lime"
+                    z: 10
+                }
+
+                Rectangle {
+                    id: currentMarker
+                    y: 0
+                    width: 2
+                    height: compassContainer.height
+                    color: "orange"
+                    z: 5
+                    visible: (x >= 0 && x <= compassContainer.width)
+                }
+
+                MouseArea {
+                    id: dragArea
+                    x: 0
+                    y: 0
+                    width:  parent.width
+                    height: parent.height
+                    focus: true
+
+                    property real dragStartX: 0
+                    property real dragStartRaw: 0
+
+                    Timer {
+                        id: dragDebounceTimer
+                        interval: 500
+                        repeat: false
+                        onTriggered: {
+                            if (returnYaw.isDragging) {
+                                returnCourse.sendCourseToDrone(returnYaw.targetCourseNormalized);
+                            }
+                        }
+                    }
+
+                    Timer {
+                        id: wheelDebounceTimer
+                        interval: 500
+                        repeat: false
+                        onTriggered: returnCourse.sendCourseToDrone(returnYaw.targetCourseNormalized)
+                    }
+
+                    onPressed: {
+                        returnYaw.isDragging   = true;
+                        dragArea.dragStartX    = mouseX;
+                        dragArea.dragStartRaw  = normalizeTo360(returnYaw.rawTargetCourse);
+                        dragDebounceTimer.stop()
+                    }
+
+                    onPositionChanged: {
+                        if (!returnYaw.isDragging) {
+                            return
+                        }
+
+                        const fullRange = width
+                        if (fullRange <= 0) {
+                            return;
+                        }
+
+                        const deltaX = mouseX - dragArea.dragStartX
+                        const sensitivity = 0.15;
+                        returnYaw.rawTargetCourse = normalizeTo360(
+                            dragArea.dragStartRaw + sensitivity * (deltaX / fullRange) * 360
+                        );
+
+                        dragDebounceTimer.restart();
+                    }
+
+                    onReleased: {
+                        returnYaw.isDragging = false;
+                        dragDebounceTimer.stop();
+                        returnCourse.sendCourseToDrone(returnYaw.targetCourseNormalized);
+                    }
+
+                    Keys.onReleased: { }
+                    onWheel: function(wheel) {
+                        const delta = wheel.angleDelta.y / 120;
+                        returnYaw.rawTargetCourse = normalizeTo360(returnYaw.rawTargetCourse + delta * 5);
+                        wheelDebounceTimer.restart();
+                        wheel.accepted = true;
+                    }
+                }
+            }
+
+            Item {
+                id: overlayLayer
+                x: 0
+                y: 0
+                width:  returnYaw.width
+                height: returnYaw.height
+                z: 999
+
+                Text {
+                    id: targetText
+                    text: returnYaw.targetCourseNormalized.toFixed(1) + "°"
+                    color: "lime"
+                    font.pixelSize: 12
+                    font.bold: true
+                    x: targetMarker.x + targetMarker.width / 2 - width / 2
+                    y: targetMarker.height + 2
+                    z: 20
+                }
+
+                Text {
+                    id: currentText
+                    text: returnYaw.realCourse ? returnYaw.realCourse.toFixed(1) : 0
+                    color: "orange"
+                    font.pixelSize: 12
+                    font.bold: true
+                    y: -height - 2
+                    z: 20
+                    visible: currentMarker.visible
+                }
+            }
+
+            onCurrentCourseChanged:   returnCourse.updatePositions()
+            onRawTargetCourseChanged: returnCourse.updatePositions()
+            Component.onCompleted:    returnCourse.updatePositions()
+            onWidthChanged:           returnCourse.updatePositions()
+        }
+
+        Item {
+            Layout.fillWidth:  true
+            height:            20
+        }
+
+        RowLayout {
+            RowLayout {
+                QGCLabel { text: "Target:" }
+                QGCTextField {
+                    id: targetField
+                    text: returnYaw.targetCourseNormalized.toFixed(1)
+                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+                    Layout.preferredWidth: 80
+
+                    onEditingFinished: {
+                        const v = parseFloat(targetField.text.replace(",", "."));
+                        if (!isNaN(v)) {
+                            returnYaw.rawTargetCourse = v;
+                            returnCourse.sendCourseToDrone(returnYaw.targetCourseNormalized);
+                        }
+                        targetField.text = returnYaw.targetCourseNormalized.toFixed(1);
+                    }
+
+                    Connections {
+                        target: returnYaw
+                        function onRawTargetCourseChanged() {
+                            targetField.text = returnYaw.targetCourseNormalized.toFixed(1);
+                        }
+                    }
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            RowLayout {
+                QGCLabel { text: "Current:" }
+                QGCTextField {
+                    text: returnYaw.realCourse.toFixed(1) + "°"
+                    enabled: false
+                }
             }
         }
 
@@ -137,29 +427,25 @@ ToolStripAction {
             repeat:   true
 
             function _valueChangedCallback(newValue) {
-                console.log("course changed: " + newValue + ". returnYaw.isDragging: " + returnYaw.isDragging)
-                returnYaw.currentCourse = normalizeTo360(returnCourse.retYawFact.value)
-                returnYaw.rawTargetCourse = returnYaw.currentCourse
-                returnYaw.Timer.running = true
-                returnCourse.updatePositions()
+                returnYaw.currentCourse    = normalizeTo360(returnCourse.retYawFact.value);
+                returnYaw.rawTargetCourse  = returnYaw.currentCourse;
+                returnCourse.updatePositions();
             }
 
             onTriggered: {
-                if (!returnCourse || !_activeVehicle) return
-
+                if (!returnCourse || !_activeVehicle) {
+                    return;
+                }
                 if (_paramaterManager.parametersReady && !returnCourse.retYawFact) {
-                    var fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW")
+                    const fact = _paramaterManager.getParameter(_activeVehicle.defaultComponentId(), "COMP_RET_YAW");
                     if (fact) {
-                        returnCourse.retYawFact = fact
-
+                        returnCourse.retYawFact = fact;
                         if (!returnCourse.initialCourseSet) {
-                            returnYaw.currentCourse = normalizeTo360(fact.value)
-                            returnYaw.rawTargetCourse = returnYaw.currentCourse
-                            returnYaw.Timer.running = true
-                            returnCourse.initialCourseSet = true
-                            returnCourse.updatePositions()
+                            returnYaw.currentCourse   = normalizeTo360(fact.value);
+                            returnYaw.rawTargetCourse = returnYaw.currentCourse;
+                            returnCourse.initialCourseSet = true;
+                            returnCourse.updatePositions();
                         }
-
                         fact.valueChanged.connect(_valueChangedCallback);
                     }
                 }
@@ -174,20 +460,22 @@ ToolStripAction {
 
         Timer {
             interval: 200
-            running: true
-            repeat: true
+            running:  true
+            repeat:   true
 
             function _valueChangedCallback(newValue) {
-                returnYaw.realCourse = normalizeTo360(newValue)
-                returnCourse.updatePositions()
-                console.log("realCourse: " + returnYaw.realCourse)
+                returnYaw.realCourse = normalizeTo360(newValue);
+                returnCourse.updatePositions();
             }
 
             onTriggered: {
-                if (!returnCourse || !_activeVehicle || _activeVehicle.heading === undefined) return;
+                if (!returnCourse || !_activeVehicle || _activeVehicle.heading === undefined) {
+                    return;
+                }
                 if (!returnCourse.headingFact) {
-                    returnCourse.headingFact = _activeVehicle.heading
-                    returnCourse.headingFact.valueChanged.connect(_valueChangedCallback)
+                    returnCourse.headingFact = _activeVehicle.heading;
+                    returnCourse.headingFact.valueChanged.connect(_valueChangedCallback);
+                    _valueChangedCallback(returnCourse.headingFact.value);
                 }
             }
 
@@ -196,273 +484,6 @@ ToolStripAction {
                     returnCourse.headingFact.valueChanged.disconnect(_valueChangedCallback);
                 }
             }
-        }
-
-        Rectangle {
-            id: returnYaw
-            anchors.topMargin:  _toolsMargin + parentToolInsets.topEdgeLeftInset
-            anchors.left:       toolStrip.left
-            anchors.top:        toolStrip.bottom
-            height:             instrumentPanel ? instrumentPanel._heightAttComp : 0
-            width:              instrumentPanel ? instrumentPanel._heightAttComp * 4 : 0
-
-            radius: 8
-            color: Qt.rgba(
-                qgcPal.window.r,
-                qgcPal.window.g,
-                qgcPal.window.b,
-                0.5
-            )
-
-            property real rawTargetCourse: 0
-            readonly property real targetCourseNormalized: ((rawTargetCourse % 360) + 360) % 360
-            property real currentCourse: 0
-            property real realCourse: 0
-            property bool isDragging: false
-
-            Timer {
-                id:       animationTimer
-                interval: 20
-                running: initialCourseSet
-                repeat: true
-                onTriggered: {
-                    var diff = returnYaw.targetCourseNormalized - returnYaw.currentCourse
-                    if (diff > 180) diff -= 360
-                    if (diff < -180) diff += 360
-                    var segmentWidth = compassStrip.segmentWidth
-                    var pxPerDegree = segmentWidth / 360
-                    var step = diff * pxPerDegree * (animationTimer.interval / wheelDebounceTimer.interval)
-                    returnYaw.currentCourse += step
-                    returnYaw.currentCourse = (returnYaw.currentCourse % 360 + 360) % 360
-                    returnCourse.updatePositions()
-                }
-            }
-
-            Rectangle {
-                id: compassContainer
-                width: parent.width
-                height: parent.height
-                anchors.top: parent.top
-                color: Qt.rgba(
-                    qgcPal.window.r,
-                    qgcPal.window.g,
-                    qgcPal.window.b,
-                    1.0
-                )
-
-                border.color: qgcPal.windowShade
-                border.width: 1
-                radius: 8
-
-                clip: true
-
-                Item {
-                    id: compassStrip
-
-                    property int stepWidth: 30
-                    property int segmentWidth: stepWidth * 72
-
-                    width: segmentWidth * 3
-                    height: parent.height
-
-                    Row {
-                        anchors.fill: parent
-                        //anchors.verticalCenter: parent.verticalCenter
-                        spacing: 0
-
-                        Repeater {
-                            model: 3
-                            delegate: Item {
-                                width: compassStrip.segmentWidth
-                                height: parent.height
-
-                                x: index * compassStrip.segmentWidth
-
-                                Repeater {
-                                    model: 72
-
-                                    delegate: Item {
-                                        width: compassStrip.stepWidth
-                                        height: parent.height
-
-                                        x: index * compassStrip.stepWidth
-                                        property int angle: index * 5
-                                        property bool is90: angle % 90 === 0
-                                        property bool is10: angle % 10 === 0 && !is90
-
-                                        Rectangle {
-                                            width: 2
-                                            height: is90 ? 16 : (is10 ? 12 : 6)
-                                            color: is90 ? qgcPal.buttonHighlight : qgcPal.text
-                                            z: 2
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            anchors.top: parent.top
-                                            anchors.topMargin: 4
-                                        }
-
-                                        Rectangle {
-                                            width: 2
-                                            height: is90 ? 16 : (is10 ? 12 : 6)
-                                            color: is90 ? qgcPal.buttonHighlight : qgcPal.text
-                                            z: 2
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            anchors.bottom: parent.bottom
-                                            anchors.bottomMargin: 4
-                                        }
-
-                                        Label {
-                                            visible: angle % 10 === 0
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            anchors.top: parent.top
-                                            anchors.topMargin: 20
-                                            z: 3
-
-                                            text: {
-                                                if (angle === 0) return "N"
-                                                if (angle === 90) return "E"
-                                                if (angle === 180) return "S"
-                                                if (angle === 270) return "W"
-                                                return angle + "°"
-                                            }
-
-                                            color: is90 ? qgcPal.buttonHighlight : qgcPal.text
-                                            font.pixelSize: 12
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    id: targetMarker
-                    width: 2
-                    height: parent.height
-                    anchors.centerIn: parent
-                    color: "lime"
-                    z: 10
-                }
-
-                Rectangle {
-                    id: currentMarker
-                    width: 2
-                    height: parent.height
-                    color: "orange"
-                    z: 5
-
-                    visible: (x >= 0 && x <= compassContainer.width)
-                    //x: returnYaw.width / 2
-                }
-
-                // Text {
-                //     id: targetText
-                //     text: returnYaw.targetCourseNormalized.toFixed(0) + "°"
-                //     color: "lime"
-                //     font.pixelSize: 12
-                //     font.bold: true
-
-                //     x: targetMarker.x + targetMarker.width / 2 - width / 2
-                //     y: targetMarker.y + targetMarker.height + 2
-                //     z: 20
-                // }
-
-                MouseArea {
-                    id: dragArea
-                    anchors.fill: parent
-                    property real dragStartX: 0
-                    property real dragStartRaw: 0
-
-                    Timer {
-                        id: dragDebounceTimer
-                        interval: 500
-                        repeat: false
-                        onTriggered: {
-                            if (returnYaw.isDragging) {
-                                sendCourseToDrone(returnYaw.targetCourseNormalized)
-                            }
-                        }
-                    }
-
-                    Timer {
-                        id: wheelDebounceTimer
-                        interval: 500
-                        repeat: false
-                        onTriggered: {
-                            sendCourseToDrone(returnYaw.targetCourseNormalized)
-                        }
-                    }
-
-                    onPressed: {
-                        returnYaw.isDragging = true
-                        dragArea.dragStartX = mouseX
-                        dragArea.dragStartRaw = returnYaw.rawTargetCourse
-                        dragDebounceTimer.stop()
-                    }
-
-                    onPositionChanged: {
-                        if (!returnYaw.isDragging) return
-                        var fullRange = compassStrip.width - compassContainer.width
-                        if (fullRange <= 0) return
-                        var deltaX = mouseX - dragArea.dragStartX
-                        var deltaCourse = (deltaX / fullRange) * 360
-                        returnYaw.rawTargetCourse = dragArea.dragStartRaw + deltaCourse
-                        dragDebounceTimer.restart()
-                    }
-
-                    onReleased: {
-                        returnYaw.isDragging = false
-                        dragDebounceTimer.stop()
-                        sendCourseToDrone(returnYaw.targetCourseNormalized)
-                    }
-
-                    focus: true
-                    Keys.onReleased: { }
-                    onWheel: function(wheel) {
-                        var delta = wheel.angleDelta.y / 120
-                        var courseStep = 5
-                        returnYaw.rawTargetCourse = normalizeTo360(returnYaw.rawTargetCourse + delta * courseStep)
-                        wheelDebounceTimer.restart()
-                        wheel.accepted = true
-                    }
-                }
-            }
-            Item {
-                id: overlayLayer
-                anchors.fill: parent
-                z: 999
-
-                Text {
-                    id: targetText
-                    text: returnYaw.targetCourseNormalized.toFixed(1) + "°"
-                    color: "lime"
-                    font.pixelSize: 12
-                    font.bold: true
-
-                    x: targetMarker.x + targetMarker.width / 2 - width / 2
-                    y: targetMarker.height - height - 2   // 🔥 внутри контейнера
-
-                    z: 20
-                }
-
-                Text {
-                    id: currentText
-                    text: (returnYaw.realCourse) ? returnYaw.realCourse.toFixed(1) : 0
-                    color: "orange"
-                    font.pixelSize: 12
-                    font.bold: true
-
-                    //x: currentMarker.x + currentMarker.width/2 - width/2
-                    y: 2
-                    z: 20
-                    visible: currentMarker.visible
-                }
-            }
-
-            onCurrentCourseChanged:  returnCourse.updatePositions()
-            onRawTargetCourseChanged:  returnCourse.updatePositions()
-            Component.onCompleted:  returnCourse.updatePositions()
-            onWidthChanged:  returnCourse.updatePositions()
         }
     }
 }

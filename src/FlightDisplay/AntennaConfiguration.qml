@@ -29,7 +29,7 @@ import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
 
 ToolStripAction {
-    id:         returnCourseIcon
+    id:         antennaConfigurationIcon
     text:       "Antenna";
     iconSource: "qrc:/qmlimages/icon-antenna.svg"
     enabled:    true
