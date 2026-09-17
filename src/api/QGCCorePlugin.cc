@@ -192,6 +192,7 @@ QVariantList& QGCCorePlugin::analyzePages()
         _p->analyzeList.append(QVariant::fromValue(new QmlComponentInfo(tr("MAVLink Inspector"),QUrl::fromUserInput("qrc:/qml/MAVLinkInspectorPage.qml"),   QUrl::fromUserInput("qrc:/qmlimages/MAVLinkInspector"))));
 #endif
         _p->analyzeList.append(QVariant::fromValue(new QmlComponentInfo(tr("Vibration"),        QUrl::fromUserInput("qrc:/qml/VibrationPage.qml"),          QUrl::fromUserInput("qrc:/qmlimages/VibrationPageIcon"))));
+        _p->analyzeList.append(QVariant::fromValue(new QmlComponentInfo(tr("Data loss test"),   QUrl::fromUserInput("qrc:/qml/DataLossPage.qml"),           QUrl::fromUserInput("qrc:/qmlimages/DataLossPageIcon"))));
     }
     return _p->analyzeList;
 }

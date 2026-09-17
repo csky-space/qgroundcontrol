@@ -289,6 +289,7 @@
 		<file alias="UdpSettings.qml">../src/ui/preferences/UdpSettings.qml</file>
 		<file alias="VehicleSummary.qml">../src/VehicleSetup/VehicleSummary.qml</file>
 		<file alias="VibrationPage.qml">../src/AnalyzeView/VibrationPage.qml</file>
+		<file alias="DataLossPage.qml">../src/AnalyzeView/DataLossPage.qml</file>
 		<file alias="VirtualJoystick.qml">../src/FlightDisplay/VirtualJoystick.qml</file>
 		<file alias="VTOLLandingPatternEditor.qml">../src/PlanView/VTOLLandingPatternEditor.qml</file>
 		<file alias="QGroundControl/Controls/MockLinkOptionsDlg.qml">../src/comm/MockLinkOptionsDlg.qml</file>

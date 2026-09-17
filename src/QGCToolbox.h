@@ -31,6 +31,7 @@ class QGCPositionManager;
 class VideoManager;
 class SignalQualityMonitor;
 class AntennaController;
+class DataLossTester;
 class MAVLinkLogManager;
 class QGCCorePlugin;
 class SettingsManager;
@@ -72,6 +73,7 @@ public:
     VideoManager*               videoManager            () { return _videoManager; }
     SignalQualityMonitor*       signalQualityMonitor    () { return _signalQualityMonitor; }
     AntennaController*          antennaController       () { return _antennaController; }
+    DataLossTester*             dataLossTester          () { return _dataLossTester; }
     MAVLinkLogManager*          mavlinkLogManager       () { return _mavlinkLogManager; }
     QGCCorePlugin*              corePlugin              () { return _corePlugin; }
     SettingsManager*            settingsManager         () { return _settingsManager; }
@@ -116,6 +118,7 @@ private:
     VideoManager*               _videoManager           = nullptr;
     SignalQualityMonitor*       _signalQualityMonitor   = nullptr;
     AntennaController*          _antennaController      = nullptr;
+    DataLossTester*             _dataLossTester         = nullptr;
     MAVLinkLogManager*          _mavlinkLogManager      = nullptr;
     QGCCorePlugin*              _corePlugin             = nullptr;
     SettingsManager*            _settingsManager        = nullptr;

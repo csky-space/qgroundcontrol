@@ -675,6 +675,7 @@ HEADERS += \
     src/Vibration/VibrationController.h \
     src/ServoController/ServoController.h \
     src/AntennaController/AntennaController.h \
+    src/DataLossTester/DataLossTester.h \
     src/DropController/DropController.h \
     src/SignalQualityMonitor/SignalQualityMonitor.h \
     src/EKF/EKFController.h \
@@ -944,6 +945,7 @@ SOURCES += \
     src/Vibration/VibrationController.cc \
     src/ServoController/ServoController.cc \
     src/AntennaController/AntennaController.cc \
+    src/DataLossTester/DataLossTester.cc \
     src/DropController/DropController.cc \
     src/SignalQualityMonitor/SignalQualityMonitor.cc \
     src/EKF/EKFController.cc \
