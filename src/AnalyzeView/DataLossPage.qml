@@ -32,62 +32,97 @@ AnalyzePage {
         id: pageComponent
 
         GridLayout {
+            id:            statsLayout
             columns:       2
             columnSpacing: ScreenTools.defaultFontPixelWidth
             rowSpacing:    ScreenTools.defaultFontPixelHeight * 0.25
 
-            QGCLabel { text: qsTr("Address:") }
+            function pct(value) {
+                 const total = QGroundControl.dataLossTester.packetsSent;
+                 if (total <= 0) return "0.00";
+                 return (100.0 * value / total).toFixed(2);
+             }
+
+            QGCLabel {
+                text: qsTr("Address:")
+            }
             QGCTextField {
                 Layout.columnSpan:  1
                 Layout.fillWidth:   true
                 text:               QGroundControl.dataLossTester.address
                 placeholderText:    qsTr("127.0.0.1")
+                enabled:            !QGroundControl.dataLossTester.connected
 
                 onEditingFinished:  QGroundControl.dataLossTester.address = text
             }
 
-            QGCLabel { text: qsTr("Port:") }
+            QGCLabel {
+                text: qsTr("Port:")
+            }
             QGCTextField {
                 Layout.columnSpan:  1
                 Layout.fillWidth:   true
                 text:               QGroundControl.dataLossTester.port
                 placeholderText:    qsTr("9000")
+                enabled:            !QGroundControl.dataLossTester.connected
 
                 onEditingFinished:  {
                     QGroundControl.dataLossTester.port = parseInt(text);
                 }
             }
 
-            QGCLabel { text: qsTr("Packets per test:") }
+            QGCLabel {
+                text: qsTr("Packets per test:")
+            }
             QGCTextField {
                 Layout.columnSpan:  1
                 Layout.fillWidth:   true
                 text:               QGroundControl.dataLossTester.packetsPerTest
                 placeholderText:    qsTr("10000")
+                enabled:            !QGroundControl.dataLossTester.connected
 
                 onEditingFinished:  {
                     QGroundControl.dataLossTester.packetsPerTest = parseInt(text);
                 }
             }
 
-            QGCLabel { text: qsTr("Send interval:") }
+            QGCLabel {
+                text: qsTr("Send interval (ms):")
+            }
             QGCTextField {
                 Layout.columnSpan:  1
                 Layout.fillWidth:   true
                 text:               QGroundControl.dataLossTester.sendInterval
                 placeholderText:    qsTr("20")
+                enabled:            !QGroundControl.dataLossTester.connected
 
                 onEditingFinished:  {
                     QGroundControl.dataLossTester.sendInterval = parseInt(text);
                 }
             }
 
-            QGCLabel { text: qsTr("Wait interval:") }
+            QGCCheckBox {
+                Layout.columnSpan:  2
+                text:               qsTr("Wait echo response")
+                checked:            QGroundControl.dataLossTester.shouldWait === true
+                enabled:            !QGroundControl.dataLossTester.connected
+
+                onClicked:          {
+                    QGroundControl.dataLossTester.shouldWait = checked
+                }
+            }
+
+            QGCLabel {
+                text: qsTr("Wait interval (ms):")
+                visible:            QGroundControl.dataLossTester.shouldWait === true
+            }
             QGCTextField {
                 Layout.columnSpan:  1
                 Layout.fillWidth:   true
                 text:               QGroundControl.dataLossTester.waitInterval
                 placeholderText:    qsTr("200")
+                enabled:            !QGroundControl.dataLossTester.connected
+                visible:            QGroundControl.dataLossTester.shouldWait === true
 
                 onEditingFinished:  {
                     QGroundControl.dataLossTester.waitInterval = parseInt(text);
@@ -106,28 +141,41 @@ AnalyzePage {
                 Layout.columnSpan:  1
                 Layout.fillWidth:   true
                 text:               qsTr("Stop Test")
-                onClicked:          QGroundControl.dataLossTester.startSendingMessages()
+                onClicked:          QGroundControl.dataLossTester.stopSendingMessages()
                 enabled:            QGroundControl.dataLossTester.connected
             }
 
-            QGCCheckBox {
-                Layout.columnSpan:  2
-                text:               qsTr("Should wait")
-                checked:            QGroundControl.dataLossTester.shouldWait === true
-
-                onClicked:          {
-                    QGroundControl.dataLossTester.setShouldWait = checked
-                }
+            QGCLabel { text: qsTr("packets sent:") }
+            QGCLabel {
+                text: QGroundControl.dataLossTester.packetsSent
             }
 
-            QGCLabel { text: qsTr("packets sent:") }
-            QGCLabel { text: QGroundControl.dataLossTester.packetsSent }
-
             QGCLabel { text: qsTr("packets received:") }
-            QGCLabel { text: QGroundControl.dataLossTester.packetsReceived }
+            QGCLabel {
+                text: QGroundControl.dataLossTester.packetsReceived
+                      + "  (" + statsLayout.pct(QGroundControl.dataLossTester.packetsReceived) + " %)"
+                color: statsLayout.pct(QGroundControl.dataLossTester.packetsReceived) >= 99.0
+                       ? qgcPal.colorGreen
+                       : qgcPal.text
+            }
 
-            QGCLabel { text: qsTr("packets lost:") }
-            QGCLabel { text: QGroundControl.dataLossTester.packetsLost }
+            QGCLabel { text: qsTr("wait timeouts:") }
+            QGCLabel {
+                text: QGroundControl.dataLossTester.waitTimeouts
+                      + "  (" + statsLayout.pct(QGroundControl.dataLossTester.waitTimeouts) + " %)"
+                color: QGroundControl.dataLossTester.waitTimeouts > 0
+                       ? qgcPal.colorOrange
+                       : qgcPal.text
+            }
+
+            QGCLabel { text: qsTr("lost by sequence:") }
+            QGCLabel {
+                text: QGroundControl.dataLossTester.packetsLostBySequence
+                      + "  (" + statsLayout.pct(QGroundControl.dataLossTester.packetsLostBySequence) + " %)"
+                color: QGroundControl.dataLossTester.packetsLostBySequence > 0
+                       ? qgcPal.colorOrange
+                       : qgcPal.text
+            }
         }
     }
 }
