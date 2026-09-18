@@ -12,6 +12,7 @@
 #include <QElapsedTimer>
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QRandomGenerator>
 
 #include "ScreenToolsController.h"
 #include "QGCToolbox.h"
@@ -106,41 +107,43 @@ void DataLossTester::setToolbox(QGCToolbox *toolbox) {
     connect(&_waitResponseTimer, &QTimer::timeout, this, &DataLossTester::_onWaitResponseTimeout);
     connect(&_disconnectTimer,   &QTimer::timeout, this, &DataLossTester::_disconnectFromServer);
 
-    static const uint8_t systemId    = 1;
-    static const uint8_t componentId = 1;
+    uint8_t systemId    = 1;
+    uint8_t componentId = 1;
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "HEARTBEAT", [](mavlink_message_t& msg) {
+    auto addMessage = [&](quint32 id, const QString& name,
+                          std::function<void(mavlink_message_t&)> pack) {
+        auto* info = new TestMessageInfo(id, name, pack);
+        info->setParent(this);
+        QQmlEngine::setObjectOwnership(info, QQmlEngine::CppOwnership);
+        _messages.append(info);
+        _messagesModel.append(QVariant::fromValue(info));
+    };
+
+    addMessage(0, "HEARTBEAT", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_heartbeat_pack(
             systemId, componentId, &msg,
             MAV_TYPE_QUADROTOR,
             MAV_AUTOPILOT_GENERIC,
             MAV_MODE_FLAG_MANUAL_INPUT_ENABLED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
             0x01020304u,
-            MAV_STATE_ACTIVE
-            );
-    })));
+            MAV_STATE_ACTIVE);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "COMMAND_LONG — ARM/DISARM", [](mavlink_message_t& msg) {
+    addMessage(1, "COMMAND_LONG — ARM/DISARM", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_command_long_pack(
             systemId, componentId, &msg,
-            1, 1,
-            MAV_CMD_COMPONENT_ARM_DISARM,
-            0,
-            1.0f, 0, 0, 0, 0, 0, 0
-        );
-    })));
+            1, 1, MAV_CMD_COMPONENT_ARM_DISARM, 0,
+            1.0f, 0, 0, 0, 0, 0, 0);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "COMMAND_LONG — TAKEOFF", [](mavlink_message_t& msg) {
+    addMessage(2, "COMMAND_LONG — TAKEOFF", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_command_long_pack(
             systemId, componentId, &msg,
-            1, 1,
-            MAV_CMD_NAV_TAKEOFF,
-            0,
-            0.0f, 0, 0, 0, 0, 0, 10.0f
-        );
-    })));
+            1, 1, MAV_CMD_NAV_TAKEOFF, 0,
+            0.0f, 0, 0, 0, 0, 0, 10.0f);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "COMMAND_INT — WAYPOINT", [](mavlink_message_t& msg) {
+    addMessage(3, "COMMAND_INT — WAYPOINT", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_command_int_pack(
             systemId, componentId, &msg,
             1, 1,
@@ -148,114 +151,101 @@ void DataLossTester::setToolbox(QGCToolbox *toolbox) {
             MAV_CMD_NAV_WAYPOINT,
             0, 1,
             0, 0, 0, 0,
-            473977000,
-            85450000,
-            100.0f
-        );
-    })));
+            473977000, 85450000, 100.0f);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "SET_MODE", [](mavlink_message_t& msg) {
+    addMessage(4, "SET_MODE", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_set_mode_pack(
             systemId, componentId, &msg,
-            1,
-            MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-            4
-        );
-    })));
+            1, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, 4);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "BATTERY_STATUS", [](mavlink_message_t& msg) {
-        uint16_t voltages[10] = {12400, 12390, 12410, 12395,
+    addMessage(5, "BATTERY_STATUS", [systemId, componentId](mavlink_message_t& msg) {
+        uint16_t voltages[10]    = {12400, 12390, 12410, 12395,
                                  12405, 12398, 12402, 12393,
                                  12407, 12401};
         uint16_t voltages_ext[4] = {0, 0, 0, 0};
         mavlink_msg_battery_status_pack(
             systemId, componentId, &msg,
-            0,
-            MAV_BATTERY_FUNCTION_ALL,
-            MAV_BATTERY_TYPE_LIPO,
-            2500,
-            voltages,
-            1500,
-            1234,
-            5678,
-            87,
-            0,
-            MAV_BATTERY_CHARGE_STATE_OK,
-            voltages_ext,
-            0,
-            0
-        );
-    })));
+            0, MAV_BATTERY_FUNCTION_ALL, MAV_BATTERY_TYPE_LIPO,
+            2500, voltages, 1500, 1234, 5678, 87,
+            0, MAV_BATTERY_CHARGE_STATE_OK,
+            voltages_ext, 0, 0);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "SYSTEM_TIME", [](mavlink_message_t& msg) {
+    addMessage(6, "SYSTEM_TIME", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_system_time_pack(
             systemId, componentId, &msg,
-            1234567890123456ULL,
-            987654321u
-        );
-    })));
+            1234567890123456ULL, 987654321u);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "STATUSTEXT", [](mavlink_message_t& msg) {
+    addMessage(7, "STATUSTEXT", [systemId, componentId](mavlink_message_t& msg) {
         const char text[] = "DataLossTester payload ABCDEFG 0123456789";
         mavlink_msg_statustext_pack(
             systemId, componentId, &msg,
-            MAV_SEVERITY_INFO,
-            text,
-            1,
-            0
-        );
-    })));
+            MAV_SEVERITY_INFO, text, 1, 0);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "ATTITUDE", [](mavlink_message_t& msg) {
+    addMessage(8, "ATTITUDE", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_attitude_pack(
             systemId, componentId, &msg,
-            1000,
-            0.1f, -0.2f, 1.57f,
-            0.01f, -0.02f, 0.5f
-        );
-    })));
+            1000, 0.1f, -0.2f, 1.57f,
+            0.01f, -0.02f, 0.5f);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "VFR_HUD", [](mavlink_message_t& msg) {
+    addMessage(9, "VFR_HUD", [systemId, componentId](mavlink_message_t& msg) {
         mavlink_msg_vfr_hud_pack(
             systemId, componentId, &msg,
-            12.5f,
-            13.7f,
-            270,
-            55,
-            120.5f,
-            1.2f
-        );
-    })));
+            12.5f, 13.7f, 270, 55, 120.5f, 1.2f);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "PARAM_VALUE", [](mavlink_message_t& msg) {
+    addMessage(10, "PARAM_VALUE", [systemId, componentId](mavlink_message_t& msg) {
         char paramId[16] = "TEST_PARAM_1234";
         mavlink_msg_param_value_pack(
             systemId, componentId, &msg,
-            paramId,
-            42.42f,
-            MAV_PARAM_TYPE_REAL32,
-            128,
-            5
-        );
-    })));
+            paramId, 42.42f, MAV_PARAM_TYPE_REAL32, 128, 5);
+    });
 
-    _messagesModel.append(QVariant::fromValue(TestMessageInfo(0, "ENCAPSULATED_DATA", [](mavlink_message_t& msg) {
+    addMessage(11, "ENCAPSULATED_DATA (253 B)", [systemId, componentId](mavlink_message_t& msg) {
         uint8_t data[253];
         for (int i = 0; i < 253; ++i) {
             data[i] = static_cast<uint8_t>((i * 7 + 1) & 0xFF);
         }
         if (data[252] == 0) data[252] = 0xA5;
         mavlink_msg_encapsulated_data_pack(
-            systemId, componentId, &msg,
-            0,
-            data
-        );
-    })));
+            systemId, componentId, &msg, 0, data);
+    });
+
+    addMessage(12, "RC_CHANNELS_OVERRIDE ", [systemId, componentId](mavlink_message_t& msg) {
+        static QRandomGenerator rng(QRandomGenerator::global()->generate());
+
+        mavlink_rc_channels_override_t rc{};
+        rc.target_system    = 1;
+        rc.target_component = 1;
+
+        rc.chan1_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan2_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan3_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan4_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan5_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan6_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan7_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan8_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan9_raw  = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan10_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan11_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan12_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan13_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan14_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan15_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan16_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan17_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+        rc.chan18_raw = static_cast<uint16_t>(rng.bounded(1000, 2001));
+
+        mavlink_msg_rc_channels_override_encode(systemId, componentId, &msg, &rc);
+    });
 }
 
-// ---------------------------------------------------------------------------
-// Getters
-// ---------------------------------------------------------------------------
 QString      DataLossTester::address() const { return _address; }
 quint16      DataLossTester::port() const { return _port; }
 quint32      DataLossTester::packetsPerTest() const { return _packetsPerTest; }
@@ -270,9 +260,6 @@ qint32       DataLossTester::packetsLostBySequence() const { return _packetsLost
 bool         DataLossTester::connected() const { return _connected; }
 QVariantList DataLossTester::messagesModel() const {return _messagesModel; }
 
-// ---------------------------------------------------------------------------
-// Setters
-// ---------------------------------------------------------------------------
 void DataLossTester::setAddress(QString address) {
     if (_address == address) return;
     _address = address;
@@ -309,9 +296,6 @@ void DataLossTester::setShouldWait(bool state) {
     emit shouldWaitChanged();
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 void DataLossTester::startSendingMessages() {
     if (_connected) {
         qCWarning(DataLossTesterLog) << "Is already sending messages";
@@ -321,23 +305,26 @@ void DataLossTester::startSendingMessages() {
     _connectToServer();
     if (!_connected) return;
 
-    // Сбрасываем счётчики теста
     _packetsSent            = 0;
     _packetsReceived        = 0;
     _testPacketsSent        = 0;
     _packetsLost            = 0;
     _waitTimeouts           = 0;
     _packetsLostBySequence  = 0;
-    _lastReceivedSeq        = 0;
-    _hasLastReceivedSeq     = false;
     _isWaitingForResponse   = false;
     _expectedResponseSeq    = 0;
     _testPacketsReceived    = 0;
     _endReconciled          = false;
     _msgTypeIndex           = 0;
-    _lastSentSeq            = 0;
 
-    // Ключевой момент: сбрасываем счётчик seq у канала — MAVLink начнёт с 0.
+    _sentPackets.clear();
+    _nextExpectedIdx        = 0;
+
+    for (TestMessageInfo* info : _messages) {
+        info->ResetStatictics();
+    }
+    _expectedInfo = nullptr;
+
     mavlink_get_channel_status(MAVLINK_COMM_0)->current_tx_seq = 0;
 
     emit packetsSentChanged();
@@ -359,9 +346,6 @@ void DataLossTester::stopSendingMessages() {
     _disconnectFromServer();
 }
 
-// ---------------------------------------------------------------------------
-// Connection
-// ---------------------------------------------------------------------------
 void DataLossTester::_connectToServer() {
     if (_connected) return;
 
@@ -427,9 +411,6 @@ void DataLossTester::_onSocketError(QAbstractSocket::SocketError error) {
     qCWarning(DataLossTesterLog) << "Socket error:" << _socket->errorString();
 }
 
-// ---------------------------------------------------------------------------
-// Sending
-// ---------------------------------------------------------------------------
 void DataLossTester::_onSendMessageTimeout() {
     if (!_connected) {
         _stopSendingMessages();
@@ -443,34 +424,27 @@ void DataLossTester::_sendNextMessage() {
         qCDebug(DataLossTesterLog) << "Failed to send next message — no connection.";
         return;
     }
-
-    if (_messagesModel.size() == 0) {
+    if (_messages.isEmpty()) {
         qCDebug(DataLossTesterLog) << "No messages registered.";
         _stopSendingMessages();
         return;
     }
 
-    if (_msgTypeIndex > _messagesModel.size()) {
-        _msgTypeIndex = _msgTypeIndex % _messagesModel.size();
-    }
-
-    TestMessageInfo* info = _messagesModel[_msgTypeIndex].value<TestMessageInfo*>();
-    _msgTypeIndex = (_msgTypeIndex + 1) % _messagesModel.size();
-
-    if (!info) {
-        qCDebug(DataLossTesterLog) << "Message info is not filled.";
-        _stopSendingMessages();
-        return;
-    }
+    TestMessageInfo* info = _messages[_msgTypeIndex];
+    _msgTypeIndex = (_msgTypeIndex + 1) % _messages.size();
 
     mavlink_message_t msg{};
     info->PackMessage(msg);
 
     const quint8 sentSeq = msg.seq;
 
+    _sentPackets.append({ sentSeq, info });
+    info->IncrementSent();
+
     if (_shouldWaitForResponse) {
         _sendMessagesTimer.stop();
         _expectedResponseSeq  = sentSeq;
+        _expectedInfo         = info;
         _isWaitingForResponse = true;
         _waitResponseTimer.start();
     }
@@ -480,18 +454,14 @@ void DataLossTester::_sendNextMessage() {
 
     const qint64 written = _socket->write(reinterpret_cast<const char*>(buf), len);
     if (written != len) {
-        qCWarning(DataLossTesterLog) << "Write size error: written=" << written
-                                     << "expected=" << len;
+        qCWarning(DataLossTesterLog) << "Write size error: written=" << written << "expected=" << len;
     }
-
-    _lastSentSeq = sentSeq;
 
     _packetsSent++;
     _testPacketsSent++;
     emit packetsSentChanged();
 
     if (_testPacketsSent >= _packetsPerTest && !_shouldWaitForResponse) {
-        qCDebug(DataLossTesterLog) << "Last message sent.";
         _sendMessagesTimer.stop();
         _disconnectTimer.start();
     }
@@ -503,23 +473,22 @@ void DataLossTester::_stopSendingMessages() {
     _isWaitingForResponse = false;
 }
 
-// ---------------------------------------------------------------------------
-// Wait-response timeout
-// ---------------------------------------------------------------------------
 void DataLossTester::_onWaitResponseTimeout() {
-    if (!_isWaitingForResponse) {
-        return;
-    }
+    if (!_isWaitingForResponse) return;
 
     qCDebug(DataLossTesterLog) << "Wait response timeout for seq" << _expectedResponseSeq;
 
     _waitTimeouts++;
     emit waitTimeoutsChanged();
-
     _packetsLost++;
     emit packetsLostChanged();
 
+    if (_expectedInfo) {
+        _expectedInfo->IncrementTimeoutLost();
+    }
+
     _isWaitingForResponse = false;
+    _expectedInfo         = nullptr;
 
     if (_testPacketsSent >= _packetsPerTest) {
         _disconnectTimer.start();
@@ -528,9 +497,6 @@ void DataLossTester::_onWaitResponseTimeout() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Receiving + sequence check
-// ---------------------------------------------------------------------------
 void DataLossTester::_onReadyRead() {
     if (!_socket) return;
 
@@ -549,8 +515,35 @@ void DataLossTester::_onReadyRead() {
         newMessages++;
         _testPacketsReceived++;
 
+        int found = -1;
+        {
+            const int logSize = _sentPackets.size();
+            const int start   = int(_nextExpectedIdx);
+            const int maxLook = qMin(logSize, start + 256);
+            for (int k = start; k < maxLook; ++k) {
+                if (_sentPackets[k].seq == msg.seq) {
+                    found = k;
+                    break;
+                }
+            }
+        }
+
+        if (found >= 0) {
+            for (int k = int(_nextExpectedIdx); k < found; ++k) {
+                if (_sentPackets[k].info) {
+                    _sentPackets[k].info->IncrementSeqLost();
+                }
+                lostBySeq++;
+            }
+            if (_sentPackets[found].info) {
+                _sentPackets[found].info->IncrementReceived();
+            }
+            _nextExpectedIdx = quint32(found + 1);
+        }
+
         if (_isWaitingForResponse && msg.seq == _expectedResponseSeq) {
             _isWaitingForResponse = false;
+            _expectedInfo         = nullptr;
             _waitResponseTimer.stop();
 
             if (_testPacketsSent >= _packetsPerTest) {
@@ -559,15 +552,6 @@ void DataLossTester::_onReadyRead() {
                 _sendMessagesTimer.start();
             }
         }
-
-        if (_hasLastReceivedSeq) {
-            const int delta = (static_cast<int>(msg.seq) - static_cast<int>(_lastReceivedSeq) + 256) % 256;
-            if (delta > 1 && delta < 128) {
-                lostBySeq += (delta - 1);
-            }
-        }
-        _lastReceivedSeq    = msg.seq;
-        _hasLastReceivedSeq = true;
     }
     _rxBuffer.clear();
 
@@ -579,27 +563,27 @@ void DataLossTester::_onReadyRead() {
     if (lostBySeq > 0) {
         _packetsLostBySequence += lostBySeq;
         emit packetsLostBySequenceChanged();
-        qCDebug(DataLossTesterLog) << "Sequence gap: lost" << lostBySeq
-                                   << "packets (total by seq ="
-                                   << _packetsLostBySequence << ")";
     }
+
+    _disconnectTimer.start();
 }
 
 void DataLossTester::_reconcileSequenceAtEnd() {
-    if (_testPacketsSent == 0 || !_hasLastReceivedSeq) {
-        return;
-    }
+    if (_sentPackets.isEmpty()) return;
 
-    const int tailDelta = (static_cast<int>(_lastSentSeq)
-                           - static_cast<int>(_lastReceivedSeq)
-                           + 256) % 256;
+    const int remaining = _sentPackets.size() - int(_nextExpectedIdx);
+    if (remaining <= 0) return;
 
-    if (tailDelta > 0 && tailDelta < 128) {
-        _packetsLostBySequence += tailDelta;
-        emit packetsLostBySequenceChanged();
-        qCDebug(DataLossTesterLog)
-            << "End-of-test sequence reconciliation: lastSentSeq ="
-            << _lastSentSeq << "lastReceivedSeq =" << _lastReceivedSeq
-            << "→ tail loss +" << tailDelta;
+    for (int i = int(_nextExpectedIdx); i < _sentPackets.size(); ++i) {
+        if (_sentPackets[i].info) {
+            _sentPackets[i].info->IncrementSeqLost();
+        }
     }
+    _packetsLostBySequence += remaining;
+    emit packetsLostBySequenceChanged();
+
+    qCDebug(DataLossTesterLog)
+        << "End-of-test reconciliation: tail loss +" << remaining
+        << "(sent =" << _sentPackets.size()
+        << ", accounted =" << _nextExpectedIdx << ")";
 }

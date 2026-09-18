@@ -61,6 +61,8 @@ private:
     std::function<void(mavlink_message_t&)> _packCallback = nullptr;
 };
 
+Q_DECLARE_METATYPE(TestMessageInfo*)
+
 class DataLossTester : public QGCTool {
     Q_OBJECT
 
@@ -138,7 +140,7 @@ private:
     bool   _isWaitingForResponse = false;
     quint32 _sendInterval = 10;
     quint32 _waitResponseInterval = 200;
-    quint32 _disconnectInterval = 500;
+    quint32 _disconnectInterval = 1000;
     quint32 _packetsPerTest = 1000;
     quint32 _testPacketsSent = 0;
 
@@ -154,18 +156,22 @@ private:
     qint32  _waitTimeouts      = 0;
     qint32  _packetsLostBySequence = 0;
 
-    // --- sequence tracking ---
-    quint8  _lastReceivedSeq       = 0;
-    bool    _hasLastReceivedSeq    = false;
+    struct SentPacket {
+        quint8 seq = 0;
+        TestMessageInfo* info = nullptr;
+    };
+    QVector<SentPacket> _sentPackets;
+    quint32 _nextExpectedIdx = 0;
 
     quint8  _expectedResponseSeq = 0;
-    quint8  _lastSentSeq         = 0;
     quint32 _testPacketsReceived = 0;
     bool    _endReconciled       = false;
 
     uint32_t _msgTypeIndex = 0;
 
     QVariantList _messagesModel;
+    QVector<TestMessageInfo*> _messages;
+    TestMessageInfo* _expectedInfo = nullptr;
 
     void _connectToServer();
     void _disconnectFromServer();
