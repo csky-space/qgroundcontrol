@@ -16,7 +16,7 @@
     "longDesc":  "UDP port to bind to for video stream.",
     "type":             "uint16",
     "min":              1025,
-    "default":     5600
+    "default":     10000
 },
 {
     "name":             "rtspUrl",

@@ -22,6 +22,7 @@
 #include "QGCApplication.h"
 #include "UDPLink.h"
 #include "TCPLink.h"
+#include "TCPServerLink.h"
 #include "SettingsManager.h"
 #include "LogReplayLink.h"
 #ifdef QGC_ENABLE_BLUETOOTH
@@ -132,6 +133,9 @@ bool LinkManager::createConnectedLink(SharedLinkConfigurationPtr& config, bool i
         break;
     case LinkConfiguration::TypeTcp:
         link = std::make_shared<TCPLink>(config);
+        break;
+    case LinkConfiguration::TypeTcpServer:
+        link = std::make_shared<TCPServerLink>(config);
         break;
 #ifdef QGC_ENABLE_BLUETOOTH
     case LinkConfiguration::TypeBluetooth:
@@ -340,6 +344,9 @@ void LinkManager::loadLinkConfigurationList()
                             case LinkConfiguration::TypeTcp:
                                 link = new TCPConfiguration(name);
                                 break;
+                            case LinkConfiguration::TypeTcpServer:
+                                link = new TCPServerConfiguration(name);
+                                break;
 #ifdef QGC_ENABLE_BLUETOOTH
                             case LinkConfiguration::TypeBluetooth:
                                 link = new BluetoothConfiguration(name);
@@ -389,6 +396,23 @@ void LinkManager::loadLinkConfigurationList()
 
     // Enable automatic Serial PX4/3DR Radio hunting
     _configurationsLoaded = true;
+}
+
+void LinkManager::createDefaultConnection() {
+    const QString defaultConfigurationName = "Default TCP Link";
+    for(int i = 0; i < _rgLinkConfigs.count(); i++) {
+        if (_rgLinkConfigs[i]->name() == defaultConfigurationName) {
+            return;
+        }
+    }
+
+    TCPConfiguration* config = new TCPConfiguration(defaultConfigurationName);
+    config->setName(defaultConfigurationName);
+    config->setHost("192.168.144.2");
+    config->setPort(9020);
+    config->setAutoConnect(true);
+
+    addConfiguration(config);
 }
 
 #ifndef NO_SERIAL_LINK
@@ -731,6 +755,7 @@ QStringList LinkManager::linkTypeStrings(void) const
 #ifndef __mobile__
         list += tr("Log Replay");
 #endif
+        list += tr("TCP Server");
         if (list.size() != static_cast<int>(LinkConfiguration::TypeLast)) {
             qWarning() << "Internal error";
         }

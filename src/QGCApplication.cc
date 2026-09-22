@@ -594,6 +594,9 @@ bool QGCApplication::_initForNormalAppBoot()
     // Load known link configurations
     toolbox()->linkManager()->loadLinkConfigurationList();
 
+    // Create default connection if was not loaded
+    toolbox()->linkManager()->createDefaultConnection();
+
     // Probe for joysticks
     toolbox()->joystickManager()->init();
 

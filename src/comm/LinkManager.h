@@ -88,6 +88,8 @@ public:
     void loadLinkConfigurationList();
     void saveLinkConfigurationList();
 
+    void createDefaultConnection();
+
     /// Suspend automatic confguration updates (during link maintenance for instance)
     void suspendConfigurationUpdates(bool suspend);
 

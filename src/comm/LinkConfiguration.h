@@ -61,6 +61,7 @@ public:
         TypeAstra,
 #endif
         TypeLogReplay,
+        TypeTcpServer,
         TypeLast        // Last type value (type >= TypeLast == invalid)
     };
     Q_ENUM(LinkType)

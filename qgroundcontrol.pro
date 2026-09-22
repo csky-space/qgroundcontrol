@@ -678,6 +678,7 @@ HEADERS += \
     src/DataLossTester/DataLossTester.h \
     src/DropController/DropController.h \
     src/SignalQualityMonitor/SignalQualityMonitor.h \
+    src/comm/TCPServerLink.h \
     src/EKF/EKFController.h \
     src/QGC.h \
     src/QGCApplication.h \
@@ -947,6 +948,7 @@ SOURCES += \
     src/AntennaController/AntennaController.cc \
     src/DataLossTester/DataLossTester.cc \
     src/DropController/DropController.cc \
+    src/comm/TCPServerLink.cc \
     src/SignalQualityMonitor/SignalQualityMonitor.cc \
     src/EKF/EKFController.cc \
     src/QGC.cc \
