@@ -45,6 +45,15 @@ Item {
 
     property string mapType:            _fmSettings ? (_fmSettings.mapProvider.value + " " + _fmSettings.mapType.value) : ""
     property bool   isMapInteractive:   false
+    property bool   _hasSelection:      false
+    property real   _selTopLat:         0
+    property real   _selTopLon:         0
+    property real   _selBotLat:         0
+    property real   _selBotLon:         0
+    property real   _curTopLat:         0
+    property real   _curTopLon:         0
+    property real   _curBotLat:         0
+    property real   _curBotLon:         0
     property var    savedCenter:        undefined
     property real   savedZoom:          3
     property string savedMapType:       ""
@@ -85,15 +94,51 @@ Item {
     }
 
     function handleChanges() {
-        if(isMapInteractive) {
+        if (!isMapInteractive)
+            return
+
+        if (_hasSelection) {
+            //-- Расчёт по выделенной области (географические координаты)
+            var p1 = QtPositioning.coordinate(_selTopLat, _selTopLon)
+            var p2 = QtPositioning.coordinate(_selBotLat, _selBotLon)
+            selectionBoundary.topLeft     = p1
+            selectionBoundary.bottomRight = p2
+            QGroundControl.mapEngineManager.updateForCurrentView(
+                p1.longitude, p1.latitude, p2.longitude, p2.latitude,
+                sliderMinZoom.value, sliderMaxZoom.value, mapType)
+
+            _curTopLat = _selTopLat
+            _curTopLon = _selTopLon
+            _curBotLat = _selBotLat
+            _curBotLon = _selBotLon
+        } else {
+            //-- Расчёт по вьюпорту
             var xl = 0
             var yl = 0
-            var xr = _map.width.toFixed(0) - 1  // Must be within boundaries of visible map
-            var yr = _map.height.toFixed(0) - 1 // Must be within boundaries of visible map
+            var xr = _map.width.toFixed(0) - 1
+            var yr = _map.height.toFixed(0) - 1
             var c0 = _map.toCoordinate(Qt.point(xl, yl), false /* clipToViewPort */)
             var c1 = _map.toCoordinate(Qt.point(xr, yr), false /* clipToViewPort */)
-            QGroundControl.mapEngineManager.updateForCurrentView(c0.longitude, c0.latitude, c1.longitude, c1.latitude, sliderMinZoom.value, sliderMaxZoom.value, mapType)
+            QGroundControl.mapEngineManager.updateForCurrentView(
+                c0.longitude, c0.latitude, c1.longitude, c1.latitude,
+                sliderMinZoom.value, sliderMaxZoom.value, mapType)
+
+            _curTopLat = c0.latitude
+            _curTopLon = c0.longitude
+            _curBotLat = c1.latitude
+            _curBotLon = c1.longitude
         }
+    }
+
+    function applySelectionFromPixels(x1, y1, x2, y2) {
+        var topLeft     = _map.toCoordinate(Qt.point(x1, y1), false /* clipToViewPort */)
+        var bottomRight = _map.toCoordinate(Qt.point(x2, y2), false /* clipToViewPort */)
+        _selTopLat    = topLeft.latitude
+        _selTopLon    = topLeft.longitude
+        _selBotLat    = bottomRight.latitude
+        _selBotLon    = bottomRight.longitude
+        _hasSelection = true
+        handleChanges()
     }
 
     function updateMap() {
@@ -108,6 +153,7 @@ Item {
 
     function addNewSet() {
         isMapInteractive = true
+        _hasSelection    = false
         mapType = _fmSettings.mapProvider.value + " " + _fmSettings.mapType.value
         resetMapToDefaults()
         handleChanges()
@@ -438,6 +484,134 @@ Item {
                 color:          Qt.rgba(1,0,0,0.05)
                 smooth:         true
                 antialiasing:   true
+            }
+
+            //-- Прямоугольник выделения области для скачивания тайлов
+            MapRectangle {
+                id:             selectionBoundary
+                visible:        offlineMapView._hasSelection && offlineMapView.isMapInteractive
+                border.width:   2
+                border.color:   "blue"
+                color:          Qt.rgba(0, 0, 1, 0.15)
+                smooth:         true
+                antialiasing:   true
+                z:              999
+            }
+
+            //-- Красные линии в местах, где карта повторяется (шов ±180°)
+            Item {
+                id:                 wrapOverlay
+                anchors.fill:       parent
+                visible:            offlineMapView.isMapInteractive
+                clip:               true
+                z:                  998
+
+                property var _seamXs: []
+
+                function _refresh() {
+                    // Мир в пикселях по формуле Web Mercator (как у QtLocation)
+                    var worldPx  = 256 * Math.pow(2, _map.zoomLevel)
+                    var pxPerDeg = worldPx / 360
+                    if (!isFinite(pxPerDeg) || pxPerDeg <= 0) {
+                        _seamXs = []
+                        return
+                    }
+
+                    var cLon = _map.center.longitude
+                    var cx   = width / 2                 // пиксель центра вьюпорта
+
+                    // Шов lon = 180 + k*360, ближайший к центру
+                    var k0   = Math.round((cLon - 180) / 360)
+                    // Запас: сколько полных миров влезает по ширине + пара на границы
+                    var span = Math.ceil(width / worldPx) + 2
+
+                    var xs = []
+                    for (var i = -span; i <= span; i++) {
+                        var L    = 180 + (k0 + i) * 360
+                        // Разница долгот нормализуется в [-180, 180],
+                        // чтобы не путаться с "завёрнутыми" значениями центра
+                        var diff = L - cLon
+                        while (diff >  180) diff -= 360
+                        while (diff < -180) diff += 360
+
+                        var x = cx + diff * pxPerDeg
+                        if (x >= -2 && x <= width + 2)
+                            xs.push(x)
+                    }
+                    _seamXs = xs
+                }
+
+                Component.onCompleted: _refresh()
+
+                Connections {
+                    target: _map
+                    function onCenterChanged()    { wrapOverlay._refresh() }
+                    function onZoomLevelChanged() { wrapOverlay._refresh() }
+                    function onWidthChanged()     { wrapOverlay._refresh() }
+                    function onHeightChanged()    { wrapOverlay._refresh() }
+                }
+
+                Repeater {
+                    model: wrapOverlay._seamXs
+                    delegate: Rectangle {
+                        x:      modelData
+                        y:      0
+                        width:  1
+                        height: wrapOverlay.height
+                        color:  "red"
+                    }
+                }
+            }
+
+            //-- Правая кнопка мыши: выделение области скачивания тайлов
+            MouseArea {
+                id:                      selectionMouseArea
+                anchors.fill:            parent
+                acceptedButtons:         Qt.RightButton
+                preventStealing:         true
+                propagateComposedEvents: false
+                enabled:                 isMapInteractive
+                z:                       1000
+
+                property real _startX:   0
+                property real _startY:   0
+                property bool _dragging: false
+
+                onPressed: {
+                    _startX   = mouse.x
+                    _startY   = mouse.y
+                    _dragging = true
+                }
+
+                onPositionChanged: {
+                    if (!_dragging)
+                        return
+                    var x1 = Math.min(_startX, mouse.x)
+                    var y1 = Math.min(_startY, mouse.y)
+                    var x2 = Math.max(_startX, mouse.x)
+                    var y2 = Math.max(_startY, mouse.y)
+                    offlineMapView.applySelectionFromPixels(x1, y1, x2, y2)
+                }
+
+                onReleased: {
+                    if (!_dragging)
+                        return
+                    _dragging = false
+
+                    var x1 = Math.min(_startX, mouse.x)
+                    var y1 = Math.min(_startY, mouse.y)
+                    var x2 = Math.max(_startX, mouse.x)
+                    var y2 = Math.max(_startY, mouse.y)
+
+                    if ((x2 - x1) < 5 || (y2 - y1) < 5) {
+                        //-- Правый клик без выделения -> сброс на вьюпорт
+                        offlineMapView._hasSelection = false
+                        offlineMapView.handleChanges()
+                        return
+                    }
+
+                    offlineMapView.applySelectionFromPixels(x1, y1, x2, y2)
+                }
             }
 
             Component.onCompleted: resetMapToDefaults()
@@ -964,6 +1138,72 @@ Item {
                         visible:    _tooManyTiles
                         color:      qgcPal.warningText
                         anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    Rectangle {
+                        anchors.left:   parent.left
+                        anchors.right:  parent.right
+                        height:         coordColumn.height + ScreenTools.defaultFontPixelHeight * 0.5
+                        color:          qgcPal.window
+                        border.color:   qgcPal.text
+                        radius:         ScreenTools.defaultFontPixelWidth * 0.5
+
+                        Column {
+                            id:                 coordColumn
+                            spacing:            ScreenTools.isTinyScreen ? 0 : ScreenTools.defaultFontPixelHeight * 0.25
+                            anchors.margins:    ScreenTools.defaultFontPixelHeight * 0.25
+                            anchors.top:        parent.top
+                            anchors.left:       parent.left
+                            anchors.right:      parent.right
+
+                            QGCLabel {
+                                text:           qsTr("Selection Bounds")
+                                font.pointSize: _adjustableFontPointSize
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            GridLayout {
+                                columns:    2
+                                rowSpacing: ScreenTools.isTinyScreen ? 0 : ScreenTools.defaultFontPixelHeight * 0.25
+                                columnSpacing: ScreenTools.defaultFontPixelWidth
+
+                                QGCLabel {
+                                    text:           qsTr("Top Lat:")
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+                                QGCLabel {
+                                    text:           _curTopLat.toFixed(6)
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+
+                                QGCLabel {
+                                    text:           qsTr("Top Lon:")
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+                                QGCLabel {
+                                    text:           _curTopLon.toFixed(6)
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+
+                                QGCLabel {
+                                    text:           qsTr("Bottom Lat:")
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+                                QGCLabel {
+                                    text:           _curBotLat.toFixed(6)
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+
+                                QGCLabel {
+                                    text:           qsTr("Bottom Lon:")
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+                                QGCLabel {
+                                    text:           _curBotLon.toFixed(6)
+                                    font.pointSize: _adjustableFontPointSize
+                                }
+                            }
+                        }
                     }
 
                     Row {

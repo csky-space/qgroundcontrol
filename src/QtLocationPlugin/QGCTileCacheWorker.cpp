@@ -513,35 +513,104 @@ QGCCacheWorker::_createTileSet(QGCMapTask *mtask)
                     task->tileSet()->topleftLon(), task->tileSet()->topleftLat(),
                     task->tileSet()->bottomRightLon(), task->tileSet()->bottomRightLat(), task->tileSet()->type());
                 QString type = task->tileSet()->type();
-                for(int x = set.tileX0; x <= set.tileX1; x++) {
-                    for(int y = set.tileY0; y <= set.tileY1; y++) {
-                        //-- See if tile is already downloaded
-                        QString hash = QGCMapEngine::getTileHash(type, x, y, z);
-                        quint64 tileID = _findTile(hash);
-                        if(!tileID) {
-                            //-- Set to download
-                            query.prepare("INSERT OR IGNORE INTO TilesDownload(setID, hash, type, x, y, z, state) VALUES(?, ?, ?, ?, ? ,? ,?)");
-                            query.addBindValue(setID);
-                            query.addBindValue(hash);
-                            query.addBindValue(getQGCMapEngine()->urlFactory()->getIdFromType(type));
-                            query.addBindValue(x);
-                            query.addBindValue(y);
-                            query.addBindValue(z);
-                            query.addBindValue(0);
-                            if(!query.exec()) {
-                                qWarning() << "Map Cache SQL error (add tile into TilesDownload):" << query.lastError().text();
-                                mtask->setError("Error creating tile set download list");
-                                return;
-                            } else
-                                actual_count++;
-                        } else {
-                            //-- Tile already in the database. No need to dowload.
-                            QString s = QString("INSERT OR IGNORE INTO SetTiles(tileID, setID) VALUES(%1, %2)").arg(tileID).arg(setID);
-                            query.prepare(s);
-                            if(!query.exec()) {
-                                qWarning() << "Map Cache SQL error (add tile into SetTiles):" << query.lastError().text();
+
+                if(set.tileX0 <= set.tileX1) {
+                    for(int x = set.tileX0; x <= set.tileX1; x++) {
+                        for(int y = set.tileY0; y <= set.tileY1; y++) {
+                            //-- See if tile is already downloaded
+                            QString hash = QGCMapEngine::getTileHash(type, x, y, z);
+                            quint64 tileID = _findTile(hash);
+                            if(!tileID) {
+                                //-- Set to download
+                                query.prepare("INSERT OR IGNORE INTO TilesDownload(setID, hash, type, x, y, z, state) VALUES(?, ?, ?, ?, ? ,? ,?)");
+                                query.addBindValue(setID);
+                                query.addBindValue(hash);
+                                query.addBindValue(getQGCMapEngine()->urlFactory()->getIdFromType(type));
+                                query.addBindValue(x);
+                                query.addBindValue(y);
+                                query.addBindValue(z);
+                                query.addBindValue(0);
+                                if(!query.exec()) {
+                                    qWarning() << "Map Cache SQL error (add tile into TilesDownload):" << query.lastError().text();
+                                    mtask->setError("Error creating tile set download list");
+                                    return;
+                                } else
+                                    actual_count++;
+                            } else {
+                                //-- Tile already in the database. No need to dowload.
+                                QString s = QString("INSERT OR IGNORE INTO SetTiles(tileID, setID) VALUES(%1, %2)").arg(tileID).arg(setID);
+                                query.prepare(s);
+                                if(!query.exec()) {
+                                    qWarning() << "Map Cache SQL error (add tile into SetTiles):" << query.lastError().text();
+                                }
+                                qCDebug(QGCTileCacheLog) << "_createTileSet() Already Cached HASH:" << hash;
                             }
-                            qCDebug(QGCTileCacheLog) << "_createTileSet() Already Cached HASH:" << hash;
+                        }
+                    }
+                } else {
+                    for(int x = 0; x <= set.tileX1; x++) {
+                        for(int y = set.tileY0; y <= set.tileY1; y++) {
+                            //-- See if tile is already downloaded
+                            QString hash = QGCMapEngine::getTileHash(type, x, y, z);
+                            quint64 tileID = _findTile(hash);
+                            if(!tileID) {
+                                //-- Set to download
+                                query.prepare("INSERT OR IGNORE INTO TilesDownload(setID, hash, type, x, y, z, state) VALUES(?, ?, ?, ?, ? ,? ,?)");
+                                query.addBindValue(setID);
+                                query.addBindValue(hash);
+                                query.addBindValue(getQGCMapEngine()->urlFactory()->getIdFromType(type));
+                                query.addBindValue(x);
+                                query.addBindValue(y);
+                                query.addBindValue(z);
+                                query.addBindValue(0);
+                                if(!query.exec()) {
+                                    qWarning() << "Map Cache SQL error (add tile into TilesDownload):" << query.lastError().text();
+                                    mtask->setError("Error creating tile set download list");
+                                    return;
+                                } else
+                                    actual_count++;
+                            } else {
+                                //-- Tile already in the database. No need to dowload.
+                                QString s = QString("INSERT OR IGNORE INTO SetTiles(tileID, setID) VALUES(%1, %2)").arg(tileID).arg(setID);
+                                query.prepare(s);
+                                if(!query.exec()) {
+                                    qWarning() << "Map Cache SQL error (add tile into SetTiles):" << query.lastError().text();
+                                }
+                                qCDebug(QGCTileCacheLog) << "_createTileSet() Already Cached HASH:" << hash;
+                            }
+                        }
+                    }
+                    int tilesWidth = static_cast<int>(pow(2.0, z));
+                    for(int x = set.tileX0; x < tilesWidth; x++) {
+                        for(int y = set.tileY0; y <= set.tileY1; y++) {
+                            //-- See if tile is already downloaded
+                            QString hash = QGCMapEngine::getTileHash(type, x, y, z);
+                            quint64 tileID = _findTile(hash);
+                            if(!tileID) {
+                                //-- Set to download
+                                query.prepare("INSERT OR IGNORE INTO TilesDownload(setID, hash, type, x, y, z, state) VALUES(?, ?, ?, ?, ? ,? ,?)");
+                                query.addBindValue(setID);
+                                query.addBindValue(hash);
+                                query.addBindValue(getQGCMapEngine()->urlFactory()->getIdFromType(type));
+                                query.addBindValue(x);
+                                query.addBindValue(y);
+                                query.addBindValue(z);
+                                query.addBindValue(0);
+                                if(!query.exec()) {
+                                    qWarning() << "Map Cache SQL error (add tile into TilesDownload):" << query.lastError().text();
+                                    mtask->setError("Error creating tile set download list");
+                                    return;
+                                } else
+                                    actual_count++;
+                            } else {
+                                //-- Tile already in the database. No need to dowload.
+                                QString s = QString("INSERT OR IGNORE INTO SetTiles(tileID, setID) VALUES(%1, %2)").arg(tileID).arg(setID);
+                                query.prepare(s);
+                                if(!query.exec()) {
+                                    qWarning() << "Map Cache SQL error (add tile into SetTiles):" << query.lastError().text();
+                                }
+                                qCDebug(QGCTileCacheLog) << "_createTileSet() Already Cached HASH:" << hash;
+                            }
                         }
                     }
                 }
