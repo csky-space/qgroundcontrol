@@ -48,11 +48,13 @@ QGCTileSet CopernicusElevationProvider::getTileCount(const int zoom, const doubl
     set.tileX1 = long2tileX(bottomRightLon, zoom);
     set.tileY1 = lat2tileY(topleftLat, zoom);
 
-    set.tileCount = (static_cast<quint64>(set.tileX1) -
-                     static_cast<quint64>(set.tileX0) + 1) *
-                    (static_cast<quint64>(set.tileY1) -
-                     static_cast<quint64>(set.tileY0) + 1);
+    qint64 spanX = static_cast<quint64>(set.tileX1) - static_cast<quint64>(set.tileX0);
+    if (spanX < 0) {
+        spanX = static_cast<int>(floor(360.0 / TerrainTile::tileSizeDegrees)) + spanX;
+    }
+    qint64 spanY = static_cast<quint64>(set.tileY1) - static_cast<quint64>(set.tileY0);
 
+    set.tileCount = (static_cast<quint64>(spanX) + 1) * (static_cast<quint64>(spanY) + 1);
     set.tileSize = getAverageSize() * set.tileCount;
 
     return set;

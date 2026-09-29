@@ -97,15 +97,14 @@ QGCTileSet MapProvider::getTileCount(const int zoom, const double topleftLon,
     set.tileY0 = lat2tileY(topleftLat, zoom);
     set.tileX1 = long2tileX(bottomRightLon, zoom);
     set.tileY1 = lat2tileY(bottomRightLat, zoom);
+
     qint64 spanX = static_cast<quint64>(set.tileX1) - static_cast<quint64>(set.tileX0);
     if (spanX < 0) {
         spanX = static_cast<int>(pow(2.0, zoom)) + spanX;
     }
-
     qint64 spanY = static_cast<quint64>(set.tileY1) - static_cast<quint64>(set.tileY0);
 
     set.tileCount = (static_cast<quint64>(spanX) + 1) * (static_cast<quint64>(spanY) + 1);
-
     set.tileSize = getAverageSize() * set.tileCount;
 
     return set;
