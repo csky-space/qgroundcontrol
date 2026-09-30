@@ -92,15 +92,22 @@ int MapProvider::lat2tileY(const double lat, const int z) const {
 QGCTileSet MapProvider::getTileCount(const int zoom, const double topleftLon,
                                      const double topleftLat, const double bottomRightLon,
                                      const double bottomRightLat) const {
+    static constexpr double cWebMercatorLimit = 85.05112878;
+    const double clampedTopleftLat = std::clamp(topleftLat, -cWebMercatorLimit, cWebMercatorLimit);
+    const double clampedBottomRightLat = std::clamp(bottomRightLat, -cWebMercatorLimit, cWebMercatorLimit);
+
     QGCTileSet set;
     set.tileX0 = long2tileX(topleftLon, zoom);
-    set.tileY0 = lat2tileY(topleftLat, zoom);
+    set.tileY0 = lat2tileY(clampedTopleftLat, zoom);
     set.tileX1 = long2tileX(bottomRightLon, zoom);
-    set.tileY1 = lat2tileY(bottomRightLat, zoom);
+    set.tileY1 = lat2tileY(clampedBottomRightLat, zoom);
 
     qint64 spanX = static_cast<quint64>(set.tileX1) - static_cast<quint64>(set.tileX0);
     if (spanX < 0) {
         spanX = static_cast<int>(pow(2.0, zoom)) + spanX;
+    }
+    else if (spanX == 0 && (bottomRightLon < topleftLon)) {
+        spanX = static_cast<int>(pow(2.0, zoom)) - 1;
     }
     qint64 spanY = static_cast<quint64>(set.tileY1) - static_cast<quint64>(set.tileY0);
 

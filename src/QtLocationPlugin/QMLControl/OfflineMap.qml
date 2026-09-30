@@ -75,6 +75,15 @@ Item {
 
     readonly property int _maxTilesForDownload: _settings ? _settings.maxTilesForDownload.rawValue : 0
 
+    readonly property real _webMercatorMaxLat: 85.05112878
+
+    function clampLat(lat) {
+        if (!isFinite(lat)) return 0;
+        if (lat >  _webMercatorMaxLat) return  _webMercatorMaxLat;
+        if (lat < -_webMercatorMaxLat) return -_webMercatorMaxLat;
+        return lat
+    }
+
     QGCPalette { id: qgcPal }
 
     Component.onCompleted: {
@@ -99,17 +108,19 @@ Item {
 
         if (_hasSelection) {
             //-- Расчёт по выделенной области (географические координаты)
-            var p1 = QtPositioning.coordinate(_selTopLat, _selTopLon)
-            var p2 = QtPositioning.coordinate(_selBotLat, _selBotLon)
+            var topLat = clampLat(_selTopLat)
+            var botLat = clampLat(_selBotLat)
+            var p1 = QtPositioning.coordinate(topLat, _selTopLon)
+            var p2 = QtPositioning.coordinate(botLat, _selBotLon)
             selectionBoundary.topLeft     = p1
             selectionBoundary.bottomRight = p2
             QGroundControl.mapEngineManager.updateForCurrentView(
                 p1.longitude, p1.latitude, p2.longitude, p2.latitude,
                 sliderMinZoom.value, sliderMaxZoom.value, mapType)
 
-            _curTopLat = _selTopLat
+            _curTopLat = topLat
             _curTopLon = _selTopLon
-            _curBotLat = _selBotLat
+            _curBotLat = botLat
             _curBotLon = _selBotLon
         } else {
             //-- Расчёт по вьюпорту
@@ -119,13 +130,17 @@ Item {
             var yr = _map.height.toFixed(0) - 1
             var c0 = _map.toCoordinate(Qt.point(xl, yl), false /* clipToViewPort */)
             var c1 = _map.toCoordinate(Qt.point(xr, yr), false /* clipToViewPort */)
+
+            var c0lat = clampLat(c0.latitude)
+            var c1lat = clampLat(c1.latitude)
+
             QGroundControl.mapEngineManager.updateForCurrentView(
-                c0.longitude, c0.latitude, c1.longitude, c1.latitude,
+                c0.longitude, c0lat, c1.longitude, c1lat,
                 sliderMinZoom.value, sliderMaxZoom.value, mapType)
 
-            _curTopLat = c0.latitude
+            _curTopLat = c0lat
             _curTopLon = c0.longitude
-            _curBotLat = c1.latitude
+            _curBotLat = c1lat
             _curBotLon = c1.longitude
         }
     }
@@ -133,9 +148,9 @@ Item {
     function applySelectionFromPixels(x1, y1, x2, y2) {
         var topLeft     = _map.toCoordinate(Qt.point(x1, y1), false /* clipToViewPort */)
         var bottomRight = _map.toCoordinate(Qt.point(x2, y2), false /* clipToViewPort */)
-        _selTopLat    = topLeft.latitude
+        _selTopLat    = clampLat(topLeft.latitude)
         _selTopLon    = topLeft.longitude
-        _selBotLat    = bottomRight.latitude
+        _selBotLat    = clampLat(bottomRight.latitude)
         _selBotLon    = bottomRight.longitude
         _hasSelection = true
         handleChanges()
@@ -1133,13 +1148,6 @@ Item {
                         } // Column - Zoom info
                     } // Rectangle - Zoom info
 
-                    QGCLabel {
-                        text:       qsTr("Too many tiles")
-                        visible:    _tooManyTiles
-                        color:      qgcPal.warningText
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-
                     Rectangle {
                         anchors.left:   parent.left
                         anchors.right:  parent.right
@@ -1168,7 +1176,7 @@ Item {
                                 columnSpacing: ScreenTools.defaultFontPixelWidth
 
                                 QGCLabel {
-                                    text:           qsTr("Top Lat:")
+                                    text:           qsTr("TL Lat:")
                                     font.pointSize: _adjustableFontPointSize
                                 }
                                 QGCLabel {
@@ -1177,7 +1185,7 @@ Item {
                                 }
 
                                 QGCLabel {
-                                    text:           qsTr("Top Lon:")
+                                    text:           qsTr("TL Lon:")
                                     font.pointSize: _adjustableFontPointSize
                                 }
                                 QGCLabel {
@@ -1186,7 +1194,7 @@ Item {
                                 }
 
                                 QGCLabel {
-                                    text:           qsTr("Bottom Lat:")
+                                    text:           qsTr("BR Lat:")
                                     font.pointSize: _adjustableFontPointSize
                                 }
                                 QGCLabel {
@@ -1195,7 +1203,7 @@ Item {
                                 }
 
                                 QGCLabel {
-                                    text:           qsTr("Bottom Lon:")
+                                    text:           qsTr("BR Lon:")
                                     font.pointSize: _adjustableFontPointSize
                                 }
                                 QGCLabel {
@@ -1230,6 +1238,12 @@ Item {
                                 showList()
                             }
                         }
+                    }
+
+                    QGCLabel {
+                        text:       qsTr("Limit:") + qsTr("too many tiles")
+                        color:      _tooManyTiles ? qgcPal.warningText : qgcPal.text
+                        anchors.horizontalCenter: parent.horizontalCenter
                     }
 
                 } // Column

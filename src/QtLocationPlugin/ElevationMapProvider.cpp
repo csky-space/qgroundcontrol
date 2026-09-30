@@ -42,16 +42,28 @@ QString CopernicusElevationProvider::_getURL(const int x, const int y, const int
 QGCTileSet CopernicusElevationProvider::getTileCount(const int zoom, const double topleftLon,
                                                  const double topleftLat, const double bottomRightLon,
                                                  const double bottomRightLat) const {
+
+    static constexpr double cWebMercatorLimit = 85.05112878;
+    const double clampedTopleftLat = std::clamp(topleftLat, -cWebMercatorLimit, cWebMercatorLimit);
+    const double clampedBottomRightLat = std::clamp(bottomRightLat, -cWebMercatorLimit, cWebMercatorLimit);
+
     QGCTileSet set;
     set.tileX0 = long2tileX(topleftLon, zoom);
-    set.tileY0 = lat2tileY(bottomRightLat, zoom);
+    set.tileY0 = lat2tileY(clampedBottomRightLat, zoom);
     set.tileX1 = long2tileX(bottomRightLon, zoom);
-    set.tileY1 = lat2tileY(topleftLat, zoom);
+    set.tileY1 = lat2tileY(clampedTopleftLat, zoom);
 
     qint64 spanX = static_cast<quint64>(set.tileX1) - static_cast<quint64>(set.tileX0);
     if (spanX < 0) {
         spanX = static_cast<int>(floor(360.0 / TerrainTile::tileSizeDegrees)) + spanX;
     }
+    else if (spanX == 0 && (bottomRightLon < topleftLon)) {
+        spanX = static_cast<int>(floor(360.0 / TerrainTile::tileSizeDegrees)) - 1;
+        if (spanX < 0) {
+            spanX = 0;
+        }
+    }
+
     qint64 spanY = static_cast<quint64>(set.tileY1) - static_cast<quint64>(set.tileY0);
 
     set.tileCount = (static_cast<quint64>(spanX) + 1) * (static_cast<quint64>(spanY) + 1);
